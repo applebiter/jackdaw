@@ -1,6 +1,9 @@
 # audio files
 audio/
 
+# image files
+images/
+
 .idea/
 
 # dotenv
