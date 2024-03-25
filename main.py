@@ -47,11 +47,9 @@ def fetch_new_audio_file():
     """
 
 
-
-
 FRAMES_PER_SECOND = 25
 SKIP_TICKS = 1000
-next_game_tick = get_tick_count()
+next_app_tick = get_tick_count()
 sleep_time = 0
 app_is_running = False
 
@@ -65,10 +63,10 @@ while app_is_running:
     # if a new file is found, use Whisper to process it
     # move the audio file to a new directory
 
-    next_game_tick += SKIP_TICKS
-    sleep_time = next_game_tick - get_tick_count()
+    next_app_tick += SKIP_TICKS
+    sleep_time = next_app_tick - get_tick_count()
 
     if sleep_time >= 0:
         time.sleep(sleep_time / 1000)
     else:
-        next_game_tick = get_tick_count()
+        next_app_tick = get_tick_count()
