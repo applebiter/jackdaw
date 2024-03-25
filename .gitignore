@@ -1,8 +1,7 @@
-# audio files
+# local files
 audio/
-
-# image files
 images/
+text/
 
 .idea/
 
