@@ -1,26 +1,15 @@
+import json
+import os
 import time
 import whisper
-# Imports for realistic voices
-import torch
-import torchaudio
-from tortoise import utils, api
-# import torch.nn as nn
-# import torch.nn.functional as F
-from tortoise.api import TextToSpeech
-from tortoise.utils.audio import load_audio, load_voice, load_voices
 
+project_root = os.path.dirname(__file__)
+input_audio_folder = f"{project_root}/jackdaw/input"
+input_audio = f"{input_audio_folder}/input.ogg"
+output_text_folder = f"{project_root}/jackdaw/output"
+output_text = f"{output_text_folder}/output.txt"
 stt_agent = whisper.load_model("base")
-audio_folder = "/home/rick/Workspace/jackdaw/audio"
-text_folder = "/home/rick/Workspace/jackdaw/text"
-
-clips_paths = [
-    "/home/rick/Workspace/jackdaw/audio/EmmaThompsonClip.mp3",
-]
-
-reference_clips = [utils.audio.load_audio(p, 22050) for p in clips_paths]
-tts = api.TextToSpeech()
-pcm_audio = tts.tts_with_preset(
-    "Wonderful, darling! It looks like you done figured it out!", voice_samples=reference_clips, preset='fast')
+tts_agent = None
 
 
 def get_tick_count() -> int:
@@ -46,7 +35,6 @@ def fetch_new_audio_file():
             generator (yield)
     """
 
-
 FRAMES_PER_SECOND = 25
 SKIP_TICKS = 1000
 next_app_tick = get_tick_count()
@@ -56,12 +44,19 @@ app_is_running = False
 while app_is_running:
 
     # Poll a directory for a new text file
-    # if a new file is found, use dome TTS to process it
+    # if a new file is found, use MaryTTS to process it
     # move the text file to a new directory
 
     # Poll a directory for a new audio file
     # if a new file is found, use Whisper to process it
     # move the audio file to a new directory
+    if os.path.isfile(input_audio):
+        result = stt_agent.transcribe(f"{input_audio}")
+
+        with open(output_text, "w") as output:
+            output.write(result["text"])
+            
+        os.remove(input_audio)
 
     next_app_tick += SKIP_TICKS
     sleep_time = next_app_tick - get_tick_count()
