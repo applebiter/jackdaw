@@ -5,6 +5,8 @@ jackdaw/input/audio/*
 jackdaw/output/audio/*
 jackdaw/output/text/*
 jackdaw/output/images/*
+*.wav
+*.txt
 
 .idea/
 
