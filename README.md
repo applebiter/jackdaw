@@ -31,6 +31,12 @@ of course be the preferred solution for the output audio, but my older machines
 struggle to run it and my Wintendo machine can run it, but I'm not interested in 
 the Windows ecosystem outside of gaming. 
 
+JackTrip -- JackTrip is not used directly in this code, but it is used to 
+connect all of the PCs on the network already running JACK. High-quality, multi-
+channel audio can be sent selectively between the PCs on the network with very 
+low latency. PCs connected with JackTrip and running JACK are able to process 
+audio in real-time.
+
 MaryTTS -- MaryTTS sits in that weird place that is not entirely unpleasant, but 
 definitely does not sound like a human. I don't know whether anyone would want 
 to hear an entire audiobook in that voice, but it suits as a voice for the house 
