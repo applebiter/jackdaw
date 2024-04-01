@@ -26,12 +26,18 @@ client melts away and the audio file is deleted. The loop then waits for the
 next query.
 
 ### Requirements
-The JACK server must be running on the host machine. TortoiseTTS would of course 
-be the preferred solution for the output audio, but my older machines struggle 
-to run it and my Wintendo machine can run it, but I'm not interested in the 
-Windows ecosystem outside of gaming. MaryTTS sits in that weird place that is 
-entirely unpleasant, but definitely does not sound like a human. OpenAI's 
-Whisper does such a great job of transcribing punctuation that MaryTTS is really
-given it's best chance to shine. I don't know whether anyone would want to hear 
-an audiobook in that voice, but it suits as a voice for the house computer 
-everywhere all at once on the JACK bus, running on connected linux pcs.
+JACK2 -- The JACK server must be running on the host machine. TortoiseTTS would 
+of course be the preferred solution for the output audio, but my older machines 
+struggle to run it and my Wintendo machine can run it, but I'm not interested in 
+the Windows ecosystem outside of gaming. 
+
+MaryTTS -- MaryTTS sits in that weird place that is not entirely unpleasant, but 
+definitely does not sound like a human. I don't know whether anyone would want 
+to hear an entire audiobook in that voice, but it suits as a voice for the house 
+computer everywhere all at once on the JACK bus, running on connected PCs.
+
+OpenAI Whisper -- OpenAI's Whisper does such a great job of transcribing 
+punctuation that MaryTTS is really given it's best chance to shine. 
+
+SOX -- SOX is used to convert the audio file from MaryTTS to a format that JACK
+can play.
