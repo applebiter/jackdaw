@@ -4,7 +4,6 @@ import time
 import ollama
 import requests
 import whisper
-# from playsound import playsound
 
 project_root = os.path.dirname(__file__)
 jacklab = f"{project_root}/jacklab"
