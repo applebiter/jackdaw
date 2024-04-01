@@ -3,7 +3,7 @@ audio/
 images/
 jackdaw/input/audio/*
 jackdaw/output/audio/*
-jackdaw/output/text/*
+jackdaw/input/text/*
 jackdaw/output/images/*
 *.wav
 *.txt
