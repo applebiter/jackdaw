@@ -73,7 +73,7 @@ while app_is_running:
 
         priming = "The user will only receive the first 1000 characters from each of the assistant's responses, so please be brief."
         response = ollama.chat(
-            model='llama2-uncensored:7b', messages=[
+            model='dolphin-mistral:7b', messages=[
                 {'role': 'system', 'content': priming},
                 {'role': 'user', 'content': text}
             ], options={'temperature': 1}, keep_alive='10m'
