@@ -25,7 +25,7 @@ parser.add_argument('filename', help='audio file to be played back')
 parser.add_argument(
     '-b', '--buffersize', type=int, default=20,
     help='number of blocks used for buffering (default: %(default)s)')
-parser.add_argument('-c', '--clientname', default='file player',
+parser.add_argument('-c', '--clientname', default='jackdaw player',
                     help='JACK client name')
 parser.add_argument('-m', '--manual', action='store_true',
                     help="don't connect to output ports automatically")
