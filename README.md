@@ -24,3 +24,5 @@ original query, is then played on the JACK bus with a JACK client that is
 instantiated by the loop in main.py. When the playback is finished, the JACK 
 client melts away and the audio file is deleted. The loop then waits for the 
 next query.
+
+### Requirements
