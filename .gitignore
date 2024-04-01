@@ -1,7 +1,10 @@
 # local files
 audio/
 images/
-text/
+jackdaw/input/audio/*
+jackdaw/output/audio/*
+jackdaw/output/text/*
+jackdaw/output/images/*
 
 .idea/
 
