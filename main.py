@@ -7,10 +7,8 @@ import whisper
 
 project_root = os.path.dirname(__file__)
 jacklab = f"{project_root}/jacklab"
-input_audio = f"{project_root}/jackdaw/input/audio"
-input_text = f"{project_root}/jackdaw/input/text"
-output_audio = f"{project_root}/jackdaw/output/audio"
-output_text = f"{project_root}/jackdaw/output/text"
+input_folder = f"{project_root}/input"
+output_folder = f"{project_root}/output"
 whisperer = whisper.load_model("base")
 
 
@@ -47,28 +45,28 @@ app_is_running = True
 while app_is_running:
 
     # 1. Check if the output audio file exists, if it does, delete it
-    if os.path.isfile(f"{output_audio}/output.wav"):
+    if os.path.isfile(f"{output_folder}/output.wav"):
         if delete_output_audio:
             print("Found output audio to delete...")
-            os.remove(f"{output_audio}/output.wav")
+            os.remove(f"{output_folder}/output.wav")
             print("Output audio deleted, waiting for user input...")
             delete_output_audio = False
 
     # 2. Input audio comes from user, goes to Whisper for processing
-    if os.path.isfile(f"{input_audio}/input.wav"):
+    if os.path.isfile(f"{input_folder}/input.wav"):
         print("Found input audio to process...")
-        result = whisperer.transcribe(f"{input_audio}/input.wav")
+        result = whisperer.transcribe(f"{input_folder}/input.wav")
 
-        with open(f"{output_text}/output.txt", "w") as output:
+        with open(f"{output_folder}/output.txt", "w") as output:
             text_out = result["text"]
             output.write(text_out)
 
-        os.remove(f"{input_audio}/input.wav")
+        os.remove(f"{input_folder}/input.wav")
         time.sleep(0.5)
 
     # 3. Output text comes from Whisper, goes to Ollama for processing
-    if os.path.isfile(f"{output_text}/output.txt"):
-        with open(f"{output_text}/output.txt", "r") as text_file:
+    if os.path.isfile(f"{output_folder}/output.txt"):
+        with open(f"{output_folder}/output.txt", "r") as text_file:
             text = text_file.read()
 
         priming = "The user will only receive the first 1000 characters from each of the assistant's responses, so please be brief."
@@ -80,16 +78,16 @@ while app_is_running:
         )
 
         # 4. Output text from Ollama gets written to input text folder
-        with open(f"{input_text}/input.txt", "w") as input_file:
+        with open(f"{input_folder}/input.txt", "w") as input_file:
             input_file.write(response['message']['content'][:1000])
 
-        os.remove(f"{output_text}/output.txt")
+        os.remove(f"{output_folder}/output.txt")
         time.sleep(0.5)
 
     # 5. Input text comes from language model, goes to MaryTTS for processing
-    if os.path.isfile(f"{input_text}/input.txt"):
+    if os.path.isfile(f"{input_folder}/input.txt"):
         print("Found input text to process...")
-        with open(f"{input_text}/input.txt", "r") as text_file:
+        with open(f"{input_folder}/input.txt", "r") as text_file:
             text = text_file.read()
 
         response = requests.post(
@@ -106,34 +104,34 @@ while app_is_running:
             headers={"Content-Type": "application/json"},
         )
 
-        with open(f"{output_audio}/raw.wav", "wb") as audio_file:
+        with open(f"{output_folder}/raw.wav", "wb") as audio_file:
             audio_file.write(response.content)
             time.sleep(0.5)
 
         result = subprocess.run(
             [
-                "sox", f"{output_audio}/raw.wav", "--rate", "44.1k",
-                "--channels", "2", f"{output_audio}/output.wav"
+                "sox", f"{output_folder}/raw.wav", "--rate", "44.1k",
+                "--channels", "2", f"{output_folder}/output.wav"
             ],
             capture_output=True, text=True
         )
         print(result.stdout)
         time.sleep(0.5)
 
-        if os.path.isfile(f"{output_audio}/output.wav"):
-            os.remove(f"{output_audio}/raw.wav")
+        if os.path.isfile(f"{output_folder}/output.wav"):
+            os.remove(f"{output_folder}/raw.wav")
             delete_output_audio = True
 
-        os.remove(f"{input_text}/input.txt")
+        os.remove(f"{input_folder}/input.txt")
         time.sleep(0.5)
 
     # 6. Output audio comes from MaryTTS, gets played
-    if os.path.isfile(f"{output_audio}/output.wav"):
+    if os.path.isfile(f"{output_folder}/output.wav"):
         print("Found output audio to play...")
         result = subprocess.run(
             [
                 "python", f"{jacklab}/play_file.py", "-c", "jackdaw",
-                f"{output_audio}/output.wav"
+                f"{output_folder}/output.wav"
             ],
             capture_output=True, text=True
         )

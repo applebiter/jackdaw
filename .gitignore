@@ -1,12 +1,8 @@
 # local files
-audio/
-images/
-jackdaw/input/audio/*
-jackdaw/output/audio/*
-jackdaw/input/text/*
-jackdaw/output/images/*
-*.wav
-*.txt
+input/*.wav
+input/*.txt
+output/*.wav
+output/*.txt
 
 .idea/
 
