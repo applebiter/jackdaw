@@ -26,10 +26,7 @@ client melts away and the audio file is deleted. The loop then waits for the
 next query.
 
 ### Requirements
-JACK2 -- The JACK server must be running on the host machine. TortoiseTTS would 
-of course be the preferred solution for the output audio, but my older machines 
-struggle to run it and my Wintendo machine can run it, but I'm not interested in 
-the Windows ecosystem outside of gaming. 
+JACK2 -- The JACK server must be running on the host machine. 
 
 JackTrip -- JackTrip is not used directly in this code, but it is used to 
 connect all of the PCs on the network already running JACK. High-quality, multi-
