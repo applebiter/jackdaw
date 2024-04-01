@@ -26,6 +26,9 @@ client melts away and the audio file is deleted. The loop then waits for the
 next query.
 
 ### Requirements
+Linux -- This code is written for Linux. It may work on other operating systems,
+but it has not been tested on them. 
+
 JACK2 -- The JACK server must be running on the host machine. 
 
 JackTrip -- JackTrip is not used directly in this code, but it is used to 
