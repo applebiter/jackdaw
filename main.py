@@ -50,7 +50,8 @@ while app_is_running:
     if os.path.isfile(f"{output_audio}/output.wav"):
         if delete_output_audio:
             print("Found output audio to delete...")
-            # os.remove(f"{output_audio}/output.wav")
+            os.remove(f"{output_audio}/output.wav")
+            print("Output audio deleted, waiting for user input...")
             delete_output_audio = False
 
     # 2. Input audio comes from user, goes to Whisper for processing
@@ -75,7 +76,7 @@ while app_is_running:
             model='llama2-uncensored:7b', messages=[
                 {'role': 'system', 'content': priming},
                 {'role': 'user', 'content': text}
-            ], options={'temperature': 1}, keep_alive=-1
+            ], options={'temperature': 1}, keep_alive='10m'
         )
 
         # 4. Output text from Ollama gets written to input text folder
