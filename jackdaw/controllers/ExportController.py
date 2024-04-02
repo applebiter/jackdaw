@@ -26,7 +26,7 @@ class ExportController(BaseController):
 
             export_root = config.get("export", "root")
             self._export_root = export_root
-            user_folder = f"{export_root}/{self._owner.uuid}"
+            user_folder = f"{export_root}/{self._owner.uuid}" if self._owner else f"{export_root}"
 
             if not os.path.exists(user_folder):
                 os.makedirs(user_folder)

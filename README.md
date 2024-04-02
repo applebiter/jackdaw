@@ -25,6 +25,12 @@ instantiated by the loop in main.py. When the playback is finished, the JACK
 client melts away and the audio file is deleted. The loop then waits for the 
 next query.
 
+### Update
+I pulled in a few classes from Noveler, my other project, to handle the Ollama 
+interactions and to store them in a database. So, even though the audio of these
+conversations is ephemeral (and so are the text files), the conversation lives 
+on in the database. 
+
 ### Requirements
 Linux -- This code is written for Linux. It may work on other operating systems,
 but it has not been tested on them. 

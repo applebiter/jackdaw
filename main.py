@@ -58,6 +58,7 @@ next_app_tick = get_tick_count()
 sleep_time = 0
 delete_output_audio = False
 app_is_running = True
+session_uuid = None
 
 while app_is_running:
 
@@ -88,8 +89,10 @@ while app_is_running:
 
         priming = "The user will only receive the first 1000 characters from \
             each of the assistant's responses, so please be brief."
+        session_uuid = jackdaw("assistant").session_uuid if session_uuid is None else session_uuid
         response = jackdaw("assistant").chat(
-            priming=priming, prompt=text, temperature=1.0
+            priming=priming, prompt=text, temperature=1.0,
+            session_uuid=session_uuid
         )
 
         # 4. Output text from Ollama gets written to input text folder
