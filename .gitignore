@@ -4,6 +4,7 @@ input/*.txt
 output/*.wav
 output/*.txt
 *.cfg
+jackdaw.db
 
 .idea/
 
