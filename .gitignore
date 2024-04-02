@@ -3,6 +3,7 @@ input/*.wav
 input/*.txt
 output/*.wav
 output/*.txt
+*.cfg
 
 .idea/
 

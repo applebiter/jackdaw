@@ -53,15 +53,15 @@ while app_is_running:
             delete_output_audio = False
 
     # 2. Input audio comes from user, goes to Whisper for processing
-    if os.path.isfile(f"{input_folder}/input.wav"):
+    if os.path.isfile(f"{input_folder}/untitled.wav"):
         print("Found input audio to process...")
-        result = whisperer.transcribe(f"{input_folder}/input.wav")
+        result = whisperer.transcribe(f"{input_folder}/untitled.wav")
 
         with open(f"{output_folder}/output.txt", "w") as output:
             text_out = result["text"]
             output.write(text_out)
 
-        os.remove(f"{input_folder}/input.wav")
+        os.remove(f"{input_folder}/untitled.wav")
         time.sleep(0.5)
 
     # 3. Output text comes from Whisper, goes to Ollama for processing
@@ -71,10 +71,10 @@ while app_is_running:
 
         priming = "The user will only receive the first 1000 characters from each of the assistant's responses, so please be brief."
         response = ollama.chat(
-            model='dolphin-mistral:7b', messages=[
+            model='llama2:7b', messages=[
                 {'role': 'system', 'content': priming},
                 {'role': 'user', 'content': text}
-            ], options={'temperature': 1}, keep_alive='10m'
+            ], options={'temperature': 1}, keep_alive='1h'
         )
 
         # 4. Output text from Ollama gets written to input text folder
