@@ -1,14 +1,31 @@
 import os
 import subprocess
 import time
-import ollama
+from configparser import ConfigParser
 import requests
 import whisper
+from jackdaw import Jackdaw
 
-project_root = os.path.dirname(__file__)
-jacklab = f"{project_root}/jacklab"
-input_folder = f"{project_root}/input"
-output_folder = f"{project_root}/output"
+config = ConfigParser()
+config.read("config.cfg")
+
+# db stuff
+user = config.get("mysql", "user")
+password = config.get("mysql", "password")
+host = config.get("mysql", "host")
+port = config.get("mysql", "port")
+database = config.get("mysql", "database")
+
+# jackdaw = Jackdaw(f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}")
+jackdaw = Jackdaw(f"sqlite:///{database}.db")
+
+# reach out to the ollama server for updates
+jackdaw("assistant").update_models()
+
+export_folder = config.get("export", "root")
+output_folder = config.get("output", "root")
+input_folder = config.get("input", "root")
+scripts_root = config.get("scripts", "root")
 whisperer = whisper.load_model("base")
 
 
@@ -69,12 +86,10 @@ while app_is_running:
         with open(f"{output_folder}/output.txt", "r") as text_file:
             text = text_file.read()
 
-        priming = "The user will only receive the first 1000 characters from each of the assistant's responses, so please be brief."
-        response = ollama.chat(
-            model='llama2:7b', messages=[
-                {'role': 'system', 'content': priming},
-                {'role': 'user', 'content': text}
-            ], options={'temperature': 1}, keep_alive='1h'
+        priming = "The user will only receive the first 1000 characters from \
+            each of the assistant's responses, so please be brief."
+        response = jackdaw("assistant").chat(
+            priming=priming, prompt=text, temperature=1.0
         )
 
         # 4. Output text from Ollama gets written to input text folder
@@ -130,7 +145,7 @@ while app_is_running:
         print("Found output audio to play...")
         result = subprocess.run(
             [
-                "python", f"{jacklab}/play_file.py", "-c", "jackdaw",
+                "python", f"{scripts_root}/play_file.py", "-c", "jackdaw",
                 f"{output_folder}/output.wav"
             ],
             capture_output=True, text=True

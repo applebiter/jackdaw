@@ -1,6 +1,6 @@
 from typing import Type
 from sqlalchemy.orm import Session
-from noveler.models import User
+from jackdaw.models import User
 
 
 class BaseController:

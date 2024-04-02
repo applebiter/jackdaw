@@ -105,13 +105,13 @@ class AssistantController(BaseController):
         self._session_uuid = uuid4
         self._chat_model = config.get("ollama", "chat_model")
         self._chat_num_ctx = config.getint("ollama", "chat_context_window")
-        self._chat_keep_alive = config.getint("ollama", "chat_memory_duration")
+        self._chat_keep_alive = config.get("ollama", "chat_memory_duration")
         self._generative_model = config.get("ollama", "generative_model")
         self._generative_num_ctx = config.getint("ollama", "generative_context_window")
-        self._generative_keep_alive = config.getint("ollama", "generative_memory_duration")
+        self._generative_keep_alive = config.get("ollama", "generative_memory_duration")
         self._multimodal_model = config.get("ollama", "multimodal_model")
         self._multimodal_num_ctx = config.getint("ollama", "multimodal_context_window")
-        self._multimodal_keep_alive = config.getint("ollama", "multimodal_memory_duration")
+        self._multimodal_keep_alive = config.get("ollama", "multimodal_memory_duration")
 
     def update_models(self) -> bool:
         """Update the database with any new models in the list provided by the Ollama API.
