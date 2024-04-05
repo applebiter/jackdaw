@@ -77,3 +77,17 @@ The application will detect the audio and begin processing it. Also, this little
 app is kind of a memory beast. No leaks, but when the libs are all loaded it 
 comes in at nearly 1GB. The CPU usage is negligible, hovering at around %0.5 on
 my older machines.
+
+### Future
+This is just an experiment, but it could be polished up a little bit more. For
+example, it's storing the conversations in a SQLite db, already, with each 
+session given a unique ID, so that SQL retrieval can easily fetch the whole 
+session. Here are some ideas for improvements:
+
+1. Replace the "Start Recording" and "Stop Recording" links with a single button that toggles between the two states and perhaps changes color to indicate its state.
+2. Add a "Clear Conversation" link to the menu that will regenerate the session ID.
+3. Add a link to the menu that will open a window with the conversation history.
+4. Add a link to the menu that will open a window with the settings.
+5. Add a link to the menu that will open a file dialog, allowing the user to select one or more documents to chat with the language model about (RAG).
+6. Add a link that opens a window with the available models from the specified Ollama server, and allows the user to select a different model.
+7. Of course, if the user selects the multimodal model, the user should be able to select one or more images to chat about.
