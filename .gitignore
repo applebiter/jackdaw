@@ -5,6 +5,8 @@ output/*.wav
 output/*.txt
 images/
 export/*
+config.cfg
+*.cfg
 *.db
 *.spec
 
