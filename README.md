@@ -26,10 +26,7 @@ client melts away and the audio file is deleted. The loop then waits for the
 next query.
 
 ### Update
-I pulled in a few classes from Noveler, my other project, to handle the Ollama 
-interactions and to store them in a database. So, even though the audio of these
-conversations is ephemeral (and so are the text files), the conversation lives 
-on in the database. 
+This is now a graphical application. It sits in the system tray.
 
 ### Requirements
 Linux -- This code is written for Linux. It may work on other operating systems,
@@ -53,3 +50,24 @@ punctuation that MaryTTS is really given it's best chance to shine.
 
 SOX -- SOX is used to convert the audio file from MaryTTS to a format that JACK
 can play.
+
+Ollama -- The Ollama server makes all of the Language Model magic happen. The 
+Ollama server is a RESTful API that can be queried with text and will return
+text. The Ollama server is not included in this project, but is central to it.
+
+### Installation
+1. Install JACK2, JackTrip, MaryTTS, SOX, and Ollama.
+2. Clone this repository.
+3. Run `pip install -r requirements.txt` in the project directory.
+4. Run `python main.py` in the project directory.
+5. The application will appear in the system tray.
+6. Right-click the icon to open the menu.
+7. Select "Quit" to close the application
+
+### Usage
+1. Right-click the icon in the system tray to open the menu.
+2. Click "Start Recording" to begin recording audio.
+3. Speak into the microphone.
+4. Click "Stop Recording" to stop recording audio.
+
+The application will detect the audio and begin processing it. 

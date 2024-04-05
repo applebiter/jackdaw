@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 import threading
 import time
@@ -106,9 +105,7 @@ next_app_tick = get_tick_count()
 sleep_time = 0
 delete_output_audio = False
 check_for_input_audio = True
-check_for_transcription = False
 session_uuid = None
-chat_is_running = False
 app_is_running = True
 
 while app_is_running:
@@ -123,31 +120,30 @@ while app_is_running:
     if check_for_input_audio:
         if os.path.isfile(f"{input_folder}/input.wav"):
             print("Found input query...")
-            check_for_transcription = transcribe_audio(
+            transcribe_audio(
                 input_folder, output_folder
             )
 
     # 4. Output text comes from Whisper, goes to Ollama for processing
-    if check_for_transcription:
-        if os.path.isfile(f"{output_folder}/transcription.txt"):
-            transcript = f"{output_folder}/transcription.txt"
-            with open(transcript, "r") as file:
-                txt = file.read()
-            print("Sending transcribed query to the LLM...")
-            # priming = "The user will only receive the first 1500 characters \
-            #            from each of the assistant's responses, so please be \
-            #            brief."
-            priming = "The user will only receive the first 2500 characters of the assistant's response, so please \
-                            be brief where possible."
-            session_uuid = jackdaw("assistant").session_uuid if session_uuid is None else session_uuid
-            resp = jackdaw("assistant").chat(
-                priming=priming, prompt=txt, temperature=1.0,
-                session_uuid=session_uuid
-            )
-            with open(f"{input_folder}/input.txt", "w") as input_file:
-                input_file.write(resp['message']['content'][:2500])
-            os.remove(f"{output_folder}/transcription.txt")
-            check_for_transcription = False
+    if os.path.isfile(f"{output_folder}/transcription.txt"):
+        transcript = f"{output_folder}/transcription.txt"
+        with open(transcript, "r") as file:
+            txt = file.read()
+        print("Sending transcribed query to the LLM...")
+        # priming = "The user will only receive the first 1500 characters \
+        #            from each of the assistant's responses, so please be \
+        #            brief."
+        priming = "The user will only receive the first 2500 characters of the assistant's response, so please \
+                        be brief where possible."
+        session_uuid = jackdaw("assistant").session_uuid if session_uuid is None else session_uuid
+        resp = jackdaw("assistant").chat(
+            priming=priming, prompt=txt, temperature=1.0,
+            session_uuid=session_uuid
+        )
+        with open(f"{input_folder}/input.txt", "w") as input_file:
+            input_file.write(resp['message']['content'][:2500])
+        os.remove(f"{output_folder}/transcription.txt")
+        check_for_transcription = False
 
     # 5. Input text comes from language model, goes to MaryTTS for processing
     if os.path.isfile(f"{input_folder}/input.txt"):
