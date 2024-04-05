@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Jackdaw
+Comment=Voice Chat With AI Models
+GenericName=Jackdaw
+Exec=/bin/bash -c 'source /home/<username>/path/to/jackdaw/.venv/bin/activate && /home/<username>/path/to/jackdaw/.venv/bin/python /home/<username>/path/to/jackdaw/main.py'
+Icon=/home/<username>/path/to/jackdaw/icons/jackdaw.svg
+Type=Application
+StartupNotify=false
+StartupWMClass=
+Categories=LLM;AI;Chat;
+Keywords=jackdaw;

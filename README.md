@@ -65,6 +65,7 @@ text. The Ollama server is not included in this project, but is central to it.
 7. The application will appear in the system tray.
 8. Right-click the icon to open the menu.
 9. Select "Quit" to close the application
+10. A jackdaw.desktop file example is included (desktop launcher). Optional.
 
 ### Usage
 1. Right-click the icon in the system tray to open the menu.
