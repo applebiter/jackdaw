@@ -23,7 +23,7 @@ port = config.get("postgresql", "port")
 database = config.get("postgresql", "database")
 # Jackdaw application launch
 # jackdaw = Jackdaw(f"postgresql+psycopg://{user}:{password}@{host}:{port}/{database}")
-jackdaw = Jackdaw(f"sqlite:///{database}.db")
+jackdaw = Jackdaw(f"sqlite:///{project_root}/{database}.db")
 # plumbing
 export_folder = config.get("export", "root")
 output_folder = config.get("output", "root")
