@@ -113,6 +113,8 @@ class AssistantController(BaseController):
         self._multimodal_num_ctx = config.getint("ollama", "multimodal_context_window")
         self._multimodal_keep_alive = config.get("ollama", "multimodal_memory_duration")
 
+        self.update_models()
+
     def update_models(self) -> bool:
         """Update the database with any new models in the list provided by the Ollama API.
         """
@@ -129,7 +131,6 @@ class AssistantController(BaseController):
                     ).first()
 
                     if not model_exists:
-
                         details = self._client.show(model["model"])
 
                         description = details["modelfile"] if details.get("modelfile") else None
@@ -184,14 +185,14 @@ class AssistantController(BaseController):
         return True
 
     def chat(
-        self,
-        prompt: str,
-        temperature: Optional[float] = 0.5,
-        seed: Optional[int] = None,
-        priming: str = None,
-        options: Optional[dict] = None,
-        session_uuid: str = None,
-        keep_alive: Optional[Union[float, str]] = None
+            self,
+            prompt: str,
+            temperature: Optional[float] = 0.5,
+            seed: Optional[int] = None,
+            priming: str = None,
+            options: Optional[dict] = None,
+            session_uuid: str = None,
+            keep_alive: Optional[Union[float, str]] = None
     ):
         """Chat with the Chat Assistant.
 
@@ -293,7 +294,8 @@ class AssistantController(BaseController):
                     total_duration=response["total_duration"] if response.get("total_duration") else None,
                     load_duration=response["load_duration"] if response.get("load_duration") else None,
                     prompt_eval_count=response["prompt_eval_count"] if response.get("prompt_eval_count") else None,
-                    prompt_eval_duration=response["prompt_eval_duration"] if response.get("prompt_eval_duration") else None,
+                    prompt_eval_duration=response["prompt_eval_duration"] if response.get(
+                        "prompt_eval_duration") else None,
                     eval_count=response["eval_count"] if response.get("eval_count") else None,
                     eval_duration=response["eval_duration"] if response.get("eval_duration") else None,
                     created=datetime.now()
@@ -312,15 +314,15 @@ class AssistantController(BaseController):
                 return response
 
     def rag_chat(
-        self,
-        prompt: str,
-        document: str,
-        temperature: Optional[float] = 0.5,
-        seed: Optional[int] = None,
-        priming: str = None,
-        options: Optional[dict] = None,
-        session_uuid: str = None,
-        keep_alive: Optional[Union[float, str]] = None
+            self,
+            prompt: str,
+            document: str,
+            temperature: Optional[float] = 0.5,
+            seed: Optional[int] = None,
+            priming: str = None,
+            options: Optional[dict] = None,
+            session_uuid: str = None,
+            keep_alive: Optional[Union[float, str]] = None
     ):
         with self._session as session:
 
@@ -406,7 +408,8 @@ class AssistantController(BaseController):
                     total_duration=response["total_duration"] if response.get("total_duration") else None,
                     load_duration=response["load_duration"] if response.get("load_duration") else None,
                     prompt_eval_count=response["prompt_eval_count"] if response.get("prompt_eval_count") else None,
-                    prompt_eval_duration=response["prompt_eval_duration"] if response.get("prompt_eval_duration") else None,
+                    prompt_eval_duration=response["prompt_eval_duration"] if response.get(
+                        "prompt_eval_duration") else None,
                     eval_count=response["eval_count"] if response.get("eval_count") else None,
                     eval_duration=response["eval_duration"] if response.get("eval_duration") else None,
                     created=datetime.now()
@@ -515,7 +518,8 @@ class AssistantController(BaseController):
                     total_duration=response["total_duration"] if response.get("total_duration") else None,
                     load_duration=response["load_duration"] if response.get("load_duration") else None,
                     prompt_eval_count=response["prompt_eval_count"] if response.get("prompt_eval_count") else None,
-                    prompt_eval_duration=response["prompt_eval_duration"] if response.get("prompt_eval_duration") else None,
+                    prompt_eval_duration=response["prompt_eval_duration"] if response.get(
+                        "prompt_eval_duration") else None,
                     eval_count=response["eval_count"] if response.get("eval_count") else None,
                     eval_duration=response["eval_duration"] if response.get("eval_duration") else None,
                     created=datetime.now()
@@ -612,7 +616,8 @@ class AssistantController(BaseController):
                     total_duration=response["total_duration"] if response.get("total_duration") else None,
                     load_duration=response["load_duration"] if response.get("load_duration") else None,
                     prompt_eval_count=response["prompt_eval_count"] if response.get("prompt_eval_count") else None,
-                    prompt_eval_duration=response["prompt_eval_duration"] if response.get("prompt_eval_duration") else None,
+                    prompt_eval_duration=response["prompt_eval_duration"] if response.get(
+                        "prompt_eval_duration") else None,
                     eval_count=response["eval_count"] if response.get("eval_count") else None,
                     eval_duration=response["eval_duration"] if response.get("eval_duration") else None,
                     created=datetime.now()
@@ -643,3 +648,8 @@ class AssistantController(BaseController):
     def __repr__(self):
         """Return the class representation."""
         return f"{self.__class__.__name__}()"
+
+    @property
+    def session_uuid(self):
+        """Return the UUID of the session."""
+        return self._session_uuid

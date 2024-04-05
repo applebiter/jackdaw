@@ -4,7 +4,7 @@ import bcrypt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from jackdaw.controllers import AssistantController, UserController, \
-    OllamaModelController, ExportController
+    OllamaModelController, ExportController, RecordingController
 from jackdaw.models import Base, User
 
 
@@ -68,6 +68,7 @@ class Jackdaw:
             "assistant": AssistantController(self._session, self._owner),
             "export": ExportController(self._session, self._owner),
             "ollama-model": OllamaModelController(self._session, self._owner),
+            "recording": RecordingController(),
             "user": UserController(self._session, self._owner)
         }
 

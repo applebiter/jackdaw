@@ -13,7 +13,7 @@ password = password
 database = jackdaw
 
 [sqlite]
-database = noveler.db
+database = jackdaw.db
 
 [formats]
 datetime = "%Y-%m-%d %H:%M:%S.%f"
@@ -21,15 +21,31 @@ date = "%Y-%m-%d"
 
 [ollama]
 url = http://localhost:11434
-chat_model = dolphin-phi:2.7b
+chat_model = llama2:7b
 chat_context_window = 4096
-chat_memory_duration = 0
-generative_model =yarn-mistral:7b
+chat_memory_duration = 1h
+generative_model = llama2:7b
 generative_context_window = 4096
 generative_memory_duration = 0
 multimodal_model = llava:7b
 multimodal_context_window = 4096
 multimodal_memory_duration = 0
 
+[marytts]
+request_url = http://192.168.32.12:5920/process
+voice = cmu-rms-hsmm
+rate = 8.0
+
 [export]
-root = /home/<username>/<some folder>/jackdaw/jackdaw/export
+root = /path/to/exports
+
+[output]
+root = /path/to/audio/and/text/output
+
+[input]
+root = /path/to/audio/and/text/input
+
+[recording]
+device = USB3,0,0
+samplerate = 44100
+channels = 1

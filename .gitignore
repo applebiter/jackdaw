@@ -3,8 +3,11 @@ input/*.wav
 input/*.txt
 output/*.wav
 output/*.txt
+images/
+export/*
 *.cfg
-jackdaw.db
+*.db
+*.spec
 
 .idea/
 
