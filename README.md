@@ -34,7 +34,7 @@ but it has not been tested on them.
 
 JACK2 -- The JACK server must be running on the host machine. 
 
-JackTrip -- JackTrip is not used directly in this code, but it is used to 
+JackTrip -- JackTrip is optional and not used directly in this code, but it is used to 
 connect all of the PCs on the network already running JACK. High-quality, multi-
 channel audio can be sent selectively between the PCs on the network with very 
 low latency. PCs connected with JackTrip and running JACK are able to process 
@@ -56,7 +56,7 @@ Ollama server is a RESTful API that can be queried with text and will return
 text. The Ollama server is not included in this project, but is central to it.
 
 ### Installation
-1. Install JACK2, JackTrip, MaryTTS, SOX, and Ollama.
+1. Install JACK2, MaryTTS, SOX, and Ollama.
 2. Clone this repository.
 3. Create a virtual environment (`python3 -m venv .venv`).
 4. Activate the virtual environment (`source .venv/bin/activate`).
