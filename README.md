@@ -58,11 +58,13 @@ text. The Ollama server is not included in this project, but is central to it.
 ### Installation
 1. Install JACK2, JackTrip, MaryTTS, SOX, and Ollama.
 2. Clone this repository.
-3. Run `pip install -r requirements.txt` in the project directory.
-4. Run `python main.py` in the project directory.
-5. The application will appear in the system tray.
-6. Right-click the icon to open the menu.
-7. Select "Quit" to close the application
+3. Create a virtual environment (`python3 -m venv .venv`).
+4. Activate the virtual environment (`source .venv/bin/activate`).
+5. Run `pip install -r requirements.txt` in the project directory.
+6. Run `python main.py` in the project directory.
+7. The application will appear in the system tray.
+8. Right-click the icon to open the menu.
+9. Select "Quit" to close the application
 
 ### Usage
 1. Right-click the icon in the system tray to open the menu.
