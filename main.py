@@ -141,7 +141,7 @@ while app_is_running:
             session_uuid=session_uuid
         )
         with open(f"{input_folder}/input.txt", "w") as input_file:
-            input_file.write(resp['message']['content'][:2500])
+            input_file.write(resp['message']['content'][:4000])
         os.remove(f"{output_folder}/transcription.txt")
         check_for_transcription = False
 

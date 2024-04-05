@@ -32,7 +32,7 @@ multimodal_context_window = 4096
 multimodal_memory_duration = 0
 
 [marytts]
-request_url = http://192.168.32.12:5920/process
+request_url = http://localhost:5920/process
 voice = cmu-rms-hsmm
 rate = 8.0
 
