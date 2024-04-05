@@ -73,4 +73,7 @@ text. The Ollama server is not included in this project, but is central to it.
 3. Speak into the microphone.
 4. Click "Stop Recording" to stop recording audio.
 
-The application will detect the audio and begin processing it. 
+The application will detect the audio and begin processing it. Also, this little
+app is kind of a memory beast. No leaks, but when the libs are all loaded it 
+comes in at nearly 1GB. The CPU usage is negligible, hovering at around %0.5 on
+my older machines.
