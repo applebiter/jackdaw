@@ -299,25 +299,25 @@ class VoiceAssistantDashboard:
                     with gr.Row():
                         with gr.Column(scale=1):
                             system_status = gr.Markdown(
-                                value=self.get_system_status(),
+                                value=lambda: self.get_system_status(),
                                 every=5
                             )
                         
                         with gr.Column(scale=1):
                             now_playing = gr.Markdown(
-                                value=self.get_now_playing()[0],
+                                value=lambda: self.get_now_playing()[0],
                                 every=2
                             )
                         
                         with gr.Column(scale=1):
                             buffer_status = gr.Markdown(
-                                value=self.get_buffer_status(),
+                                value=lambda: self.get_buffer_status(),
                                 every=3
                             )
                     
                     with gr.Row():
                         music_stats = gr.Markdown(
-                            value=self.get_music_stats(),
+                            value=lambda: self.get_music_stats(),
                             every=30
                         )
                 
