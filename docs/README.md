@@ -55,7 +55,7 @@ pip install -r requirements.txt
 
 4. **Download Vosk model**
 ```bash
-# Download a model from https://alphacephei.com/vosk/models
+# See model/README for download instructions
 # For English, recommended: vosk-model-small-en-us-0.15
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
@@ -64,8 +64,12 @@ mv vosk-model-small-en-us-0.15 model
 
 5. **Download Piper TTS voice**
 ```bash
-# Voices are included in the repository under voices/
-# Additional voices available at: https://github.com/rhasspy/piper/releases
+# See voices/README.md for download instructions and voice options
+# IMPORTANT: Download BOTH .onnx and .onnx.json files for each voice!
+# Example for lessac voice:
+cd voices
+wget https://github.com/rhasspy/piper/releases/latest/download/en_US-lessac-medium.onnx
+wget https://github.com/rhasspy/piper/releases/latest/download/en_US-lessac-medium.onnx.json
 ```
 
 6. **Install and start Ollama**
