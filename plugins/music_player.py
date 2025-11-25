@@ -12,6 +12,9 @@ from ogg_jack_player import (
     play_random_ogg_in_directory,
     skip_to_next_track,
     stop_playback,
+    pause_playback,
+    resume_playback,
+    is_paused,
     set_volume,
     adjust_volume,
     get_volume
@@ -49,6 +52,8 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             "play random track": self._cmd_play_random,
             "next track": self._cmd_next_track,
             "stop playing music": self._cmd_stop_music,
+            "pause music": self._cmd_pause_music,
+            "resume music": self._cmd_resume_music,
             "volume up": self._cmd_volume_up,
             "volume down": self._cmd_volume_down,
             "set volume low": self._cmd_set_volume_low,
@@ -97,3 +102,13 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
         """Report current volume level."""
         vol = get_volume()
         print(f"Current volume: {int(vol * 100)}%")
+    
+    def _cmd_pause_music(self):
+        """Pause current music playback."""
+        pause_playback()
+        return "Music paused."
+    
+    def _cmd_resume_music(self):
+        """Resume paused music playback."""
+        resume_playback()
+        return "Music resumed."

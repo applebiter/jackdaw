@@ -26,6 +26,7 @@ import soundfile as sf  # pip install soundfile
 _playback_lock = threading.Lock()
 _skip_requested = threading.Event()
 _stop_requested = threading.Event()
+_paused = threading.Event()  # Set when paused
 _current_music_dir: Optional[str] = None
 _volume: float = 0.7  # Default volume (0.0 to 1.0)
 
@@ -79,6 +80,10 @@ class OggJackPlayer:
         # Check for skip or stop request
         if _skip_requested.is_set() or _stop_requested.is_set():
             self._playing = False
+            return
+
+        # Check for pause - output silence but maintain position
+        if _paused.is_set():
             return
 
         if not self._playing or self._audio.size == 0:
@@ -288,41 +293,79 @@ def adjust_volume(delta: float):
     print(f"[OggJackPlayer] Volume adjusted to {int(_volume * 100)}%")
 
 
+def pause_playback():
+    """
+    Pause the current music playback.
+    
+    The music will stop playing but maintain its position.
+    Call resume_playback() to continue from where it paused.
+    """
+    global _paused
+    if not _paused.is_set():
+        _paused.set()
+        print("[OggJackPlayer] Playback paused")
+
+
+def resume_playback():
+    """
+    Resume paused music playback.
+    
+    Continues playback from where it was paused.
+    """
+    global _paused
+    if _paused.is_set():
+        _paused.clear()
+        print("[OggJackPlayer] Playback resumed")
+
+
+def is_paused() -> bool:
+    """
+    Check if playback is currently paused.
+    
+    Returns:
+        True if paused, False otherwise
+    """
+    return _paused.is_set()
+
+
 def _play_music_loop(root: str):
     """
     Internal function that runs in a background thread to play music.
+    Continuously plays random tracks until stop is requested.
     """
     global _current_music_dir
     _current_music_dir = root
 
+    root_dir = Path(root).expanduser()
+    if not root_dir.exists():
+        print(f"[OggJackPlayer] Directory does not exist: {root_dir}")
+        return
+
+    oggs = _collect_ogg_files(root_dir)
+    if not oggs:
+        print(f"[OggJackPlayer] No .ogg files found under: {root_dir}")
+        return
+
     while True:
+        # Clear skip flag before playing next track
         _skip_requested.clear()
-        _stop_requested.clear()
-
-        root_dir = Path(root).expanduser()
-        if not root_dir.exists():
-            print(f"[OggJackPlayer] Directory does not exist: {root_dir}")
-            return
-
-        oggs = _collect_ogg_files(root_dir)
-        if not oggs:
-            print(f"[OggJackPlayer] No .ogg files found under: {root_dir}")
-            return
-
-        choice = random.choice(oggs)
-        print(f"[OggJackPlayer] Selected random OGG: {choice}")
-        player = OggJackPlayer(client_name="OggPlayer")
-        player.play_blocking(choice)
 
         # If stop was requested, halt completely
         if _stop_requested.is_set():
             print("[OggJackPlayer] Stopping playback.")
             break
 
-        # If skip was requested, play next track; otherwise stop
-        if not _skip_requested.is_set():
+        choice = random.choice(oggs)
+        print(f"[OggJackPlayer] Selected random OGG: {choice}")
+        player = OggJackPlayer(client_name="OggPlayer")
+        player.play_blocking(choice)
+
+        # If stop was requested during playback, halt
+        if _stop_requested.is_set():
+            print("[OggJackPlayer] Stopping playback.")
             break
 
+        # Whether skipped or naturally finished, play next track
         print("[OggJackPlayer] Auto-playing next track...")
 
 
