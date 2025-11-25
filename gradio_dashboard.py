@@ -195,10 +195,10 @@ class VoiceAssistantDashboard:
         
         try:
             # Check if voice assistant processes are running
-            pid_file = Path("voice_assistant.pid")
+            pid_file = Path(".voice_assistant.pid")
             if pid_file.exists():
                 with open(pid_file) as f:
-                    pids = [line.strip() for line in f if line.strip()]
+                    pids = f.read().strip().split()
                 
                 running = []
                 for pid in pids:
