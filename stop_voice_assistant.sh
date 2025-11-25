@@ -15,3 +15,10 @@ else
     pkill -f "llm_query_processor.py"
     pkill -f "tts_jack_client.py"
 fi
+
+# Also stop dashboard if running
+if pgrep -f "gradio_dashboard.py" > /dev/null; then
+    echo "Stopping Gradio dashboard..."
+    pkill -f "gradio_dashboard.py"
+    echo "✅ Dashboard stopped."
+fi
