@@ -89,43 +89,41 @@ class VoiceAssistantDashboard:
             return f"Error getting now playing: {e}", None
     
     def get_buffer_status(self) -> str:
-        """Get ring buffer recorder status from logs."""
+        """Get ring buffer recorder status from logs and JACK."""
         try:
-            if not self.voice_log.exists():
-                return "No buffer status available"
-            
-            with open(self.voice_log, 'r') as f:
-                lines = f.readlines()[-50:]
-            
-            # Look for buffer messages
+            # Check if RingBufferRecorder client exists in JACK
             is_running = False
+            try:
+                result = subprocess.run(
+                    ["jack_lsp"],
+                    capture_output=True,
+                    text=True,
+                    timeout=2
+                )
+                if result.returncode == 0:
+                    is_running = "RingBufferRecorder" in result.stdout
+            except:
+                pass
+            
+            # Get buffer details from log if running
             buffer_info = ""
-            
-            for line in reversed(lines):
-                if "[RingBuffer] Started recording" in line:
-                    is_running = True
-                    break
-                elif "[RingBuffer] Stopped" in line:
-                    is_running = False
-                    break
-                elif "[timemachine] Stopping recorder" in line:
-                    is_running = False
-                    break
-            
-            if is_running:
-                # Extract buffer details from log
+            if is_running and self.voice_log.exists():
+                with open(self.voice_log, 'r') as f:
+                    lines = f.readlines()[-100:]
+                
+                # Extract buffer details from most recent start
                 for line in reversed(lines):
                     if "Buffer:" in line and "seconds" in line:
                         buffer_info = line.split("Buffer:")[-1].strip()
                         break
-                
-                status = "### 🎙️ Ring Buffer Status\n\n"
+            
+            status = "### 🎙️ Ring Buffer Status\n\n"
+            if is_running:
                 status += "**Status:** 🟢 Recording\n\n"
                 if buffer_info:
                     status += f"**Buffer:** {buffer_info}\n"
                 status += "\nSay 'save that' to capture the buffer!"
             else:
-                status = "### 🎙️ Ring Buffer Status\n\n"
                 status += "**Status:** ⚫ Stopped\n\n"
                 status += "Say 'start the buffer' to begin recording"
             
