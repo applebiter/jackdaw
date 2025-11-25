@@ -433,7 +433,7 @@ class VoiceAssistantDashboard:
                         with gr.Column(scale=2):
                             recordings_dropdown = gr.Dropdown(
                                 label="Select Recording",
-                                choices=lambda: [r[0] for r in self.get_recent_recordings()],
+                                choices=[r[0] for r in self.get_recent_recordings()],
                                 interactive=True
                             )
                         
