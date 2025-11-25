@@ -26,6 +26,9 @@
     "interval_seconds": 0.5,
     "delete_query_after_read": true
   },
+  "logging": {
+    "log_level": "INFO"
+  },
   "voice": {
     "recognition": {
       "model_path": "model",

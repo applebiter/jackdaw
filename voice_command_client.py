@@ -42,6 +42,7 @@ class VoiceCommandClient:
         model_path = config['voice']['recognition']['model_path']
         self.query_file = Path(config['files']['query_file'])
         self.wake_word = config['voice']['recognition'].get('wake_word', '').lower()
+        self.log_level = config.get('logging', {}).get('log_level', 'INFO').upper()
         self.audio_queue = queue.Queue()
 
         # Optional music library path for playback commands
@@ -280,8 +281,9 @@ class VoiceCommandClient:
                     partial = result.get('partial', '')
                     
                     if partial:
-                        # Show partial results (optional, can be commented out)
-                        print(f"Partial: {partial}", end='\r')
+                        # Show partial results only in DEBUG mode
+                        if self.log_level == 'DEBUG':
+                            print(f"Partial: {partial}", end='\r')
                         
                         # Check if "stop recording" is in partial results
                         if self.capturing and 'stop recording' in partial.lower():

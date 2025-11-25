@@ -127,6 +127,9 @@ tail -f tts_client.log      # Text-to-speech
     "inactivity_timeout_minutes": 30,  // Reset session after N minutes
     "max_context_tokens": 30000        // History token limit
   },
+  "logging": {
+    "log_level": "INFO"        // INFO (default) or DEBUG (verbose)
+  },
   "voice": {
     "recognition": {
       "wake_word": "alpha",            // Should match hostname
@@ -142,6 +145,10 @@ tail -f tts_client.log      # Text-to-speech
   }
 }
 ```
+
+**Log Levels:**
+- `INFO` (default): Shows recognized commands and responses, suppresses partial speech recognition
+- `DEBUG`: Verbose mode - shows all partial speech recognition results as you speak
 
 ## Network Topology
 

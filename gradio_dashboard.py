@@ -57,38 +57,27 @@ class VoiceAssistantDashboard:
     
     def get_now_playing(self) -> Tuple[str, str]:
         """
-        Get currently playing track info from voice command log.
+        Get currently playing track info from OggJackPlayer.
         
         Returns:
             Tuple of (track_info_markdown, album_art_path or None)
         """
         try:
-            if not self.voice_log.exists():
-                return "No playback information available", None
+            # Import here to avoid circular dependencies
+            from ogg_jack_player import get_now_playing
             
-            # Read last 100 lines to find most recent playback
-            with open(self.voice_log, 'r') as f:
-                lines = f.readlines()[-100:]
+            track_info = get_now_playing()
             
-            # Find last OggJackPlayer "Playing track" message
-            for line in reversed(lines):
-                if "[OggJackPlayer] Playing track" in line:
-                    # Extract track info - format: "Playing track X/Y: /path/to/file.ogg"
-                    parts = line.split("Playing track")[-1].strip()
-                    
-                    # Extract position and path
-                    if ":" in parts:
-                        position_info = parts.split(":")[0].strip()  # "1/13535"
-                        file_path = ":".join(parts.split(":")[1:]).strip()  # Handle paths with colons
-                        
-                        # Extract just the filename
-                        filename = Path(file_path).stem  # Get filename without extension
-                        
-                        # Format as markdown
-                        markdown = f"### 🎵 Now Playing\n\n**{filename}**\n\nTrack {position_info}\n\n"
-                        return markdown, None
+            if track_info is None:
+                return "No track currently playing", None
             
-            return "No track currently playing", None
+            # Format as markdown
+            filename = track_info['filename']
+            position = track_info['position']
+            total = track_info['total']
+            
+            markdown = f"### 🎵 Now Playing\n\n**{filename}**\n\nTrack {position}/{total}\n\n"
+            return markdown, None
             
         except Exception as e:
             return f"Error getting now playing: {e}", None

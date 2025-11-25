@@ -33,6 +33,8 @@ _playlist_position: int = 0  # Current position in playlist for sequential playb
 _shuffle_mode: bool = False  # False = sequential, True = random
 _volume: float = 0.7  # Default volume (0.0 to 1.0)
 _playback_thread: Optional[threading.Thread] = None  # Track active playback thread
+_current_track: Optional[Path] = None  # Currently playing track
+_total_tracks: int = 0  # Total tracks in current playlist/library
 
 
 class OggJackPlayer:
@@ -419,6 +421,11 @@ def _play_music_loop(root: str):
             # Sequential playback
             choice = oggs[_playlist_position]
             print(f"[OggJackPlayer] Playing track {_playlist_position + 1}/{len(oggs)}: {choice}")
+            
+            # Update global current track info
+            _current_track = choice
+            _total_tracks = len(oggs)
+            
             _playlist_position = (_playlist_position + 1) % len(oggs)  # Wrap around to start
         
         player = OggJackPlayer(client_name="OggPlayer")
@@ -465,6 +472,27 @@ def play_random_ogg_in_directory(root: str):
     # Start playback in a background thread
     _playback_thread = threading.Thread(target=_play_music_loop, args=(root,), daemon=True)
     _playback_thread.start()
+
+
+def get_now_playing() -> Optional[dict]:
+    """
+    Get information about the currently playing track.
+    
+    Returns:
+        Dictionary with keys: 'filename', 'position', 'total', 'path'
+        or None if nothing is playing
+    """
+    global _current_track, _playlist_position, _total_tracks
+    
+    if _current_track is None:
+        return None
+    
+    return {
+        'filename': _current_track.stem,
+        'position': _playlist_position,
+        'total': _total_tracks,
+        'path': str(_current_track)
+    }
 
 
 def play_playlist(file_paths: List[str], library_root: str = "/"):
