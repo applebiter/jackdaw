@@ -102,7 +102,9 @@ class VoiceAssistantDashboard:
                 )
                 if result.returncode == 0:
                     is_running = "RingBufferRecorder" in result.stdout
-            except:
+                    print(f"[DEBUG] Buffer check: jack_lsp returned {result.returncode}, is_running={is_running}")
+            except Exception as e:
+                print(f"[DEBUG] Buffer check exception: {e}")
                 pass
             
             # Get buffer details from log if running
