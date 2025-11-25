@@ -26,3 +26,6 @@ pydub==0.25.1
 
 # Configuration and utilities
 six==1.17.0
+
+# Optional: Web dashboard (not required for headless operation)
+gradio==4.44.0
