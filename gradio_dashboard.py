@@ -437,7 +437,7 @@ def main():
     interface.launch(
         server_name="0.0.0.0",  # Allow external access
         server_port=7865,
-        share=False,  # Set to True for public Gradio link
+        share=True,  # Create public Gradio link
         inbrowser=False  # Set to True to auto-open browser
     )
 
