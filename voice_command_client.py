@@ -324,6 +324,10 @@ class VoiceCommandClient:
             if phrase in text_lower:
                 print(f"\n>>> Command detected: '{phrase}'")
                 try:
+                    # Pass the full text (after wake word) to callback
+                    callback(text_lower)
+                except TypeError:
+                    # Fallback for callbacks that don't accept parameters
                     callback()
                 except Exception as e:
                     print(f"Error executing command callback: {e}")

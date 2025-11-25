@@ -19,7 +19,10 @@ from ogg_jack_player import (
     is_paused,
     set_volume,
     adjust_volume,
-    get_volume
+    get_volume,
+    set_shuffle_mode,
+    get_shuffle_mode,
+    toggle_shuffle_mode
 )
 from music_query import (
     search_by_artist,
@@ -42,7 +45,6 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
         self.music_library_path = config.get('library_path', None)
-        self.voice_client = None  # Will be set by set_voice_client()
     
     def get_name(self) -> str:
         return "music_player"
@@ -56,10 +58,6 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return False
         print(f"[{self.get_name()}] Initialized with library: {self.music_library_path}")
         return True
-    
-    def set_voice_client(self, voice_client):
-        """Set the voice client for accessing user input."""
-        self.voice_client = voice_client
     
     def get_commands(self) -> Dict[str, Callable]:
         """Register all music-related commands."""
@@ -91,6 +89,11 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             
             # Library info
             "music library stats": self._cmd_library_stats,
+            
+            # Playback mode
+            "shuffle on": self._cmd_shuffle_on,
+            "shuffle off": self._cmd_shuffle_off,
+            "toggle shuffle": self._cmd_toggle_shuffle,
         }
     
     # Command handlers
@@ -144,15 +147,17 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
         resume_playback()
         return "Music resumed."
     
-    def _cmd_play_artist(self):
+    def _cmd_play_artist(self, text: str = ""):
         """Play tracks by a specific artist."""
-        if not self.voice_client:
-            print(f"[{self.get_name()}] Voice client not set")
-            return "Cannot get artist name."
+        # Extract artist name from the command text
+        # Text format: "play artist <artist name>"
+        if "play artist" in text.lower():
+            artist_name = text.lower().split("play artist", 1)[1].strip()
+        else:
+            artist_name = text.strip()
         
-        # Get artist name from user
-        artist_name = self.voice_client.get_user_input("What artist?")
         if not artist_name:
+            print(f"[{self.get_name()}] No artist name provided")
             return "No artist specified."
         
         print(f"[{self.get_name()}] Searching for artist: {artist_name}")
@@ -162,17 +167,20 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return f"No tracks found for artist {artist_name}."
         
         print(f"[{self.get_name()}] Found {len(tracks)} tracks by {artist_name}")
+        stop_playback()  # Stop any currently playing music
         play_playlist(tracks, library_root=self.music_library_path or "/")
         return f"Playing {len(tracks)} tracks by {artist_name}."
     
-    def _cmd_play_album(self):
+    def _cmd_play_album(self, text: str = ""):
         """Play tracks from a specific album."""
-        if not self.voice_client:
-            print(f"[{self.get_name()}] Voice client not set")
-            return "Cannot get album name."
+        # Extract album name from the command text
+        if "play album" in text.lower():
+            album_name = text.lower().split("play album", 1)[1].strip()
+        else:
+            album_name = text.strip()
         
-        album_name = self.voice_client.get_user_input("What album?")
         if not album_name:
+            print(f"[{self.get_name()}] No album name provided")
             return "No album specified."
         
         print(f"[{self.get_name()}] Searching for album: {album_name}")
@@ -182,17 +190,20 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return f"No tracks found for album {album_name}."
         
         print(f"[{self.get_name()}] Found {len(tracks)} tracks from {album_name}")
+        stop_playback()  # Stop any currently playing music
         play_playlist(tracks, library_root=self.music_library_path or "/")
         return f"Playing album {album_name}."
     
-    def _cmd_play_genre(self):
+    def _cmd_play_genre(self, text: str = ""):
         """Play tracks from a specific genre."""
-        if not self.voice_client:
-            print(f"[{self.get_name()}] Voice client not set")
-            return "Cannot get genre."
+        # Extract genre name from the command text
+        if "play genre" in text.lower():
+            genre_name = text.lower().split("play genre", 1)[1].strip()
+        else:
+            genre_name = text.strip()
         
-        genre_name = self.voice_client.get_user_input("What genre?")
         if not genre_name:
+            print(f"[{self.get_name()}] No genre provided")
             return "No genre specified."
         
         print(f"[{self.get_name()}] Searching for genre: {genre_name}")
@@ -202,17 +213,20 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return f"No tracks found for genre {genre_name}."
         
         print(f"[{self.get_name()}] Found {len(tracks)} tracks in genre {genre_name}")
+        stop_playback()  # Stop any currently playing music
         play_playlist(tracks, library_root=self.music_library_path or "/")
         return f"Playing {len(tracks)} tracks from {genre_name}."
     
-    def _cmd_play_song(self):
+    def _cmd_play_song(self, text: str = ""):
         """Play a specific song by title."""
-        if not self.voice_client:
-            print(f"[{self.get_name()}] Voice client not set")
-            return "Cannot get song title."
+        # Extract song title from the command text
+        if "play song" in text.lower():
+            song_title = text.lower().split("play song", 1)[1].strip()
+        else:
+            song_title = text.strip()
         
-        song_title = self.voice_client.get_user_input("What song?")
         if not song_title:
+            print(f"[{self.get_name()}] No song title provided")
             return "No song specified."
         
         print(f"[{self.get_name()}] Searching for song: {song_title}")
@@ -222,17 +236,20 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return f"No tracks found with title {song_title}."
         
         print(f"[{self.get_name()}] Found {len(tracks)} tracks matching {song_title}")
+        stop_playback()  # Stop any currently playing music
         play_playlist(tracks, library_root=self.music_library_path or "/")
         return f"Playing {len(tracks)} tracks matching {song_title}."
     
-    def _cmd_play_year(self):
+    def _cmd_play_year(self, text: str = ""):
         """Play tracks from a specific year."""
-        if not self.voice_client:
-            print(f"[{self.get_name()}] Voice client not set")
-            return "Cannot get year."
+        # Extract year from the command text
+        if "play year" in text.lower():
+            year = text.lower().split("play year", 1)[1].strip()
+        else:
+            year = text.strip()
         
-        year = self.voice_client.get_user_input("What year?")
         if not year:
+            print(f"[{self.get_name()}] No year provided")
             return "No year specified."
         
         print(f"[{self.get_name()}] Searching for year: {year}")
@@ -242,17 +259,20 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return f"No tracks found from year {year}."
         
         print(f"[{self.get_name()}] Found {len(tracks)} tracks from {year}")
+        stop_playback()  # Stop any currently playing music
         play_playlist(tracks, library_root=self.music_library_path or "/")
         return f"Playing {len(tracks)} tracks from {year}."
     
-    def _cmd_play_some(self):
+    def _cmd_play_some(self, text: str = ""):
         """Play tracks matching a general search term."""
-        if not self.voice_client:
-            print(f"[{self.get_name()}] Voice client not set")
-            return "Cannot get search term."
+        # Extract search term from the command text
+        if "play some" in text.lower():
+            search_term = text.lower().split("play some", 1)[1].strip()
+        else:
+            search_term = text.strip()
         
-        search_term = self.voice_client.get_user_input("Play some what?")
         if not search_term:
+            print(f"[{self.get_name()}] No search term provided")
             return "No search term specified."
         
         print(f"[{self.get_name()}] Searching for: {search_term}")
@@ -264,6 +284,7 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             return f"No tracks found matching {search_term}."
         
         print(f"[{self.get_name()}] Found {len(tracks)} tracks matching {search_term}")
+        stop_playback()  # Stop any currently playing music
         play_playlist(tracks, library_root=self.music_library_path or "/")
         return f"Playing {len(tracks)} tracks."
     
@@ -274,3 +295,19 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
                 f"{stats['total_artists']} artists, "
                 f"{stats['total_albums']} albums, "
                 f"and {stats['total_genres']} genres.")
+    
+    def _cmd_shuffle_on(self):
+        """Enable shuffle mode for playback."""
+        set_shuffle_mode(True)
+        return "Shuffle mode enabled."
+    
+    def _cmd_shuffle_off(self):
+        """Disable shuffle mode (sequential playback)."""
+        set_shuffle_mode(False)
+        return "Sequential playback enabled."
+    
+    def _cmd_toggle_shuffle(self):
+        """Toggle between shuffle and sequential playback."""
+        shuffle = toggle_shuffle_mode()
+        mode = "shuffle" if shuffle else "sequential"
+        return f"Playback mode: {mode}."

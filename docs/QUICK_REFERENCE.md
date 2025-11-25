@@ -20,19 +20,61 @@ nano voice_assistant_config.json
 ```
 
 ### Voice Commands
+
+#### Basic Commands
 ```
-"[hostname], start recording"  - Begin capturing query
+"[hostname], hello"             - Test command
+"[hostname], stop listening"    - Shutdown all components
+```
+
+#### LLM Recording
+```
+"[hostname], start recording"   - Begin capturing query
 [speak your question]
-"[hostname], stop recording"   - Send to LLM
+"[hostname], stop recording"    - Send to LLM
 [wait for TTS response]
-
-"[hostname], stop listening"   - Shutdown all components
 ```
 
-### Examples:
-- "[wake word], start recording"
-- "What's the weather like?"
-- "[wake word], stop recording"
+#### Music Player
+```
+# Playing Music
+"[hostname], play random track"           - Play from music library
+"[hostname], play artist pink floyd"      - Play tracks by artist
+"[hostname], play album dark side"        - Play album
+"[hostname], play song comfortably numb"  - Play song by title
+"[hostname], play genre jazz"             - Play genre
+"[hostname], play year 1985"              - Play tracks from year
+
+# Playback Control
+"[hostname], next track"                  - Skip to next (sequential or shuffle)
+"[hostname], stop playing music"          - Stop playback
+"[hostname], pause music"                 - Pause playback
+"[hostname], resume music"                - Resume from pause
+
+# Playback Mode
+"[hostname], shuffle on"                  - Enable shuffle/random mode
+"[hostname], shuffle off"                 - Enable sequential mode (default)
+"[hostname], toggle shuffle"              - Switch between modes
+
+# Volume Control
+"[hostname], volume up"                   - Increase by 10%
+"[hostname], volume down"                 - Decrease by 10%
+"[hostname], set volume low"              - 30%
+"[hostname], set volume medium"           - 60%
+"[hostname], set volume high"             - 90%
+"[hostname], what's the volume"           - Report level
+
+# Library Info
+"[hostname], music library stats"         - Show library statistics
+```
+
+#### Timemachine (Retroactive Recording)
+```
+"[hostname], start the buffer"   - Begin buffering audio
+"[hostname], save that"          - Save last N seconds to WAV file
+"[hostname], stop the buffer"    - Stop buffering
+"[hostname], buffer status"      - Check if running
+```
 
 ## Monitoring
 

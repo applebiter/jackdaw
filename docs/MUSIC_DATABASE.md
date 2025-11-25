@@ -69,15 +69,41 @@ If you need a custom solution:
 |---------|--------------|
 | `music library stats` | Reports total tracks, artists, albums, and genres |
 
-### Traditional Commands (Still Work)
+### Playback Control
 
 | Command | What It Does |
 |---------|--------------|
 | `play random track` | Plays random tracks from filesystem directory |
-| `next track` | Skip to next track |
+| `next track` | Skip to next track (sequential or shuffle based on mode) |
 | `stop playing music` | Stop playback completely |
 | `pause music` | Pause current track (maintains position) |
 | `resume music` | Resume from paused position |
+
+### Playback Mode (Sequential vs. Shuffle)
+
+By default, playlists play **sequentially** (in order). When you play an album, tracks play in album order.
+
+| Command | What It Does |
+|---------|--------------|
+| `shuffle on` | Enable random/shuffle mode for playlists |
+| `shuffle off` | Enable sequential mode (default - plays in order) |
+| `toggle shuffle` | Switch between shuffle and sequential modes |
+
+**Sequential mode** (default):
+- Plays tracks in order (1, 2, 3, 4...)
+- Perfect for albums that should play in sequence
+- "next track" advances to the next track in order
+- Wraps back to beginning when playlist ends
+
+**Shuffle mode**:
+- Plays tracks randomly from the playlist
+- Great for artist collections or genre playlists
+- "next track" picks a random track
+
+### Volume Control
+
+| Command | What It Does |
+|---------|--------------|
 | `volume up` / `volume down` | Adjust volume ±10% |
 | `set volume low/medium/high` | Set volume to 30%/60%/90% |
 | `what's the volume` | Report current volume level |

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Capture and remember the current JACK source connected to VoiceCommandClient:input.
+"""Capture and remember JACK routing for voice assistant components.
 
 Usage:
   python remember_jack_routing.py
 
-After you manually connect your preferred capture client to
-`VoiceCommandClient:input` once, run this script. It will inspect
-current JACK connections and write `jack_routing.json` with the
-source port name so the voice client can auto-connect it on startup.
+After manually connecting your preferred sources to:
+- `VoiceCommandClient:input` (for voice recognition)
+- `RingBufferRecorder:in_1` and `RingBufferRecorder:in_2` (for retroactive recording)
+
+Run this script to save the connections. They will be auto-restored on startup.
 """
 
 import jack
@@ -17,30 +18,75 @@ from pathlib import Path
 
 def main() -> None:
     client = jack.Client("RoutingInspector")
-
-    input_port_name = "VoiceCommandClient:input"
-    input_ports = [p for p in client.get_ports() if p.name == input_port_name]
-    if not input_ports:
-        print(f"Input port not found: {input_port_name}")
-        return
-
-    input_port = input_ports[0]
-
-    # Use the client API to get connections for this port
-    connections = client.get_all_connections(input_port)
-    if not connections:
-        print(f"No sources currently connected to {input_port_name}.")
-        print("Connect your desired capture client to this port, then rerun.")
-        return
-
-    # For now, just take the first connected source
-    source_port = connections[0].name
     cfg_path = Path("jack_routing.json")
-    data = {"voice_input_source": source_port}
-    with cfg_path.open("w") as f:
-        json.dump(data, f, indent=2)
-
-    print(f"Saved JACK routing: {source_port} -> {input_port_name} in {cfg_path}")
+    
+    # Load existing config if present
+    data = {}
+    if cfg_path.exists():
+        try:
+            with cfg_path.open("r") as f:
+                data = json.load(f)
+        except:
+            pass
+    
+    # Check VoiceCommandClient:input
+    voice_port_name = "VoiceCommandClient:input"
+    voice_ports = [p for p in client.get_ports() if p.name == voice_port_name]
+    if voice_ports:
+        connections = client.get_all_connections(voice_ports[0])
+        if connections:
+            source_port = connections[0].name
+            data["voice_input_source"] = source_port
+            print(f"✅ Voice input: {source_port} -> {voice_port_name}")
+        else:
+            print(f"⚠️  No connections to {voice_port_name}")
+    else:
+        print(f"⚠️  {voice_port_name} not found (voice assistant not running?)")
+    
+    # Check ring buffer recorder inputs (new Python-based recorder)
+    buffer_connections = []
+    recorder_found = False
+    for channel in [1, 2]:
+        buf_port_name = f"RingBufferRecorder:in_{channel}"
+        buf_ports = [p for p in client.get_ports() if p.name == buf_port_name]
+        if buf_ports:
+            recorder_found = True
+            connections = client.get_all_connections(buf_ports[0])
+            if connections:
+                for conn in connections:
+                    buffer_connections.append([conn.name, buf_port_name])
+                    print(f"✅ Ring Buffer: {conn.name} -> {buf_port_name}")
+    
+    # Also check for legacy TimeMachine inputs (for backwards compatibility)
+    if not recorder_found:
+        for channel in [1, 2]:
+            tm_port_name = f"TimeMachine:in_{channel}"
+            tm_ports = [p for p in client.get_ports() if p.name == tm_port_name]
+            if tm_ports:
+                connections = client.get_all_connections(tm_ports[0])
+                if connections:
+                    for conn in connections:
+                        buffer_connections.append([conn.name, tm_port_name])
+                        print(f"✅ Timemachine: {conn.name} -> {tm_port_name}")
+    
+    if not buffer_connections and not recorder_found:
+        print(f"⚠️  RingBufferRecorder not found (buffer not started?)")
+    
+    if buffer_connections:
+        data["timemachine_inputs"] = buffer_connections
+    
+    # Save config
+    if data:
+        with cfg_path.open("w") as f:
+            json.dump(data, f, indent=2)
+        print(f"\n💾 Saved JACK routing to {cfg_path}")
+    else:
+        print("\n❌ No connections found to save.")
+        print("\nTo use this tool:")
+        print("1. Start the voice assistant")
+        print("2. Say 'indigo start the buffer'")
+        print("3. Manually connect audio sources in qjackctl/Carla")
+        print("4. Run this script again to remember the connections")
 
 
 if __name__ == "__main__":

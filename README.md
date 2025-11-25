@@ -75,6 +75,7 @@ voiceassistant/
 ├── tts_jack_client.py         # Text-to-speech JACK client
 ├── ogg_jack_player.py         # Music player with skip/volume control
 ├── music_query.py             # Music database query handler
+├── ring_buffer_recorder.py    # Python-based retroactive audio recorder
 ├── plugin_base.py             # Plugin base class
 ├── plugin_loader.py           # Dynamic plugin loader
 │
@@ -118,8 +119,14 @@ Say your wake word followed by:
 
 **Music Player:**
 - **play random track** - Play music from library
-- **next track** - Skip to next song
+- **play artist <name>** - Play tracks by artist (e.g., "play artist pink floyd")
+- **play album <name>** - Play album (e.g., "play album dark side of the moon")
+- **play song <title>** - Play song by title
+- **play genre <genre>** - Play tracks from genre
+- **next track** - Skip to next song (sequential or random based on mode)
 - **stop playing music** - Stop playback
+- **shuffle on/off** - Enable/disable shuffle mode (default: sequential)
+- **toggle shuffle** - Switch between shuffle and sequential
 - **volume up/down** - Adjust volume by 10%
 - **set volume low/medium/high** - Set to 30%/60%/90%
 - **what's the volume** - Report current volume

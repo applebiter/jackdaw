@@ -1,16 +1,17 @@
-# Timemachine Plugin - Retroactive Recording
+# Ring Buffer Recorder - Retroactive Recording
 
 ## Overview
 
-The Timemachine plugin integrates JACK Timemachine, a tool that maintains a continuous buffer of recent audio. This lets you "go back in time" and save what was just played or recorded, perfect for capturing spontaneous musical ideas.
+The Ring Buffer Recorder plugin provides retroactive audio recording using a Python-based implementation. It maintains a continuous buffer of recent audio, letting you "go back in time" and save what was just played or recorded - perfect for capturing spontaneous musical ideas.
 
-**Use case**: You're improvising on piano, play something brilliant, and realize you need to save it *after* it's already happened. Timemachine makes this possible.
+**Use case**: You're improvising on piano, play something brilliant, and realize you need to save it *after* it's already happened. The ring buffer makes this possible.
 
 ## How It Works
 
-1. **Continuous Buffer**: Timemachine runs in the background, constantly recording audio into a rolling buffer (default: 30 seconds)
-2. **Retroactive Save**: When you say "save that", it writes the buffer contents to a WAV file
+1. **Continuous Buffer**: A Python JACK client runs in the background, constantly recording audio into a rolling buffer (default: 30 seconds)
+2. **Retroactive Save**: When you say "save that", it writes the buffer contents to a timestamped WAV file
 3. **Zero Latency**: The buffer is always recording, so there's no delay when you trigger a save
+4. **Fully Headless**: Pure Python implementation - no GUI, no clicking, fully voice-controlled
 
 Think of it as a DVR for your audio interface - constantly recording, ready to save on demand.
 
@@ -18,12 +19,12 @@ Think of it as a DVR for your audio interface - constantly recording, ready to s
 
 | Command | What It Does |
 |---------|--------------|
-| `start recording buffer` | Start timemachine with continuous buffer |
-| `stop recording buffer` | Stop timemachine (clears buffer) |
+| `start the buffer` | Start timemachine with continuous buffer |
+| `stop the buffer` | Stop timemachine (clears buffer) |
 | `save that` | Save the buffer to a WAV file |
 | `save the last 30 seconds` | Same as "save that" |
 | `save what i just played` | Same as "save that" |
-| `timemachine status` | Check if buffer is running |
+| `buffer status` | Check if buffer is running |
 
 ## Configuration
 
@@ -38,8 +39,8 @@ Add to your `voice_assistant_config.json`:
       "output_dir": "~/recordings",
       "file_prefix": "recording-",
       "channels": 2,
-      "format": "wav",
-      "jack_name": "TimeMachine",
+      "format": "WAV",
+      "jack_name": "RingBufferRecorder",
       "auto_connect": true
     }
   }
@@ -54,10 +55,10 @@ Add to your `voice_assistant_config.json`:
 | `buffer_seconds` | integer | `30` | Length of rolling buffer in seconds |
 | `output_dir` | string | `"~/recordings"` | Where to save captured audio |
 | `file_prefix` | string | `"recording-"` | Prefix for saved filenames |
-| `channels` | integer | `2` | Number of audio channels (1-8) |
-| `format` | string | `"wav"` | File format: `"wav"` or `"w64"` |
-| `jack_name` | string | `"TimeMachine"` | JACK client name |
-| `auto_connect` | boolean | `true` | Auto-connect to system:capture ports |
+| `channels` | integer | `2` | Number of audio channels |
+| `format` | string | `"WAV"` | File format: WAV, FLAC, OGG, etc. |
+| `jack_name` | string | `"RingBufferRecorder"` | JACK client name |
+| `auto_connect` | boolean | `true` | Auto-connect to system:capture ports (deprecated) |
 
 ### Buffer Length Recommendations
 
@@ -73,98 +74,113 @@ Add to your `voice_assistant_config.json`:
 ### Basic Workflow
 
 ```
+You: "indigo, start the buffer"
+Assistant: [Starts ring buffer recorder]
+
 You: [Improvising on piano]
 You: [Play something awesome]
 You: "indigo, save that"
-Assistant: "Saved the last 30 seconds."
+Assistant: [Saves last 30 seconds to file]
 ```
 
-The recording is saved to `~/recordings/recording-YYYYMMDD-HHMMSS.wav`
+The recording is saved to `~/recordings/recording-YYYYMMDD_HHMMSS.wav` (default location)
 
-### Start Buffer First (Recommended)
+### Recommended Session Workflow
 
-For better reliability, start the buffer when you begin your session:
+Start the buffer at the beginning of your session for best results:
 
 ```
-You: "indigo, start recording buffer"
-Assistant: "Recording buffer started. Say 'save that' to capture the last 30 seconds."
+You: "indigo, start the buffer"
+Assistant: [Starts ring buffer]
+
+[Connect audio sources in qjackctl/Carla if not auto-connected]
 
 You: [Play piano for a while]
 You: [Play something worth keeping]
 You: "indigo, save that"
-Assistant: "Saved the last 30 seconds."
+Assistant: [Saves last 30 seconds to WAV file]
 
 You: [Continue playing]
 You: [Another great moment]
 You: "indigo, save that"
-Assistant: "Saved the last 30 seconds."
+Assistant: [Saves another recording]
 
 [When done for the day]
-You: "indigo, stop recording buffer"
-Assistant: "Recording buffer stopped."
+You: "indigo, stop the buffer"
+Assistant: [Stops recorder]
 ```
 
 ### Auto-Start Behavior
 
 If you say "save that" without starting the buffer first, the plugin will:
-1. Automatically start timemachine
+1. Automatically start the recorder
 2. Wait 1 second for initialization
 3. Trigger the save
 
-**Caveat**: This only captures what happened *after* timemachine started, so you might miss the beginning of what you wanted to save. Better to start the buffer at the beginning of your session.
+**Caveat**: This only captures what happened *after* the recorder started, so you'll miss the beginning. Always start the buffer at the beginning of your session.
 
 ## JACK Routing
 
-### Default Behavior (`auto_connect: true`)
+### Initial Setup (One-Time)
 
-Timemachine automatically connects to:
-- `system:capture_1` → `TimeMachine:in_1`
-- `system:capture_2` → `TimeMachine:in_2`
+1. **Start the buffer**: Say "indigo, start the buffer"
+2. **Connect sources**: In qjackctl or Carla, connect your audio sources to:
+   - `RingBufferRecorder:in_1`
+   - `RingBufferRecorder:in_2`
+3. **Remember connections**: Run the routing memory tool:
+   ```bash
+   python tools/remember_jack_routing.py
+   ```
 
-This records from your audio interface inputs (microphones, instruments, etc.).
+After this one-time setup, connections will auto-restore every time you start the buffer!
 
-### Custom Routing (`auto_connect: false`)
+### Manual Routing
 
-Disable auto-connect and manually route in JACK:
-
-```json
-{
-  "timemachine": {
-    "auto_connect": false
-  }
-}
-```
-
-Then use `qjackctl`, `Carla`, or `jack_connect` to route audio:
+Use `qjackctl`, `Carla`, or `jack_connect` to route audio:
 
 ```bash
-# Connect piano plugin to timemachine
-jack_connect pianoteq:out_1 TimeMachine:in_1
-jack_connect pianoteq:out_2 TimeMachine:in_2
+# Connect microphone to ring buffer
+jack_connect system:capture_1 RingBufferRecorder:in_1
+jack_connect system:capture_1 RingBufferRecorder:in_2
 
-# Or system playback (record what you hear)
-jack_connect system:playback_1 TimeMachine:in_1
-jack_connect system:playback_2 TimeMachine:in_2
+# Connect piano plugin to ring buffer
+jack_connect pianoteq:out_1 RingBufferRecorder:in_1
+jack_connect pianoteq:out_2 RingBufferRecorder:in_2
+
+# Record system playback (everything you hear)
+jack_connect system:playback_1 RingBufferRecorder:in_1
+jack_connect system:playback_2 RingBufferRecorder:in_2
 ```
+
+### Remembering JACK Connections
+
+The `remember_jack_routing.py` tool saves your JACK connections:
+
+```bash
+# While buffer is running with connections made:
+python tools/remember_jack_routing.py
+```
+
+This saves to `jack_routing.json` and connections auto-restore on next startup.
 
 ### Advanced Routing Examples
 
 **Record system output (everything you hear):**
 ```bash
-jack_connect system:playback_1 TimeMachine:in_1
-jack_connect system:playback_2 TimeMachine:in_2
+jack_connect system:playback_1 RingBufferRecorder:in_1
+jack_connect system:playback_2 RingBufferRecorder:in_2
 ```
 
 **Record specific JACK client:**
 ```bash
-jack_connect some_synth:left TimeMachine:in_1
-jack_connect some_synth:right TimeMachine:in_2
+jack_connect some_synth:left RingBufferRecorder:in_1
+jack_connect some_synth:right RingBufferRecorder:in_2
 ```
 
 **Mono input to stereo:**
 ```bash
-jack_connect system:capture_1 TimeMachine:in_1
-jack_connect system:capture_1 TimeMachine:in_2
+jack_connect system:capture_1 RingBufferRecorder:in_1
+jack_connect system:capture_1 RingBufferRecorder:in_2
 ```
 
 ## File Naming
@@ -172,65 +188,76 @@ jack_connect system:capture_1 TimeMachine:in_2
 Saved files are automatically timestamped:
 
 ```
-recording-20251125-143022.wav
-recording-20251125-143156.wav
-recording-20251125-144301.wav
+recording-20251125_143022.wav
+recording-20251125_143156.wav
+recording-20251125_144301.wav
 ```
 
-Format: `{prefix}YYYYMMDD-HHMMSS.{format}`
+Format: `{prefix}YYYYMMDD_HHMMSS.{format}`
 
 ## Technical Details
 
-### How Timemachine Works
+### How the Ring Buffer Works
 
-1. Maintains a circular buffer in RAM
-2. Continuously writes incoming audio to buffer
-3. When triggered (SIGUSR1 signal), writes buffer to disk
-4. Buffer overwrites oldest data (rolling window)
+1. Maintains a circular buffer in RAM using NumPy arrays
+2. JACK process callback continuously writes incoming audio to buffer
+3. Write position wraps around when reaching buffer end
+4. When triggered, copies buffer to disk asynchronously
+5. Oldest data automatically overwritten (rolling window)
 
-### Signal-Based Control
+### Architecture
 
-The plugin controls timemachine using Unix signals:
+- **Pure Python**: No external processes or GUI dependencies
+- **JACK-Client**: Native Python JACK integration
+- **NumPy**: Efficient audio buffer storage
+- **SoundFile**: High-quality audio file writing
+- **Threading**: Async file saves don't block audio
 
-- **SIGUSR1**: Trigger save (write buffer to file)
-- **SIGTERM**: Graceful shutdown
-- **SIGKILL**: Force kill (if SIGTERM fails)
+### Implementation
 
-### Process Management
-
-- Timemachine runs as subprocess
-- Plugin tracks PID for signal delivery
-- Automatic cleanup on voice assistant shutdown
-- Safe handling of multiple save requests
+```python
+RingBufferRecorder
+├── JACK process callback (real-time)
+│   └── Writes audio to circular buffer
+├── Save method (voice triggered)
+│   └── Copies buffer and queues save
+└── Background thread
+    └── Writes files asynchronously
+```
 
 ### Performance
 
-- **RAM usage**: ~10 MB per minute (stereo, 44.1kHz, 16-bit)
+- **RAM usage**: ~10 MB per minute (stereo, 44.1kHz, 32-bit float)
   - 30 seconds: ~5 MB
   - 60 seconds: ~10 MB
   - 120 seconds: ~20 MB
-- **CPU usage**: Negligible (< 1%)
-- **Disk I/O**: Only during saves
+- **CPU usage**: Negligible (< 0.5%)
+- **Disk I/O**: Only during saves (async, non-blocking)
+- **Latency**: Zero - buffer is real-time
 
 ## Troubleshooting
 
 ### "Failed to start recording buffer"
 
-**Check if timemachine is installed:**
+**Check Python dependencies:**
 ```bash
-which timemachine
-timemachine -h
+pip list | grep -E "JACK-Client|numpy|soundfile"
 ```
 
-**Install if missing:**
+**If missing, install:**
 ```bash
-sudo apt install timemachine
+pip install JACK-Client numpy soundfile
+```
+
+**Check JACK is running:**
+```bash
+jack_lsp
 ```
 
 ### "Failed to save buffer"
 
 **Possible causes:**
-1. Buffer not started - say "start recording buffer" first
+1. Buffer not started - say "start the buffer" first
 2. Output directory doesn't exist - check `output_dir` config
 3. No disk space - check `df -h`
 4. Permissions issue - ensure output dir is writable
@@ -239,20 +266,20 @@ sudo apt install timemachine
 
 **Check JACK connections:**
 ```bash
-jack_lsp -c | grep TimeMachine
+jack_lsp -c | grep RingBuffer
 ```
 
 Should show connections like:
 ```
-TimeMachine:in_1
+RingBufferRecorder:in_1
    system:capture_1
-TimeMachine:in_2
+RingBufferRecorder:in_2
    system:capture_2
 ```
 
 **If not connected:**
-- Enable `auto_connect: true` in config
-- Or manually connect in qjackctl/Carla
+- Manually connect in qjackctl/Carla
+- Run `python tools/remember_jack_routing.py` to save connections
 - Or use `jack_connect` commands
 
 ### Buffer Too Short
@@ -307,21 +334,25 @@ Save recordings and automatically:
 
 ## Comparison with Other Recording Tools
 
-| Feature | Timemachine | Ardour | JACK Recorder |
-|---------|-------------|--------|---------------|
-| Retroactive recording | ✅ Yes | ❌ No | ❌ No |
-| Voice control | ✅ Yes | ❌ No | ⚠️ Limited |
-| Buffer size | Configurable | N/A | N/A |
-| Lightweight | ✅ Yes | ❌ No | ✅ Yes |
-| GUI | ❌ No | ✅ Yes | ⚠️ Optional |
-| Multi-track | ❌ No | ✅ Yes | ✅ Yes |
-| Real-time | ✅ Yes | ✅ Yes | ✅ Yes |
+| Feature | Ring Buffer | Timemachine (C) | Ardour | JACK Recorder |
+|---------|-------------|-----------------|--------|---------------|
+| Retroactive recording | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
+| Voice control | ✅ Yes | ❌ No | ❌ No | ⚠️ Limited |
+| Buffer size | Configurable | Configurable | N/A | N/A |
+| Lightweight | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes |
+| GUI required | ❌ No | ✅ Yes | ✅ Yes | ⚠️ Optional |
+| Headless operation | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| Multi-format | ✅ Yes | ⚠️ Limited | ✅ Yes | ✅ Yes |
+| Python-based | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| Multi-track | ❌ No | ❌ No | ✅ Yes | ✅ Yes |
+| Real-time | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
 
-**When to use Timemachine:**
+**When to use Ring Buffer Recorder:**
 - Capturing spontaneous ideas
 - Improvisation sessions
 - "Oops, should have recorded that"
 - Lightweight, always-on recording
+- Fully headless/voice-controlled workflow
 
 **When to use Ardour:**
 - Full production
@@ -331,7 +362,7 @@ Save recordings and automatically:
 
 ## Summary
 
-The Timemachine plugin turns your voice assistant into a retroactive recording safety net. Keep it running in the background during practice or composition sessions, and never lose a great idea again.
+The Ring Buffer Recorder plugin turns your voice assistant into a retroactive recording safety net. Keep it running in the background during practice or composition sessions, and never lose a great idea again.
 
 Perfect for:
 - 🎹 Piano improvisations
