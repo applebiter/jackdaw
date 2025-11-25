@@ -19,7 +19,7 @@ from datetime import datetime
 import time
 import subprocess
 import os
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, Union
 
 
 class VoiceAssistantDashboard:
@@ -288,6 +288,72 @@ class VoiceAssistantDashboard:
         except Exception as e:
             return f"Error getting music stats: {e}"
     
+    def load_recording_for_browser(self, filename: str) -> Tuple[Optional[str], str]:
+        """
+        Load a recording file for browser playback.
+        
+        Args:
+            filename: Name of the recording file
+            
+        Returns:
+            Tuple of (file_path, status_message)
+        """
+        if not filename:
+            return None, "Please select a recording first"
+        
+        try:
+            file_path = self.recordings_dir / filename
+            if not file_path.exists():
+                return None, f"File not found: {filename}"
+            
+            return str(file_path), f"✅ Loaded: {filename}"
+        
+        except Exception as e:
+            return None, f"❌ Error loading file: {e}"
+    
+    def play_recording_on_server(self, filename: str) -> str:
+        """
+        Play a recording on the server through JACK (same as music playback).
+        
+        Args:
+            filename: Name of the recording file
+            
+        Returns:
+            Status message
+        """
+        if not filename:
+            return "Please select a recording first"
+        
+        try:
+            file_path = self.recordings_dir / filename
+            if not file_path.exists():
+                return f"❌ File not found: {filename}"
+            
+            # Use the ogg_jack_player to play through JACK
+            # First check if ogg_jack_player.py exists
+            player_script = Path("ogg_jack_player.py")
+            if not player_script.exists():
+                return "❌ ogg_jack_player.py not found"
+            
+            # Stop any currently playing music
+            subprocess.run(
+                ["pkill", "-f", "ogg_jack_player.py"],
+                capture_output=True
+            )
+            time.sleep(0.2)
+            
+            # Start playback in background
+            subprocess.Popen(
+                [".venv/bin/python", "ogg_jack_player.py", str(file_path)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            
+            return f"🎵 Playing on server: {filename}"
+        
+        except Exception as e:
+            return f"❌ Error playing file: {e}"
+    
     def create_interface(self) -> gr.Blocks:
         """Create the Gradio interface."""
         
@@ -363,17 +429,57 @@ class VoiceAssistantDashboard:
                 with gr.Tab("🎙️ Recordings"):
                     gr.Markdown("### Recent Ring Buffer Recordings")
                     
+                    with gr.Row():
+                        with gr.Column(scale=2):
+                            recordings_dropdown = gr.Dropdown(
+                                label="Select Recording",
+                                choices=lambda: [r[0] for r in self.get_recent_recordings()],
+                                interactive=True
+                            )
+                        
+                        with gr.Column(scale=1):
+                            recordings_refresh_btn = gr.Button("🔄 Refresh List")
+                    
+                    with gr.Row():
+                        play_browser_btn = gr.Button("🔊 Play in Browser", variant="primary")
+                        play_server_btn = gr.Button("🎵 Play on Server (JACK)")
+                    
+                    audio_player = gr.Audio(
+                        label="Audio Player",
+                        visible=True
+                    )
+                    
+                    playback_status = gr.Textbox(
+                        label="Status",
+                        value="",
+                        interactive=False
+                    )
+                    
+                    # Wire up buttons
+                    recordings_refresh_btn.click(
+                        fn=lambda: gr.Dropdown(choices=[r[0] for r in self.get_recent_recordings()]),
+                        outputs=recordings_dropdown
+                    )
+                    
+                    play_browser_btn.click(
+                        fn=self.load_recording_for_browser,
+                        inputs=recordings_dropdown,
+                        outputs=[audio_player, playback_status]
+                    )
+                    
+                    play_server_btn.click(
+                        fn=self.play_recording_on_server,
+                        inputs=recordings_dropdown,
+                        outputs=playback_status
+                    )
+                    
+                    gr.Markdown("---")
+                    
                     recordings_table = gr.Dataframe(
                         headers=["Filename", "Size", "Date"],
                         value=self.get_recent_recordings,
                         every=5,
                         interactive=False
-                    )
-                    
-                    recordings_refresh_btn = gr.Button("🔄 Refresh Recordings")
-                    recordings_refresh_btn.click(
-                        fn=self.get_recent_recordings,
-                        outputs=recordings_table
                     )
                     
                     recordings_path = gr.Textbox(
