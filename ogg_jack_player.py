@@ -28,6 +28,7 @@ _skip_requested = threading.Event()
 _stop_requested = threading.Event()
 _paused = threading.Event()  # Set when paused
 _current_music_dir: Optional[str] = None
+_current_playlist: Optional[List[Path]] = None  # Custom playlist
 _volume: float = 0.7  # Default volume (0.0 to 1.0)
 
 
@@ -333,18 +334,23 @@ def _play_music_loop(root: str):
     Internal function that runs in a background thread to play music.
     Continuously plays random tracks until stop is requested.
     """
-    global _current_music_dir
+    global _current_music_dir, _current_playlist
     _current_music_dir = root
+    
+    # Use custom playlist if set, otherwise scan directory
+    if _current_playlist:
+        oggs = _current_playlist
+        print(f"[OggJackPlayer] Playing from custom playlist ({len(oggs)} tracks)")
+    else:
+        root_dir = Path(root).expanduser()
+        if not root_dir.exists():
+            print(f"[OggJackPlayer] Directory does not exist: {root_dir}")
+            return
 
-    root_dir = Path(root).expanduser()
-    if not root_dir.exists():
-        print(f"[OggJackPlayer] Directory does not exist: {root_dir}")
-        return
-
-    oggs = _collect_ogg_files(root_dir)
-    if not oggs:
-        print(f"[OggJackPlayer] No .ogg files found under: {root_dir}")
-        return
+        oggs = _collect_ogg_files(root_dir)
+        if not oggs:
+            print(f"[OggJackPlayer] No .ogg files found under: {root_dir}")
+            return
 
     while True:
         # Clear skip flag before playing next track
@@ -353,6 +359,7 @@ def _play_music_loop(root: str):
         # If stop was requested, halt completely
         if _stop_requested.is_set():
             print("[OggJackPlayer] Stopping playback.")
+            _current_playlist = None  # Clear playlist on stop
             break
 
         choice = random.choice(oggs)
@@ -363,6 +370,7 @@ def _play_music_loop(root: str):
         # If stop was requested during playback, halt
         if _stop_requested.is_set():
             print("[OggJackPlayer] Stopping playback.")
+            _current_playlist = None  # Clear playlist on stop
             break
 
         # Whether skipped or naturally finished, play next track
@@ -384,6 +392,41 @@ def play_random_ogg_in_directory(root: str):
 
         client.register_command("play random track", cmd_play_random_ogg)
     """
+    global _current_playlist, _stop_requested
+    _current_playlist = None  # Clear any custom playlist
+    _stop_requested.clear()  # Clear stop flag for new playback
+    
     # Start playback in a background thread
     thread = threading.Thread(target=_play_music_loop, args=(root,), daemon=True)
+    thread.start()
+
+
+def play_playlist(file_paths: List[str], library_root: str = "/"):
+    """
+    Play tracks from a custom playlist (list of file paths).
+    Continuously plays random tracks from the playlist until stopped.
+    
+    Args:
+        file_paths: List of absolute file paths to OGG files
+        library_root: Root directory for relative path construction (default: "/")
+    
+    Example:
+        from music_query import search_by_artist
+        tracks = search_by_artist("Pink Floyd")
+        play_playlist(tracks)
+    """
+    global _current_playlist, _stop_requested
+    
+    if not file_paths:
+        print("[OggJackPlayer] Empty playlist provided")
+        return
+    
+    # Convert strings to Path objects
+    _current_playlist = [Path(p) for p in file_paths]
+    _stop_requested.clear()  # Clear stop flag for new playback
+    
+    print(f"[OggJackPlayer] Starting playlist with {len(_current_playlist)} tracks")
+    
+    # Start playback in a background thread (use library_root as placeholder)
+    thread = threading.Thread(target=_play_music_loop, args=(library_root,), daemon=True)
     thread.start()

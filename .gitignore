@@ -51,3 +51,6 @@ voices/
 # Backups
 *.bak
 *.backup
+music_library.sqlite3
+music_export.csv
+music_data.sql
