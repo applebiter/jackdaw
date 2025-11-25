@@ -1,0 +1,57 @@
+{
+  "database": {
+    "enabled": true,
+    "backend": "sqlite",
+    "path": "conversations.sqlite3"
+  },
+  "session": {
+    "strategy": "single_active",
+    "inactivity_timeout_minutes": 30,
+    "max_context_tokens": 30000
+  },
+  "ollama": {
+    "host": "http://localhost:11434",
+    "model": "llama2",
+    "options": {
+      "temperature": 0.7,
+      "num_predict": 500,
+      "num_ctx": 32768  
+    }
+  },
+  "files": {
+    "query_file": "llm_query.txt",
+    "response_file": "llm_response.txt"
+  },
+  "polling": {
+    "interval_seconds": 0.5,
+    "delete_query_after_read": true
+  },
+  "voice": {
+    "recognition": {
+      "model_path": "model",
+      "sample_rate": 16000,
+      "wake_word": "indigo",
+      "vad_enabled": true,
+      "vad_energy_threshold": 0.01,
+      "vad_speech_timeout": 1.5
+    },
+    "synthesis": {
+      "model_path": "voices/en_US-lessac-medium.onnx",
+      "sample_rate": 22050
+    }
+  },
+  "music": {
+    "library_path": "/path/to/your/music/library"
+  },
+  "plugins": {
+    "music_player": {
+      "enabled": true
+    },
+    "llm_recorder": {
+      "enabled": true
+    },
+    "basic_commands": {
+      "enabled": true
+    }
+  }
+}

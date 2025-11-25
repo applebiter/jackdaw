@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Logs
+logs/
+*.log
+
+# Database
+conversations.sqlite3
+conversations_test.sqlite3
+
+# Runtime
+.voice_assistant.pid
+llm_query.txt
+llm_response.txt
+
+# Configuration (keep local only)
+voice_assistant_config.json
+
+# JACK routing memory
+jack_routing.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (too large for git)
+model/
+voices/
+
+# Backups
+*.bak
+*.backup
