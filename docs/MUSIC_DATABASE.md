@@ -6,7 +6,43 @@ The voice assistant now includes a powerful music database system that lets you 
 
 ## Database Setup
 
-### Migrating Your Music Library
+### Option 1: Scan Your Music Directory (Recommended)
+
+The easiest way to build your database is to scan your existing music collection:
+
+```bash
+# Activate your virtual environment
+source .venv/bin/activate
+
+# Basic scan (fast, no BPM analysis)
+python3 tools/scan_music_library.py /path/to/your/music
+
+# With BPM analysis (slower, adds 2-5 seconds per track)
+python3 tools/scan_music_library.py /path/to/your/music --bpm
+```
+
+The scanner will:
+- Recursively find all `.ogg` and `.flac` files
+- Extract metadata tags (artist, album, title, genre, year, etc.)
+- Analyze audio properties (duration, sample rate, bit depth, channels)
+- Optionally analyze beats per minute (BPM)
+- Insert everything into `music_library.sqlite3`
+- Skip duplicates automatically
+
+**What it extracts:**
+- **Audio format**: sample rate, channels, bits per sample, bitrate
+- **Duration**: in both timecode (HH:MM:SS) and milliseconds
+- **Tags**: title, artist, album artist, album, genre, year
+- **Track info**: track number, disc number
+- **Credits**: composer, producer, engineer, label, copyright
+- **BPM**: beats per minute (optional, requires `--bpm` flag)
+
+**Performance:**
+- Without BPM: ~0.1-0.5 seconds per track
+- With BPM: ~2-5 seconds per track
+- Example: 13,000 tracks without BPM takes ~30-60 minutes
+
+### Option 2: Migrate from MySQL
 
 If you have a MySQL music database (like the xiphsound schema):
 
@@ -25,13 +61,13 @@ The migration script will:
 - Import all metadata (artist, album, genre, title, year, etc.)
 - Create indexes for fast searching
 
-### Building Your Own Database
+### Option 3: Build Your Own Database
 
-If you don't have an existing database, you can create one from scratch:
+If you need a custom solution:
 
 1. The schema is in `music_library_schema.sql`
-2. Populate it with track metadata from your music files
-3. Use a tool like [Mutagen](https://mutagen.readthedocs.io/) to read ID3/Vorbis tags
+2. Create the database: `sqlite3 music_library.sqlite3 < music_library_schema.sql`
+3. Populate it with your own scripts or tools
 
 ## Voice Commands
 
@@ -213,10 +249,13 @@ Potential additions:
 ### Database not found
 
 ```bash
-# Re-run migration
+# Scan your music directory
+python3 tools/scan_music_library.py /path/to/music
+
+# Or re-run migration (if using MySQL source)
 python3 tools/migrate_music_db.py
 
-# Or create from schema
+# Or create empty database from schema
 sqlite3 music_library.sqlite3 < music_library_schema.sql
 ```
 
@@ -228,6 +267,29 @@ If your music moved, update the database:
 UPDATE sounds 
 SET location = REPLACE(location, '/old/path', '/new/path');
 ```
+
+### Scanner Issues
+
+**Scanner fails with import errors:**
+```bash
+source .venv/bin/activate
+pip install mutagen librosa soundfile pydub
+```
+
+**Scanner is too slow:**
+- Skip BPM analysis (don't use `--bpm` flag)
+- BPM analysis adds 2-5 seconds per track
+- For 13,000 tracks: ~1 hour without BPM, ~18-36 hours with BPM
+
+**Scanner skips all files:**
+- Check that database doesn't already have those files
+- Files are identified by `location + filename` (must be unique)
+- Look for "Skipping duplicate" messages in output
+
+**Audio files not recognized:**
+- Scanner supports `.ogg` and `.flac` only
+- Check file extensions (case-insensitive)
+- Verify files aren't corrupted (try playing them)
 
 ## Summary
 
