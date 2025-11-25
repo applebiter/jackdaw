@@ -34,7 +34,7 @@ This system is designed for a **multi-host setup** where all hosts:
 - Maintain their **own local SQLite database** for conversation history
 - Have unique hostnames matching their wake words
 
-Each host stores its own conversations in a local file (default: `conversations.sqlite3`), so there is no longer any dependency on a remote PostgreSQL server.
+Each host stores its own conversations in a local SQLite database (default: `conversations.sqlite3`).
 
 ### 1. Install on Each Host
 
@@ -44,7 +44,7 @@ On each host:
 
 2. **Create a virtual environment**
 ```bash
-python3 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate
 ```
 

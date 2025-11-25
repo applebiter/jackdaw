@@ -384,13 +384,13 @@ def main():
         epilog="""
 Examples:
   # Basic scan (no BPM analysis)
-  python3 tools/scan_music_library.py /path/to/music
+  python tools/scan_music_library.py /path/to/music
   
   # Scan with BPM analysis (slow!)
-  python3 tools/scan_music_library.py /path/to/music --bpm
+  python tools/scan_music_library.py /path/to/music --bpm
   
   # Update existing entries
-  python3 tools/scan_music_library.py /path/to/music --update
+  python tools/scan_music_library.py /path/to/music --update
         """
     )
     

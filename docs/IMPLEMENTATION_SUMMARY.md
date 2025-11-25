@@ -31,7 +31,7 @@
 ### 3. LLM Query Processor Updates ✅
 
 **Key features in `llm_query_processor.py`:**
-- Uses `LocalConversationStore` (SQLite) instead of PostgreSQL.
+- Uses `LocalConversationStore` (SQLite) for local conversation storage.
 - Retrieves or creates a per-host session based on inactivity timeout.
 - Loads bounded conversation history before each query.
 - Stores both query and response after each LLM call.
@@ -109,4 +109,4 @@ sqlite3 conversations.sqlite3 "SELECT role, substr(content,1,80) AS preview, tok
 - `test_local_conversation_store.py`
   - Quick smoke test for the SQLite-backed store.
 
-Legacy PostgreSQL-specific files (`schema.sql`, `setup_database.sh`, `test_database.py`) are no longer required for normal operation but are kept for reference.
+Legacy database files in the `tools/` directory are available for reference but not required for normal operation.

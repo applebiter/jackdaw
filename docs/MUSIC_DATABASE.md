@@ -15,10 +15,10 @@ The easiest way to build your database is to scan your existing music collection
 source .venv/bin/activate
 
 # Basic scan (fast, no BPM analysis)
-python3 tools/scan_music_library.py /path/to/your/music
+python tools/scan_music_library.py /path/to/your/music
 
 # With BPM analysis (slower, adds 2-5 seconds per track)
-python3 tools/scan_music_library.py /path/to/your/music --bpm
+python tools/scan_music_library.py /path/to/your/music --bpm
 ```
 
 The scanner will:
@@ -52,7 +52,7 @@ source .venv/bin/activate
 pip install mysql-connector-python
 
 # Run the migration script
-python3 tools/migrate_music_db.py
+python tools/migrate_music_db.py
 ```
 
 The migration script will:
@@ -250,10 +250,10 @@ Potential additions:
 
 ```bash
 # Scan your music directory
-python3 tools/scan_music_library.py /path/to/music
+python tools/scan_music_library.py /path/to/music
 
 # Or re-run migration (if using MySQL source)
-python3 tools/migrate_music_db.py
+python tools/migrate_music_db.py
 
 # Or create empty database from schema
 sqlite3 music_library.sqlite3 < music_library_schema.sql
