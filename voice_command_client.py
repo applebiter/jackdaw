@@ -318,8 +318,9 @@ class VoiceCommandClient:
             # Remove wake word from text for command matching
             text_lower = text_lower[len(self.wake_word):].strip()
         
-        # Check for command matches
-        for phrase, callback in self.commands.items():
+        # Check for command matches - sort by length descending to match longer phrases first
+        sorted_commands = sorted(self.commands.items(), key=lambda x: len(x[0]), reverse=True)
+        for phrase, callback in sorted_commands:
             if phrase in text_lower:
                 print(f"\n>>> Command detected: '{phrase}'")
                 try:

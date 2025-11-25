@@ -133,11 +133,15 @@ class PluginLoader:
             Plugin configuration dictionary
         """
         # First check plugins.<plugin_name>
-        plugin_config = self.plugin_config.get(plugin_file_stem, {})
+        plugin_config = self.plugin_config.get(plugin_file_stem, {}).copy()
         
-        # For music_player, also check the 'music' config section
-        if plugin_file_stem == 'music_player' and not plugin_config:
-            plugin_config = self.config.get('music', {})
+        # For music_player, merge with the 'music' config section
+        if plugin_file_stem == 'music_player':
+            music_config = self.config.get('music', {})
+            # Merge music config into plugin config (plugin config takes precedence)
+            for key, value in music_config.items():
+                if key not in plugin_config:
+                    plugin_config[key] = value
         
         # Ensure 'enabled' defaults to True if not specified
         if 'enabled' not in plugin_config:

@@ -39,7 +39,7 @@ class BasicCommandsPlugin(VoiceAssistantPlugin):
         return {
             "hello": self._cmd_hello,
             "stop listening": self._cmd_stop_listening,
-            "play": self._cmd_play,
+           # "play": self._cmd_play,
             "pause": self._cmd_pause,
             "next": self._cmd_next,
             "previous": self._cmd_previous,
@@ -58,9 +58,9 @@ class BasicCommandsPlugin(VoiceAssistantPlugin):
         else:
             print(f"[{self.get_name()}] Error: No voice client available")
     
-    def _cmd_play(self):
-        """Placeholder for play command."""
-        print("Play callback executed!")
+    """ def _cmd_play(self):
+        # Placeholder for play command.
+        print("Play callback executed!") """
     
     def _cmd_pause(self):
         """Placeholder for pause command."""
