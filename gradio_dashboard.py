@@ -66,22 +66,27 @@ class VoiceAssistantDashboard:
             if not self.voice_log.exists():
                 return "No playback information available", None
             
-            # Read last 100 lines to find most recent "Now playing"
+            # Read last 100 lines to find most recent playback
             with open(self.voice_log, 'r') as f:
                 lines = f.readlines()[-100:]
             
-            # Find last "Now playing" message
+            # Find last OggJackPlayer "Playing track" message
             for line in reversed(lines):
-                if "Now playing:" in line or "Playing:" in line:
-                    # Extract track info
-                    info = line.split("Now playing:")[-1].split("Playing:")[-1].strip()
+                if "[OggJackPlayer] Playing track" in line:
+                    # Extract track info - format: "Playing track X/Y: /path/to/file.ogg"
+                    parts = line.split("Playing track")[-1].strip()
                     
-                    # Format as markdown
-                    markdown = f"### 🎵 Now Playing\n\n**{info}**\n\n"
-                    
-                    # Try to extract artist/album for database lookup
-                    # (simplified - could be enhanced)
-                    return markdown, None
+                    # Extract position and path
+                    if ":" in parts:
+                        position_info = parts.split(":")[0].strip()  # "1/13535"
+                        file_path = ":".join(parts.split(":")[1:]).strip()  # Handle paths with colons
+                        
+                        # Extract just the filename
+                        filename = Path(file_path).stem  # Get filename without extension
+                        
+                        # Format as markdown
+                        markdown = f"### 🎵 Now Playing\n\n**{filename}**\n\nTrack {position_info}\n\n"
+                        return markdown, None
             
             return "No track currently playing", None
             
