@@ -42,26 +42,7 @@ The scanner will:
 - With BPM: ~2-5 seconds per track
 - Example: 13,000 tracks without BPM takes ~30-60 minutes
 
-### Option 2: Migrate from MySQL
-
-If you have a MySQL music database (like the xiphsound schema):
-
-```bash
-# Ensure mysql-connector-python is installed in your venv
-source .venv/bin/activate
-pip install mysql-connector-python
-
-# Run the migration script
-python tools/migrate_music_db.py
-```
-
-The migration script will:
-- Connect to MySQL and export all tracks
-- Create a SQLite database (`music_library.sqlite3`)
-- Import all metadata (artist, album, genre, title, year, etc.)
-- Create indexes for fast searching
-
-### Option 3: Build Your Own Database
+### Option 2: Build Your Own Database
 
 If you need a custom solution:
 
@@ -251,9 +232,6 @@ Potential additions:
 ```bash
 # Scan your music directory
 python tools/scan_music_library.py /path/to/music
-
-# Or re-run migration (if using MySQL source)
-python tools/migrate_music_db.py
 
 # Or create empty database from schema
 sqlite3 music_library.sqlite3 < music_library_schema.sql

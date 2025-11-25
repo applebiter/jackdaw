@@ -39,7 +39,6 @@ voiceassistant/
 ├── tools/                      # Utility scripts
 │   ├── inspect_conversations.py    # View SQLite conversations
 │   ├── remember_jack_routing.py    # Save JACK routing config
-│   ├── migrate_music_db.py        # Migrate MySQL to SQLite
 │   └── scan_music_library.py      # Scan music directory to database
 │
 ├── tests/                      # Test files
