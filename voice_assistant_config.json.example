@@ -52,6 +52,16 @@
     },
     "basic_commands": {
       "enabled": true
+    },
+    "timemachine": {
+      "enabled": true,
+      "buffer_seconds": 30,
+      "output_dir": "~/recordings",
+      "file_prefix": "recording-",
+      "channels": 2,
+      "format": "wav",
+      "jack_name": "TimeMachine",
+      "auto_connect": true
     }
   }
 }
