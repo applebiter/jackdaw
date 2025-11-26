@@ -1,6 +1,6 @@
-# System Tray Application
+# Jackdaw System Tray Application
 
-The voice assistant includes a system tray application that provides a graphical interface for controlling the voice assistant and accessing plugin features.
+Jackdaw includes a system tray application that provides a graphical interface for controlling the voice assistant and accessing plugin features.
 
 ## Features
 
@@ -20,10 +20,19 @@ The tray application requires PySide6, which is included in `requirements.txt`:
 .venv/bin/pip install PySide6
 ```
 
-## Starting the Tray App
+## Starting Jackdaw
+
+### From Applications Menu
+
+Search for "Jackdaw" in your applications menu and click to launch.
+
+### From Terminal
 
 ```bash
 # From the project directory:
+./launch_tray_app.sh
+
+# Or directly:
 .venv/bin/python voice_assistant_tray.py
 ```
 
@@ -60,36 +69,33 @@ Plugins can provide custom GUI forms accessible from the tray menu. For example,
 
 To have the tray application start automatically when you log in:
 
-### GNOME/Ubuntu
+### Automatic Setup (Recommended)
 
-1. Open "Startup Applications"
-2. Click "Add"
-3. Name: `Voice Assistant`
-4. Command: `/home/YOUR_USERNAME/jack-voice-assistant/.venv/bin/python /home/YOUR_USERNAME/jack-voice-assistant/voice_assistant_tray.py`
-5. Click "Add"
+The installation script automatically sets up autostart and desktop launcher:
 
-### KDE Plasma
-
-1. System Settings → Startup and Shutdown → Autostart
-2. Click "Add Application"
-3. Select "Add Custom Program"
-4. Command: `/home/YOUR_USERNAME/jack-voice-assistant/.venv/bin/python /home/YOUR_USERNAME/jack-voice-assistant/voice_assistant_tray.py`
-
-### Generic Desktop Entry
-
-Create `~/.config/autostart/voice-assistant.desktop`:
-
-```desktop
-[Desktop Entry]
-Type=Application
-Name=Voice Assistant
-Exec=/home/YOUR_USERNAME/jack-voice-assistant/.venv/bin/python /home/YOUR_USERNAME/jack-voice-assistant/voice_assistant_tray.py
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
+```bash
+./install.sh
 ```
 
-Replace `YOUR_USERNAME` with your actual username.
+This creates:
+- Desktop launcher at `~/.local/share/applications/jackdaw.desktop`
+- Autostart entry at `~/.config/autostart/jackdaw.desktop`
+
+Jackdaw will appear in your applications menu and start automatically at login.
+
+### Manual Setup
+
+If you need to set it up manually:
+
+**Desktop Launcher:**
+```bash
+cp jackdaw.desktop ~/.local/share/applications/
+```
+
+**Autostart:**
+```bash
+cp jackdaw.desktop ~/.config/autostart/
+```
 
 ## Creating Plugin GUIs
 

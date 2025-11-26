@@ -1,6 +1,8 @@
-# Voice Assistant
+# Jackdaw Voice Assistant
 
 A modular, real-time voice assistant system using JACK Audio, Vosk speech recognition, Ollama LLM, and Piper TTS.
+
+**Jackdaw** combines JACK Audio connectivity with voice control and is designed to grow toward a full DAW (Digital Audio Workstation) with voice command capabilities.
 
 ## Quick Start
 
@@ -12,11 +14,8 @@ cd jack-voice-assistant
 # Run the installation script
 ./install.sh
 
-# Install PySide6 for the GUI
-.venv/bin/pip install PySide6
-
-# Start the system tray application
-.venv/bin/python voice_assistant_tray.py
+# Launch Jackdaw from your applications menu or:
+./launch_tray_app.sh
 
 # Or start manually without GUI:
 ./start_voice_assistant.sh
@@ -24,6 +23,8 @@ cd jack-voice-assistant
 # Stop all components
 ./stop_voice_assistant.sh
 ```
+
+After installation, **Jackdaw** appears in your applications menu and starts automatically at login.
 
 The installation script will:
 - Check for system dependencies (JACK, ffmpeg)

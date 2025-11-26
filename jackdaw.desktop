@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Jackdaw Voice Assistant
+Comment=Voice-controlled assistant with JACK Audio integration
+Exec=/home/sysadmin/Programs/jack-voice-assistant/launch_tray_app.sh
+Icon=/home/sysadmin/Programs/jack-voice-assistant/jackdaw-icon.png
+Terminal=false
+Categories=AudioVideo;Audio;
+Keywords=voice;assistant;jack;audio;music;
+StartupNotify=true

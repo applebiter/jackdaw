@@ -41,6 +41,9 @@ class VoiceAssistantTray(QObject):
         with open(self.config_file, 'r') as f:
             self.config = json.load(f)
         
+        # Check for and stop any already-running processes
+        self._cleanup_existing_processes()
+        
         # Voice assistant processes
         self.voice_process: Optional[subprocess.Popen] = None
         self.llm_process: Optional[subprocess.Popen] = None
@@ -70,10 +73,10 @@ class VoiceAssistantTray(QObject):
     
     def setup_tray_icon(self):
         """Set up the system tray icon and menu."""
-        # Create icon (you can replace this with an actual icon file)
-        icon = self.create_default_icon()
+        # Create icon
+        icon = self.create_icon(is_active=False)
         self.tray_icon.setIcon(icon)
-        self.tray_icon.setToolTip("Voice Assistant (Stopped)")
+        self.tray_icon.setToolTip("Jackdaw (Stopped)")
         
         # Create context menu
         menu = QMenu()
@@ -90,11 +93,11 @@ class VoiceAssistantTray(QObject):
         menu.addSeparator()
         
         # Control actions
-        self.start_action = QAction("▶ Start Voice Assistant", menu)
+        self.start_action = QAction("▶ Start Jackdaw", menu)
         self.start_action.triggered.connect(self.start_voice_assistant)
         menu.addAction(self.start_action)
         
-        self.stop_action = QAction("⏹ Stop Voice Assistant", menu)
+        self.stop_action = QAction("⏹ Stop Jackdaw", menu)
         self.stop_action.triggered.connect(self.stop_voice_assistant)
         self.stop_action.setEnabled(False)
         menu.addAction(self.stop_action)
@@ -107,7 +110,7 @@ class VoiceAssistantTray(QObject):
             if hasattr(plugin, 'create_gui_widget') and callable(getattr(plugin, 'create_gui_widget')):
                 plugin_name = plugin.get_name()
                 action = QAction(f"🔧 {plugin.get_description()}", menu)
-                action.triggered.connect(lambda checked, p=plugin: self.show_plugin_gui(p))
+                action.triggered.connect(lambda checked=False, p=plugin: self.show_plugin_gui(p))
                 menu.addAction(action)
                 self.plugin_menu_items[plugin_name] = action
         
@@ -134,11 +137,78 @@ class VoiceAssistantTray(QObject):
         self.tray_icon.setContextMenu(menu)
         self.tray_icon.show()
     
-    def create_default_icon(self) -> QIcon:
-        """Create a simple default icon."""
-        # Create a simple colored square as default icon
+    def _cleanup_existing_processes(self):
+        """Check for and stop any already-running voice assistant processes."""
+        try:
+            # Check if processes are running
+            result = subprocess.run(
+                ["pgrep", "-f", "voice_command_client.py"],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print("Found existing voice assistant processes, stopping them...")
+                subprocess.run(["pkill", "-f", "voice_command_client.py"], check=False)
+                subprocess.run(["pkill", "-f", "llm_query_processor.py"], check=False)
+                subprocess.run(["pkill", "-f", "tts_jack_client.py"], check=False)
+                import time
+                time.sleep(1)  # Give processes time to stop
+                print("Existing processes stopped.")
+        except Exception as e:
+            print(f"Error checking for existing processes: {e}")
+    
+    def create_icon(self, is_active: bool = False) -> QIcon:
+        """Create a microphone icon for the tray."""
+        from PySide6.QtGui import QPainter, QColor, QPen, QBrush
+        from PySide6.QtCore import QRect, QRectF
+        
+        # Create a 64x64 pixmap
         pixmap = QPixmap(64, 64)
-        pixmap.fill(Qt.blue)
+        pixmap.fill(Qt.transparent)
+        
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Draw microphone
+        # Choose color based on active state
+        if is_active:
+            mic_color = QColor(100, 200, 100)  # Green when active
+            wave_color = QColor(100, 220, 100, 200)
+        else:
+            mic_color = QColor(120, 120, 120)  # Gray when inactive
+            wave_color = QColor(150, 150, 150, 150)
+        
+        painter.setPen(QPen(mic_color.darker(120), 2))
+        painter.setBrush(QBrush(mic_color))
+        
+        # Main mic body
+        painter.drawRoundedRect(QRectF(22, 12, 20, 28), 10, 10)
+        
+        # Mic stand/handle
+        painter.setPen(QPen(QColor(90, 90, 90), 2))
+        painter.drawLine(32, 40, 32, 52)  # Vertical line down
+        
+        # Base arc
+        painter.drawArc(QRect(20, 42, 24, 16), 0, 180 * 16)
+        
+        # Base horizontal line
+        painter.drawLine(20, 58, 44, 58)
+        
+        # Add sound waves (only visible when active)
+        if is_active:
+            painter.setPen(QPen(wave_color, 2))
+            
+            # Left waves
+            painter.drawArc(QRect(8, 20, 12, 12), -30 * 16, 60 * 16)
+            painter.drawArc(QRect(4, 16, 16, 16), -30 * 16, 60 * 16)
+            
+            # Right waves
+            painter.drawArc(QRect(44, 20, 12, 12), 150 * 16, 60 * 16)
+            painter.drawArc(QRect(44, 16, 16, 16), 150 * 16, 60 * 16)
+        
+        painter.end()
+        
         return QIcon(pixmap)
     
     def start_voice_assistant(self):
@@ -247,10 +317,15 @@ class VoiceAssistantTray(QObject):
         """Handle status change signal."""
         self.status_action.setText(f"Status: {status}")
         
+        # Update icon based on status
+        is_active = (status == "Running")
+        icon = self.create_icon(is_active=is_active)
+        self.tray_icon.setIcon(icon)
+        
         if status == "Running":
-            self.tray_icon.setToolTip(f"Voice Assistant - {status}\nWake word: {self.config['voice']['recognition'].get('wake_word', 'N/A')}")
+            self.tray_icon.setToolTip(f"Jackdaw - {status}\nWake word: {self.config['voice']['recognition'].get('wake_word', 'N/A')}")
         else:
-            self.tray_icon.setToolTip(f"Voice Assistant - {status}")
+            self.tray_icon.setToolTip(f"Jackdaw - {status}")
     
     def on_track_changed(self, status: dict):
         """Handle track change signal."""
@@ -286,7 +361,7 @@ class VoiceAssistantTray(QObject):
     def show_logs_viewer(self):
         """Show a simple log viewer dialog."""
         dialog = QDialog()
-        dialog.setWindowTitle("Voice Assistant Logs")
+        dialog.setWindowTitle("Jackdaw Logs")
         dialog.resize(800, 600)
         
         layout = QVBoxLayout()
@@ -319,12 +394,12 @@ class VoiceAssistantTray(QObject):
     def show_about(self):
         """Show about dialog."""
         dialog = QDialog()
-        dialog.setWindowTitle("About Voice Assistant")
+        dialog.setWindowTitle("About Jackdaw")
         
         layout = QVBoxLayout()
         
         about_text = QLabel(
-            "<h2>Voice Assistant</h2>"
+            "<h2>Jackdaw Voice Assistant</h2>"
             "<p>A modular voice-controlled assistant using JACK Audio</p>"
             "<p><b>Features:</b></p>"
             "<ul>"

@@ -176,20 +176,32 @@ chmod +x start_voice_assistant.sh
 chmod +x stop_voice_assistant.sh
 echo -e "${GREEN}✓ Scripts are executable${NC}"
 
-# GUI Application Setup
+# Install Desktop Launcher and Autostart
 echo ""
 echo "=========================================="
-echo "System Tray GUI Application"
+echo "Jackdaw Desktop Integration"
 echo "=========================================="
 echo ""
-echo "The voice assistant includes a system tray application with GUI controls."
-echo "To use it, make sure PySide6 is installed (included in requirements.txt)."
+echo "Installing desktop launcher and autostart..."
+
+# Install desktop file
+mkdir -p ~/.local/share/applications
+cp jackdaw.desktop ~/.local/share/applications/
+echo -e "${GREEN}✓ Desktop launcher installed${NC}"
+
+# Install autostart
+mkdir -p ~/.config/autostart
+cp jackdaw.desktop ~/.config/autostart/
+echo -e "${GREEN}✓ Autostart configured${NC}"
+
 echo ""
-echo "To start the GUI application:"
-echo "  .venv/bin/python voice_assistant_tray.py"
+echo "Jackdaw will:"
+echo "  • Appear in your applications menu"
+echo "  • Start automatically at login"
 echo ""
-echo "Or start without GUI:"
-echo "  ./start_voice_assistant.sh"
+echo "You can also start manually:"
+echo "  GUI:  ./launch_tray_app.sh"
+echo "  CLI:  ./start_voice_assistant.sh"
 echo ""
 
 # Check for Ollama
@@ -232,9 +244,10 @@ echo "   Microphone → VoiceCommandClient:input"
 echo "   TTSJackClient:out_L/R → Speakers"
 echo "   OggPlayer:out_L/R → Speakers"
 echo ""
-echo "To start the voice assistant:"
-echo "   GUI:    .venv/bin/python voice_assistant_tray.py"
-echo "   CLI:    ./start_voice_assistant.sh"
+echo -e "${GREEN}Installation Complete!${NC}"
 echo ""
-echo -e "${GREEN}For help, see: docs/README.md${NC}"
+echo "🐦‍⬛ Launch Jackdaw from your applications menu or run:"
+echo "   ./launch_tray_app.sh"
+echo ""
+echo -e "${GREEN}For help, see: docs/README.md and docs/TRAY_APP.md${NC}"
 echo ""
