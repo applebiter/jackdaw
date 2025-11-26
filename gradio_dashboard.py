@@ -32,7 +32,10 @@ class VoiceAssistantDashboard:
         # Paths
         self.logs_dir = Path("logs")
         self.recordings_dir = Path(self.config.get("plugins", {}).get("timemachine", {}).get("output_dir", "~/recordings")).expanduser()
-        self.music_db = Path(self.config.get("plugins", {}).get("music_player", {}).get("database_path", "music_library.sqlite3"))
+        # Music database - check both old and new config locations
+        music_db_path = self.config.get("plugins", {}).get("music_player", {}).get("database_path") or \
+                        self.config.get("music", {}).get("database_path", "music_library.sqlite3")
+        self.music_db = Path(music_db_path)
         
         # Log file paths
         self.voice_log = self.logs_dir / "voice_command.log"
@@ -248,10 +251,16 @@ class VoiceAssistantDashboard:
         """Get music library statistics."""
         try:
             if not self.music_db.exists():
-                return "Music database not found"
+                return f"### 📚 Music Library\n\nDatabase not found at: `{self.music_db}`\n\nRun `python tools/scan_music_library.py` to create it."
             
             conn = sqlite3.connect(self.music_db)
             cursor = conn.cursor()
+            
+            # Check if tracks table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tracks'")
+            if not cursor.fetchone():
+                conn.close()
+                return f"### 📚 Music Library\n\nDatabase exists but `tracks` table not found.\n\nRun `python tools/scan_music_library.py` to populate it."
             
             stats = "### 📚 Music Library\n\n"
             
@@ -280,7 +289,7 @@ class VoiceAssistantDashboard:
             return stats
             
         except Exception as e:
-            return f"Error getting music stats: {e}"
+            return f"### 📚 Music Library\n\nError: {e}\n\nDatabase: `{self.music_db}`"
     
     def load_recording_for_browser(self, filename: str) -> Tuple[Optional[str], str]:
         """
