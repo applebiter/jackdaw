@@ -385,6 +385,12 @@ class VoiceAssistantDashboard:
                     stop_playback()
                     time.sleep(0.5)
                     
+                    # Clear any leftover stop signal file before starting new playback
+                    stop_signal = Path(".stop_playback")
+                    if stop_signal.exists():
+                        print(f"[Dashboard] Cleaning up stop signal file")
+                        stop_signal.unlink()
+                    
                     print(f"[Dashboard] Starting playback of {file_path}")
                     # Play the recording as a single-file playlist
                     play_playlist([str(file_path)])
