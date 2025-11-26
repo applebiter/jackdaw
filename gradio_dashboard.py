@@ -289,33 +289,33 @@ class VoiceAssistantDashboard:
             conn = sqlite3.connect(self.music_db)
             cursor = conn.cursor()
             
-            # Check if tracks table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tracks'")
+            # Check if sounds table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sounds'")
             if not cursor.fetchone():
                 conn.close()
-                return f"### 📚 Music Library\n\nDatabase exists but `tracks` table not found.\n\nRun `python tools/scan_music_library.py` to populate it."
+                return f"### 📚 Music Library\n\nDatabase exists but `sounds` table not found.\n\nRun `python tools/scan_music_library.py` to populate it."
             
             stats = "### 📚 Music Library\n\n"
             
             # Count tracks
-            cursor.execute("SELECT COUNT(*) FROM tracks")
+            cursor.execute("SELECT COUNT(*) FROM sounds")
             track_count = cursor.fetchone()[0]
             stats += f"**Tracks:** {track_count:,}\n\n"
             
             # Count artists
-            cursor.execute("SELECT COUNT(DISTINCT artist) FROM tracks WHERE artist IS NOT NULL")
+            cursor.execute("SELECT COUNT(DISTINCT artist) FROM sounds WHERE artist IS NOT NULL")
             artist_count = cursor.fetchone()[0]
             stats += f"**Artists:** {artist_count:,}\n\n"
             
             # Count albums
-            cursor.execute("SELECT COUNT(DISTINCT album) FROM tracks WHERE album IS NOT NULL")
+            cursor.execute("SELECT COUNT(DISTINCT album) FROM sounds WHERE album IS NOT NULL")
             album_count = cursor.fetchone()[0]
             stats += f"**Albums:** {album_count:,}\n\n"
             
-            # Total duration
-            cursor.execute("SELECT SUM(duration) FROM tracks WHERE duration IS NOT NULL")
-            total_seconds = cursor.fetchone()[0] or 0
-            hours = int(total_seconds // 3600)
+            # Total duration (convert milliseconds to hours)
+            cursor.execute("SELECT SUM(CAST(duration_milliseconds AS REAL)) FROM sounds WHERE duration_milliseconds IS NOT NULL")
+            total_ms = cursor.fetchone()[0] or 0
+            hours = int((total_ms / 1000) // 3600)
             stats += f"**Total Duration:** {hours:,} hours\n\n"
             
             conn.close()

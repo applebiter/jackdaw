@@ -494,11 +494,11 @@ def play_random_ogg_in_directory(root: str):
 def _write_now_playing_status(track_path: Path, position: Optional[int], total: int) -> None:
     """
     Write current track info to a status file for cross-process sharing.
-    Includes audio tags extracted from the file.
+    Queries music database for tags (much faster than reading file).
     """
     try:
         import json
-        from mutagen import File as MutagenFile
+        import sqlite3
         
         status_file = Path(".now_playing.json")
         status = {
@@ -510,24 +510,67 @@ def _write_now_playing_status(track_path: Path, position: Optional[int], total: 
             'tags': {}
         }
         
-        # Extract audio tags using mutagen
+        # Try to get tags from music database (much faster than reading file)
         try:
-            audio = MutagenFile(track_path, easy=True)
-            if audio is not None:
-                # Common tags
-                tag_keys = ['title', 'artist', 'album', 'albumartist', 'date', 'genre', 
-                           'tracknumber', 'discnumber', 'composer', 'performer', 'comment']
-                for key in tag_keys:
-                    if key in audio:
-                        value = audio[key]
-                        # Handle lists (mutagen returns lists)
-                        status['tags'][key] = value[0] if isinstance(value, list) and value else value
+            db_path = Path("music_library.sqlite3")
+            if db_path.exists():
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
                 
-                # Add duration if available
-                if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
-                    status['duration'] = audio.info.length
-        except Exception as tag_error:
-            print(f"[OggJackPlayer] Could not read tags: {tag_error}")
+                # Query by full path (location + filename)
+                location = str(track_path.parent)
+                filename = track_path.name
+                
+                cursor.execute("""
+                    SELECT title, artist, album, albumartist, year, genre, 
+                           tracknumber, discnumber, composer, comment, 
+                           duration_milliseconds
+                    FROM sounds 
+                    WHERE location = ? AND filename = ?
+                """, (location, filename))
+                
+                row = cursor.fetchone()
+                if row:
+                    tags = {}
+                    if row[0]: tags['title'] = row[0]
+                    if row[1]: tags['artist'] = row[1]
+                    if row[2]: tags['album'] = row[2]
+                    if row[3]: tags['albumartist'] = row[3]
+                    if row[4]: tags['date'] = row[4]
+                    if row[5]: tags['genre'] = row[5]
+                    if row[6]: tags['tracknumber'] = row[6]
+                    if row[7]: tags['discnumber'] = row[7]
+                    if row[8]: tags['composer'] = row[8]
+                    if row[9]: tags['comment'] = row[9]
+                    
+                    status['tags'] = tags
+                    
+                    # Duration from database (convert milliseconds to seconds)
+                    if row[10]:
+                        try:
+                            status['duration'] = float(row[10]) / 1000.0
+                        except (ValueError, TypeError):
+                            pass
+                
+                conn.close()
+        except Exception as db_error:
+            print(f"[OggJackPlayer] Database query failed, falling back to file: {db_error}")
+            # Fallback to reading file if database fails
+            try:
+                from mutagen import File as MutagenFile
+                audio = MutagenFile(track_path, easy=True)
+                if audio is not None:
+                    tag_keys = ['title', 'artist', 'album', 'albumartist', 'date', 'genre', 
+                               'tracknumber', 'discnumber', 'composer', 'comment']
+                    for key in tag_keys:
+                        if key in audio:
+                            value = audio[key]
+                            status['tags'][key] = value[0] if isinstance(value, list) and value else value
+                    
+                    if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
+                        status['duration'] = audio.info.length
+            except Exception as tag_error:
+                print(f"[OggJackPlayer] Could not read tags from file: {tag_error}")
         
         with open(status_file, 'w') as f:
             json.dump(status, f, indent=2)
