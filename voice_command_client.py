@@ -285,10 +285,10 @@ class VoiceCommandClient:
                         if self.log_level == 'DEBUG':
                             print(f"Partial: {partial}", end='\r')
                         
-                        # Check if "stop recording" is in partial results
-                        if self.capturing and 'stop recording' in partial.lower():
-                            # Trigger stop recording immediately
-                            self.check_commands('stop recording')
+                        # Check if "end chat" is in partial results
+                        if self.capturing and 'end chat' in partial.lower():
+                            # Trigger end chat immediately
+                            self.check_commands('end chat')
                         
             except queue.Empty:
                 continue
