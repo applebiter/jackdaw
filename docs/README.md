@@ -102,7 +102,7 @@ This allows each host to respond only to its own name on the shared audio networ
   "path": "conversations.sqlite3"
 }
 ```
-Each host writes to its own SQLite file. You can change `path` to any writable location (e.g. `"~/.local/share/jack-voice-assistant/conversations.sqlite3"`).
+Each host writes to its own SQLite file. You can change `path` to any writable location (e.g. `"~/.local/share/jackdaw/conversations.sqlite3"`).
 
 Set `"enabled": false` to disable conversation history and run stateless.
 

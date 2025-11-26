@@ -8,8 +8,8 @@ A modular, real-time voice assistant system using JACK Audio, Vosk speech recogn
 
 ```bash
 # Clone the repository
-git clone https://github.com/applebiter/jack-voice-assistant.git
-cd jack-voice-assistant
+git clone https://github.com/applebiter/jackdaw.git
+cd jackdaw
 
 # Run the installation script
 ./install.sh
