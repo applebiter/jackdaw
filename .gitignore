@@ -24,6 +24,7 @@ conversations_test.sqlite3
 
 # Runtime
 .voice_assistant.pid
+.now_playing.json
 llm_query.txt
 llm_response.txt
 

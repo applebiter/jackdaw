@@ -260,9 +260,19 @@ def stop_playback():
 
         client.register_command("stop playing music", cmd_stop_music)
     """
-    global _stop_requested, _playback_thread
+    global _stop_requested, _playback_thread, _current_track
     _stop_requested.set()
     print("[OggJackPlayer] Stop requested; will halt playback.")
+    
+    # Clear now playing status
+    try:
+        status_file = Path(".now_playing.json")
+        if status_file.exists():
+            status_file.unlink()
+    except Exception:
+        pass
+    
+    _current_track = None
     
     # Wait for playback thread to finish (with timeout)
     if _playback_thread and _playback_thread.is_alive():
@@ -417,6 +427,10 @@ def _play_music_loop(root: str):
         if _shuffle_mode:
             choice = random.choice(oggs)
             print(f"[OggJackPlayer] Selected random track: {choice}")
+            # Update status for shuffle mode
+            _current_track = choice
+            _total_tracks = len(oggs)
+            _write_now_playing_status(choice, None, len(oggs))
         else:
             # Sequential playback
             choice = oggs[_playlist_position]
@@ -425,6 +439,9 @@ def _play_music_loop(root: str):
             # Update global current track info
             _current_track = choice
             _total_tracks = len(oggs)
+            
+            # Write status to file for cross-process sharing
+            _write_now_playing_status(choice, _playlist_position + 1, len(oggs))
             
             _playlist_position = (_playlist_position + 1) % len(oggs)  # Wrap around to start
         
@@ -474,25 +491,53 @@ def play_random_ogg_in_directory(root: str):
     _playback_thread.start()
 
 
+def _write_now_playing_status(track_path: Path, position: Optional[int], total: int) -> None:
+    """
+    Write current track info to a status file for cross-process sharing.
+    """
+    try:
+        import json
+        status_file = Path(".now_playing.json")
+        status = {
+            'filename': track_path.stem,
+            'position': position,
+            'total': total,
+            'path': str(track_path),
+            'timestamp': __import__('time').time()
+        }
+        with open(status_file, 'w') as f:
+            json.dump(status, f)
+    except Exception as e:
+        print(f"[OggJackPlayer] Error writing status: {e}")
+
+
 def get_now_playing() -> Optional[dict]:
     """
     Get information about the currently playing track.
+    Reads from status file for cross-process compatibility.
     
     Returns:
-        Dictionary with keys: 'filename', 'position', 'total', 'path'
+        Dictionary with keys: 'filename', 'position', 'total', 'path', 'timestamp'
         or None if nothing is playing
     """
-    global _current_track, _playlist_position, _total_tracks
-    
-    if _current_track is None:
+    try:
+        import json
+        import time
+        status_file = Path(".now_playing.json")
+        
+        if not status_file.exists():
+            return None
+        
+        with open(status_file, 'r') as f:
+            status = json.load(f)
+        
+        # Check if status is stale (older than 30 seconds means likely stopped)
+        if time.time() - status.get('timestamp', 0) > 30:
+            return None
+        
+        return status
+    except Exception:
         return None
-    
-    return {
-        'filename': _current_track.stem,
-        'position': _playlist_position,
-        'total': _total_tracks,
-        'path': str(_current_track)
-    }
 
 
 def play_playlist(file_paths: List[str], library_root: str = "/"):
