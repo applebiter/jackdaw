@@ -250,6 +250,9 @@ def stop_playback():
     """
     Signal the current OGG playback to stop completely without playing
     the next track. Waits for playback thread to finish.
+    
+    Works across processes by creating a stop signal file that all
+    playback loops check.
 
     Call this from a voice command handler, e.g.:
 
@@ -263,6 +266,13 @@ def stop_playback():
     global _stop_requested, _playback_thread, _current_track
     _stop_requested.set()
     print("[OggJackPlayer] Stop requested; will halt playback.")
+    
+    # Create stop signal file for cross-process communication
+    try:
+        stop_signal = Path(".stop_playback")
+        stop_signal.touch()
+    except Exception:
+        pass
     
     # Clear now playing status
     try:
@@ -415,6 +425,16 @@ def _play_music_loop(root: str):
     while True:
         # Clear skip flag before playing next track
         _skip_requested.clear()
+
+        # Check for cross-process stop signal
+        stop_signal = Path(".stop_playback")
+        if stop_signal.exists():
+            print("[OggJackPlayer] Stop signal detected from another process")
+            _stop_requested.set()
+            try:
+                stop_signal.unlink()  # Clean up signal file
+            except Exception:
+                pass
 
         # If stop was requested, halt completely
         if _stop_requested.is_set():
