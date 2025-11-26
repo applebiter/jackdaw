@@ -18,7 +18,7 @@ mkdir -p logs
 
 # Rotate/truncate old logs if they exist and are large
 for logfile in logs/voice_command.log logs/llm_processor.log logs/tts_client.log; do
-    if [ -f "$logfile" ] && [ $(stat -f%z "$logfile" 2>/dev/null || stat -c%s "$logfile") -gt 10485760 ]; then
+    if [ -f "$logfile" ] && [ $(stat -c%s "$logfile" 2>/dev/null || echo 0) -gt 10485760 ]; then
         echo "Rotating large log file: $logfile"
         tail -n 5000 "$logfile" > "${logfile}.tmp" && mv "${logfile}.tmp" "$logfile"
     fi

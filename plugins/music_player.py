@@ -50,7 +50,7 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
         return "music_player"
     
     def get_description(self) -> str:
-        return "Control music playback with commands like play, stop, next track, and volume control"
+        return "Music Player Controls"
     
     def initialize(self) -> bool:
         if not self.music_library_path:
@@ -149,96 +149,124 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     
     def _cmd_play_artist(self, text: str = ""):
         """Play tracks by a specific artist."""
-        # Extract artist name from the command text
-        # Text format: "play artist <artist name>"
-        if "play artist" in text.lower():
-            artist_name = text.lower().split("play artist", 1)[1].strip()
-        else:
-            artist_name = text.strip()
-        
-        if not artist_name:
-            print(f"[{self.get_name()}] No artist name provided")
-            return "No artist specified."
-        
-        print(f"[{self.get_name()}] Searching for artist: {artist_name}")
-        tracks = search_by_artist(artist_name, limit=200)
-        
-        if not tracks:
-            return f"No tracks found for artist {artist_name}."
-        
-        print(f"[{self.get_name()}] Found {len(tracks)} tracks by {artist_name}")
-        stop_playback()  # Stop any currently playing music
-        play_playlist(tracks, library_root=self.music_library_path or "/")
-        return f"Playing {len(tracks)} tracks by {artist_name}."
+        try:
+            # Extract artist name from the command text
+            # Text format: "play artist <artist name>"
+            if "play artist" in text.lower():
+                artist_name = text.lower().split("play artist", 1)[1].strip()
+            else:
+                artist_name = text.strip()
+            
+            if not artist_name:
+                print(f"[{self.get_name()}] No artist name provided")
+                return "No artist specified."
+            
+            print(f"[{self.get_name()}] Searching for artist: {artist_name}")
+            tracks = search_by_artist(artist_name, limit=200)
+            
+            if not tracks:
+                print(f"[{self.get_name()}] No tracks found for artist {artist_name}")
+                return f"No tracks found for artist {artist_name}."
+            
+            print(f"[{self.get_name()}] Found {len(tracks)} tracks by {artist_name}")
+            stop_playback()  # Stop any currently playing music
+            play_playlist(tracks, library_root=self.music_library_path or "/")
+            return f"Playing {len(tracks)} tracks by {artist_name}."
+        except Exception as e:
+            print(f"[{self.get_name()}] Error in _cmd_play_artist: {e}")
+            import traceback
+            traceback.print_exc()
+            return f"Error playing artist: {e}"
     
     def _cmd_play_album(self, text: str = ""):
         """Play tracks from a specific album."""
-        # Extract album name from the command text
-        if "play album" in text.lower():
-            album_name = text.lower().split("play album", 1)[1].strip()
-        else:
-            album_name = text.strip()
-        
-        if not album_name:
-            print(f"[{self.get_name()}] No album name provided")
-            return "No album specified."
-        
-        print(f"[{self.get_name()}] Searching for album: {album_name}")
-        tracks = search_by_album(album_name, limit=200)
-        
-        if not tracks:
-            return f"No tracks found for album {album_name}."
-        
-        print(f"[{self.get_name()}] Found {len(tracks)} tracks from {album_name}")
-        stop_playback()  # Stop any currently playing music
-        play_playlist(tracks, library_root=self.music_library_path or "/")
-        return f"Playing album {album_name}."
+        try:
+            # Extract album name from the command text
+            if "play album" in text.lower():
+                album_name = text.lower().split("play album", 1)[1].strip()
+            else:
+                album_name = text.strip()
+            
+            if not album_name:
+                print(f"[{self.get_name()}] No album name provided")
+                return "No album specified."
+            
+            print(f"[{self.get_name()}] Searching for album: {album_name}")
+            tracks = search_by_album(album_name, limit=200)
+            
+            if not tracks:
+                print(f"[{self.get_name()}] No tracks found for album {album_name}")
+                return f"No tracks found for album {album_name}."
+            
+            print(f"[{self.get_name()}] Found {len(tracks)} tracks from {album_name}")
+            stop_playback()  # Stop any currently playing music
+            play_playlist(tracks, library_root=self.music_library_path or "/")
+            return f"Playing album {album_name}."
+        except Exception as e:
+            print(f"[{self.get_name()}] Error in _cmd_play_album: {e}")
+            import traceback
+            traceback.print_exc()
+            return f"Error playing album: {e}"
     
     def _cmd_play_genre(self, text: str = ""):
         """Play tracks from a specific genre."""
-        # Extract genre name from the command text
-        if "play genre" in text.lower():
-            genre_name = text.lower().split("play genre", 1)[1].strip()
-        else:
-            genre_name = text.strip()
-        
-        if not genre_name:
-            print(f"[{self.get_name()}] No genre provided")
-            return "No genre specified."
-        
-        print(f"[{self.get_name()}] Searching for genre: {genre_name}")
-        tracks = search_by_genre(genre_name, limit=200)
-        
-        if not tracks:
-            return f"No tracks found for genre {genre_name}."
-        
-        print(f"[{self.get_name()}] Found {len(tracks)} tracks in genre {genre_name}")
-        stop_playback()  # Stop any currently playing music
-        play_playlist(tracks, library_root=self.music_library_path or "/")
-        return f"Playing {len(tracks)} tracks from {genre_name}."
+        try:
+            # Extract genre name from the command text
+            if "play genre" in text.lower():
+                genre_name = text.lower().split("play genre", 1)[1].strip()
+            else:
+                genre_name = text.strip()
+            
+            if not genre_name:
+                print(f"[{self.get_name()}] No genre provided")
+                return "No genre specified."
+            
+            print(f"[{self.get_name()}] Searching for genre: {genre_name}")
+            tracks = search_by_genre(genre_name, limit=200)
+            
+            if not tracks:
+                print(f"[{self.get_name()}] No tracks found for genre {genre_name}")
+                return f"No tracks found for genre {genre_name}."
+            
+            print(f"[{self.get_name()}] Found {len(tracks)} tracks in genre {genre_name}")
+            stop_playback()  # Stop any currently playing music
+            play_playlist(tracks, library_root=self.music_library_path or "/")
+            return f"Playing {len(tracks)} tracks from {genre_name}."
+        except Exception as e:
+            print(f"[{self.get_name()}] Error in _cmd_play_genre: {e}")
+            import traceback
+            traceback.print_exc()
+            return f"Error playing genre: {e}"
     
     def _cmd_play_song(self, text: str = ""):
         """Play a specific song by title."""
-        # Extract song title from the command text
-        if "play song" in text.lower():
-            song_title = text.lower().split("play song", 1)[1].strip()
-        else:
-            song_title = text.strip()
-        
-        if not song_title:
-            print(f"[{self.get_name()}] No song title provided")
-            return "No song specified."
-        
-        print(f"[{self.get_name()}] Searching for song: {song_title}")
-        tracks = search_by_title(song_title, limit=50)
-        
-        if not tracks:
-            return f"No tracks found with title {song_title}."
-        
-        print(f"[{self.get_name()}] Found {len(tracks)} tracks matching {song_title}")
-        stop_playback()  # Stop any currently playing music
-        play_playlist(tracks, library_root=self.music_library_path or "/")
-        return f"Playing {len(tracks)} tracks matching {song_title}."
+        try:
+            # Extract song title from the command text
+            if "play song" in text.lower():
+                song_title = text.lower().split("play song", 1)[1].strip()
+            else:
+                song_title = text.strip()
+            
+            if not song_title:
+                print(f"[{self.get_name()}] No song title provided")
+                return "No song specified."
+            
+            print(f"[{self.get_name()}] Searching for song: {song_title}")
+            tracks = search_by_title(song_title, limit=50)
+            
+            if not tracks:
+                print(f"[{self.get_name()}] No tracks found with title {song_title}")
+                return f"No tracks found with title {song_title}."
+            
+            print(f"[{self.get_name()}] Found {len(tracks)} tracks matching {song_title}")
+            stop_playback()  # Stop any currently playing music
+            play_playlist(tracks, library_root=self.music_library_path or "/")
+            return f"Playing {len(tracks)} tracks matching {song_title}."
+        except Exception as e:
+            print(f"[{self.get_name()}] Error in _cmd_play_song: {e}")
+            import traceback
+            traceback.print_exc()
+            return f"Error playing song: {e}"
     
     def _cmd_play_year(self, text: str = ""):
         """Play tracks from a specific year."""
@@ -311,3 +339,179 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
         shuffle = toggle_shuffle_mode()
         mode = "shuffle" if shuffle else "sequential"
         return f"Playback mode: {mode}."
+    
+    def create_gui_widget(self):
+        """Create a GUI widget for music player controls."""
+        try:
+            from PySide6.QtWidgets import (
+                QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+                QLabel, QSlider, QLineEdit, QGroupBox
+            )
+            from PySide6.QtCore import Qt, QTimer
+            from pathlib import Path
+            import json
+            
+            widget = QWidget()
+            main_layout = QVBoxLayout()
+            
+            # Now Playing section
+            now_playing_group = QGroupBox("Now Playing")
+            now_playing_layout = QVBoxLayout()
+            
+            title_label = QLabel("No track playing")
+            title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+            title_label.setWordWrap(True)
+            now_playing_layout.addWidget(title_label)
+            
+            artist_label = QLabel("")
+            now_playing_layout.addWidget(artist_label)
+            
+            album_label = QLabel("")
+            now_playing_layout.addWidget(album_label)
+            
+            now_playing_group.setLayout(now_playing_layout)
+            main_layout.addWidget(now_playing_group)
+            
+            # Playback controls
+            controls_group = QGroupBox("Playback Controls")
+            controls_layout = QVBoxLayout()
+            
+            button_layout = QHBoxLayout()
+            
+            play_random_btn = QPushButton("▶ Play Random")
+            play_random_btn.clicked.connect(lambda: self._cmd_play_random())
+            button_layout.addWidget(play_random_btn)
+            
+            next_btn = QPushButton("⏭ Next")
+            next_btn.clicked.connect(lambda: self._cmd_next_track())
+            button_layout.addWidget(next_btn)
+            
+            stop_btn = QPushButton("⏹ Stop")
+            stop_btn.clicked.connect(lambda: self._cmd_stop_music())
+            button_layout.addWidget(stop_btn)
+            
+            controls_layout.addLayout(button_layout)
+            controls_group.setLayout(controls_layout)
+            main_layout.addWidget(controls_group)
+            
+            # Volume control
+            volume_group = QGroupBox("Volume")
+            volume_layout = QVBoxLayout()
+            
+            volume_slider = QSlider(Qt.Horizontal)
+            volume_slider.setMinimum(0)
+            volume_slider.setMaximum(100)
+            volume_slider.setValue(int(get_volume() * 100))
+            volume_slider.valueChanged.connect(lambda v: set_volume(v / 100.0))
+            
+            volume_label = QLabel(f"{volume_slider.value()}%")
+            volume_slider.valueChanged.connect(lambda v: volume_label.setText(f"{v}%"))
+            
+            volume_layout.addWidget(volume_slider)
+            volume_layout.addWidget(volume_label)
+            
+            volume_group.setLayout(volume_layout)
+            main_layout.addWidget(volume_group)
+            
+            # Search section
+            search_group = QGroupBox("Search & Play")
+            search_layout = QVBoxLayout()
+            
+            artist_layout = QHBoxLayout()
+            artist_input = QLineEdit()
+            artist_input.setPlaceholderText("Artist name...")
+            artist_btn = QPushButton("Play Artist")
+            artist_btn.clicked.connect(
+                lambda: self._cmd_play_artist(f"play artist {artist_input.text()}")
+            )
+            artist_layout.addWidget(artist_input)
+            artist_layout.addWidget(artist_btn)
+            search_layout.addLayout(artist_layout)
+            
+            album_layout = QHBoxLayout()
+            album_input = QLineEdit()
+            album_input.setPlaceholderText("Album name...")
+            album_btn = QPushButton("Play Album")
+            album_btn.clicked.connect(
+                lambda: self._cmd_play_album(f"play album {album_input.text()}")
+            )
+            album_layout.addWidget(album_input)
+            album_layout.addWidget(album_btn)
+            search_layout.addLayout(album_layout)
+            
+            genre_layout = QHBoxLayout()
+            genre_input = QLineEdit()
+            genre_input.setPlaceholderText("Genre name...")
+            genre_btn = QPushButton("Play Genre")
+            genre_btn.clicked.connect(
+                lambda: self._cmd_play_genre(f"play genre {genre_input.text()}")
+            )
+            genre_layout.addWidget(genre_input)
+            genre_layout.addWidget(genre_btn)
+            search_layout.addLayout(genre_layout)
+            
+            search_group.setLayout(search_layout)
+            main_layout.addWidget(search_group)
+            
+            # Library stats
+            stats_label = QLabel("Loading stats...")
+            main_layout.addWidget(stats_label)
+            
+            try:
+                stats = get_database_stats()
+                stats_text = (
+                    f"Library: {stats['total_tracks']} tracks, "
+                    f"{stats['total_artists']} artists, "
+                    f"{stats['total_albums']} albums, "
+                    f"{stats['total_genres']} genres"
+                )
+                stats_label.setText(stats_text)
+            except Exception as e:
+                stats_label.setText(f"Error loading stats: {e}")
+            
+            widget.setLayout(main_layout)
+            
+            # Update now playing info periodically
+            def update_now_playing():
+                try:
+                    status_file = Path(".now_playing.json")
+                    if status_file.exists():
+                        with open(status_file, 'r') as f:
+                            status = json.load(f)
+                        
+                        if status and 'tags' in status:
+                            tags = status['tags']
+                            title = tags.get('title', status.get('filename', 'Unknown'))
+                            artist = tags.get('artist', 'Unknown Artist')
+                            album = tags.get('album', '')
+                            
+                            title_label.setText(title)
+                            artist_label.setText(f"Artist: {artist}")
+                            album_label.setText(f"Album: {album}" if album else "")
+                        else:
+                            title_label.setText("No track playing")
+                            artist_label.setText("")
+                            album_label.setText("")
+                    else:
+                        title_label.setText("No track playing")
+                        artist_label.setText("")
+                        album_label.setText("")
+                except Exception:
+                    pass
+            
+            # Timer to update now playing
+            timer = QTimer(widget)
+            timer.timeout.connect(update_now_playing)
+            timer.start(1000)  # Update every second
+            
+            # Initial update
+            update_now_playing()
+            
+            return widget
+            
+        except ImportError:
+            print(f"[{self.get_name()}] PySide6 not available, GUI disabled")
+            return None
+        except Exception as e:
+            print(f"[{self.get_name()}] Error creating GUI widget: {e}")
+            return None

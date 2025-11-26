@@ -174,66 +174,23 @@ echo ""
 echo "Setting script permissions..."
 chmod +x start_voice_assistant.sh
 chmod +x stop_voice_assistant.sh
-chmod +x start_with_dashboard.sh
 echo -e "${GREEN}✓ Scripts are executable${NC}"
 
-# Offer to install systemd service
+# GUI Application Setup
 echo ""
 echo "=========================================="
-echo "Systemd Service Installation (Optional)"
+echo "System Tray GUI Application"
 echo "=========================================="
 echo ""
-echo "Would you like to install the voice assistant as a systemd service?"
-echo "This will allow it to start automatically at login and run with the dashboard."
+echo "The voice assistant includes a system tray application with GUI controls."
+echo "To use it, make sure PySide6 is installed (included in requirements.txt)."
 echo ""
-read -p "Install as service? (y/N) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    USER_NAME=$(whoami)
-    SERVICE_NAME="voice-assistant@${USER_NAME}.service"
-    
-    # Update the service file with the actual installation path
-    INSTALL_DIR="$PWD"
-    sed "s|/home/%i/jack-voice-assistant|${INSTALL_DIR}|g" voice-assistant.service > /tmp/voice-assistant.service.tmp
-    
-    # Install service
-    echo "Installing systemd service..."
-    mkdir -p ~/.config/systemd/user
-    cp /tmp/voice-assistant.service.tmp ~/.config/systemd/user/voice-assistant@.service
-    rm /tmp/voice-assistant.service.tmp
-    
-    # Enable lingering (allows user services to run without login)
-    if command -v loginctl &> /dev/null; then
-        loginctl enable-linger "$USER_NAME" 2>/dev/null || true
-    fi
-    
-    # Reload and enable service
-    systemctl --user daemon-reload
-    systemctl --user enable "$SERVICE_NAME"
-    
-    echo -e "${GREEN}✓ Service installed and enabled${NC}"
-    echo ""
-    echo "Service commands:"
-    echo "  Start:   systemctl --user start $SERVICE_NAME"
-    echo "  Stop:    systemctl --user stop $SERVICE_NAME"
-    echo "  Status:  systemctl --user status $SERVICE_NAME"
-    echo "  Logs:    journalctl --user -u $SERVICE_NAME -f"
-    echo ""
-    echo "The service will start automatically at your next login."
-    echo "Dashboard will be available at: http://localhost:7865"
-    echo ""
-    read -p "Start the service now? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        systemctl --user start "$SERVICE_NAME"
-        sleep 2
-        echo ""
-        systemctl --user status "$SERVICE_NAME" --no-pager
-    fi
-else
-    echo "Skipping service installation."
-    echo "You can run ./start_with_dashboard.sh manually instead."
-fi
+echo "To start the GUI application:"
+echo "  .venv/bin/python voice_assistant_tray.py"
+echo ""
+echo "Or start without GUI:"
+echo "  ./start_voice_assistant.sh"
+echo ""
 
 # Check for Ollama
 echo ""
@@ -275,16 +232,9 @@ echo "   Microphone → VoiceCommandClient:input"
 echo "   TTSJackClient:out_L/R → Speakers"
 echo "   OggPlayer:out_L/R → Speakers"
 echo ""
-if systemctl --user is-enabled "voice-assistant@${USER_NAME}.service" &> /dev/null; then
-    echo -e "${GREEN}Service is installed and will start at next login${NC}"
-    echo "Dashboard: http://localhost:7865"
-else
-    echo "To start manually:"
-    echo "   ./start_with_dashboard.sh"
-    echo "   Dashboard: http://localhost:7865"
-    echo ""
-    echo "To install as service later, run this again."
-fi
+echo "To start the voice assistant:"
+echo "   GUI:    .venv/bin/python voice_assistant_tray.py"
+echo "   CLI:    ./start_voice_assistant.sh"
 echo ""
 echo -e "${GREEN}For help, see: docs/README.md${NC}"
 echo ""

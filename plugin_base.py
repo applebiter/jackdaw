@@ -75,3 +75,30 @@ class VoiceAssistantPlugin(ABC):
             Plugin description string
         """
         return "No description available"
+    
+    def create_gui_widget(self) -> Optional[Any]:
+        """
+        Create and return a GUI widget (QWidget) for this plugin.
+        
+        This method is optional. If a plugin wants to provide a GUI interface,
+        it should implement this method and return a PySide6 QWidget.
+        
+        The widget will be displayed in a dialog when the user selects the
+        plugin from the system tray menu.
+        
+        Returns:
+            A PySide6 QWidget instance, or None if no GUI is provided
+            
+        Example:
+            from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+            
+            def create_gui_widget(self):
+                widget = QWidget()
+                layout = QVBoxLayout()
+                button = QPushButton("Do Something")
+                button.clicked.connect(self._on_button_clicked)
+                layout.addWidget(button)
+                widget.setLayout(layout)
+                return widget
+        """
+        return None

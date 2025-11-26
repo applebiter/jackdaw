@@ -12,13 +12,13 @@ cd jack-voice-assistant
 # Run the installation script
 ./install.sh
 
-# The installer will offer to set up a systemd service for auto-start at login
-# with the dashboard enabled. If you decline, you can start manually:
+# Install PySide6 for the GUI
+.venv/bin/pip install PySide6
 
-# Start with web dashboard (http://localhost:7865)
-./start_with_dashboard.sh
+# Start the system tray application
+.venv/bin/python voice_assistant_tray.py
 
-# Or start without dashboard
+# Or start manually without GUI:
 ./start_voice_assistant.sh
 
 # Stop all components
@@ -31,7 +31,6 @@ The installation script will:
 - Install Python packages
 - Set up directories and config files
 - Guide you through model downloads
-- **Optional**: Install as systemd service for auto-start with dashboard
 
 See `docs/README.md` for detailed setup and `docs/SYSTEMD_SERVICE.md` for service management.
 
@@ -84,6 +83,7 @@ voiceassistant/
 │   ├── en_US-lessac-medium.onnx
 │   └── en_US-lessac-medium.onnx.json
 │
+├── voice_assistant_tray.py    # System tray GUI application
 ├── voice_command_client.py    # Main voice recognition & command dispatcher
 ├── llm_query_processor.py     # LLM query handler with conversation history
 ├── tts_jack_client.py         # Text-to-speech JACK client
@@ -200,7 +200,8 @@ See `requirements.txt` for Python packages.
 ## Documentation
 
 - `docs/README.md` - Complete setup guide
-- `docs/PLUGIN_GUIDE.md` - Plugin development guide
+- `docs/TRAY_APP.md` - System tray application guide
+- `docs/PLUGIN_GUIDE.md` - Plugin development guide (includes GUI)
 - `docs/QUICK_REFERENCE.md` - Command and config reference
 - `docs/MUSIC_DATABASE.md` - Music library system and scanner
 - `docs/TIMEMACHINE.md` - Retroactive recording plugin guide

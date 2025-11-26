@@ -27,6 +27,5 @@ pydub==0.25.1
 # Configuration and utilities
 six==1.17.0
 
-# Optional: Web dashboard (not required for headless operation)
-gradio==4.19.2
-huggingface_hub<1.0
+# GUI (System Tray Application)
+PySide6==6.6.1

@@ -506,6 +506,15 @@ def play_random_ogg_in_directory(root: str):
     _playlist_position = 0  # Reset position
     _stop_requested.clear()  # Clear stop flag for new playback
     
+    # Clean up any old stop signal file before starting new playback
+    try:
+        stop_signal = Path(".stop_playback")
+        if stop_signal.exists():
+            stop_signal.unlink()
+            print("[OggJackPlayer] Cleaned up old stop signal")
+    except Exception as e:
+        print(f"[OggJackPlayer] Warning: Could not clean stop signal: {e}")
+    
     # Start playback in a background thread
     _playback_thread = threading.Thread(target=_play_music_loop, args=(root,), daemon=True)
     _playback_thread.start()
@@ -676,6 +685,15 @@ def play_playlist(file_paths: List[str], library_root: str = "/"):
     _current_playlist = [Path(p) for p in file_paths]
     _playlist_position = 0  # Start at beginning of playlist
     _stop_requested.clear()  # Clear stop flag for new playback
+    
+    # Clean up any old stop signal file before starting new playback
+    try:
+        stop_signal = Path(".stop_playback")
+        if stop_signal.exists():
+            stop_signal.unlink()
+            print("[OggJackPlayer] Cleaned up old stop signal")
+    except Exception as e:
+        print(f"[OggJackPlayer] Warning: Could not clean stop signal: {e}")
     
     mode = "shuffle" if _shuffle_mode else "sequential"
     print(f"[OggJackPlayer] Starting playlist with {len(_current_playlist)} tracks ({mode} mode)")
