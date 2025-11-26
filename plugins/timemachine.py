@@ -93,7 +93,8 @@ class TimemachinePlugin(VoiceAssistantPlugin):
         print(f"[{self.get_name()}] Checking for remembered connections...")
         
         if not self.remembered_connections:
-            print(f"[{self.get_name()}] No connections to restore")
+            print(f"[{self.get_name()}] No remembered connections - attempting auto-connect to system")
+            self._auto_connect_system()
             return
         
         print(f"[{self.get_name()}] Restoring {len(self.remembered_connections)} connection(s)...")
@@ -131,6 +132,69 @@ class TimemachinePlugin(VoiceAssistantPlugin):
                         print(f"[{self.get_name()}] ✅ {source} -> {dest} (already connected)")
             except Exception as e:
                 print(f"[{self.get_name()}] Auto-connect failed for {source} -> {dest}: {e}")
+    
+    def _auto_connect_system(self) -> None:
+        """
+        Automatically connect system capture ports to recorder inputs.
+        Falls back to this when no remembered connections exist.
+        """
+        import subprocess
+        import time
+        
+        # Give recorder time to register ports
+        time.sleep(0.5)
+        
+        try:
+            # Get list of system capture ports
+            result = subprocess.run(
+                ['jack_lsp'],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            
+            if result.returncode != 0:
+                print(f"[{self.get_name()}] Could not list JACK ports")
+                return
+            
+            # Find system capture ports (typically microphone inputs)
+            system_captures = [
+                line.strip() for line in result.stdout.split('\n')
+                if 'system:capture' in line or 'alsa_pcm:capture' in line
+            ]
+            
+            if not system_captures:
+                print(f"[{self.get_name()}] No system capture ports found for auto-connect")
+                print(f"[{self.get_name()}] Please manually connect audio sources to {self.jack_name} in Carla/qjackctl")
+                return
+            
+            # Connect first N capture ports to recorder inputs
+            num_to_connect = min(len(system_captures), self.channels)
+            
+            for i in range(num_to_connect):
+                source = system_captures[i]
+                dest = f"{self.jack_name}:in_{i+1}"
+                
+                try:
+                    result = subprocess.run(
+                        ['jack_connect', source, dest],
+                        capture_output=True,
+                        text=True,
+                        timeout=2
+                    )
+                    
+                    if result.returncode == 0:
+                        print(f"[{self.get_name()}] ✅ Auto-connected {source} -> {dest}")
+                    elif 'already' in result.stderr.lower():
+                        print(f"[{self.get_name()}] ✅ {source} -> {dest} (already connected)")
+                    else:
+                        print(f"[{self.get_name()}] Could not connect {source} -> {dest}: {result.stderr.strip()}")
+                        
+                except Exception as e:
+                    print(f"[{self.get_name()}] Connection error: {e}")
+            
+        except Exception as e:
+            print(f"[{self.get_name()}] Auto-connect error: {e}")
     
     def _start_recorder(self) -> bool:
         """
