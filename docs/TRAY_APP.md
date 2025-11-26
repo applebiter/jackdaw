@@ -50,8 +50,9 @@ Search for "Jackdaw" in your applications menu and click to launch.
 # From the project directory:
 ./launch_tray_app.sh
 
-# Or directly:
-.venv/bin/python voice_assistant_tray.py
+# Or manually:
+source .venv/bin/activate
+python voice_assistant_tray.py
 ```
 
 The application will:

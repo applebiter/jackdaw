@@ -257,6 +257,7 @@ Potential additions:
 
 ```bash
 # Scan your music directory
+source .venv/bin/activate
 python tools/scan_music_library.py /path/to/music
 
 # Or create empty database from schema
