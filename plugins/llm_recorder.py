@@ -39,7 +39,7 @@ class LLMRecorderPlugin(VoiceAssistantPlugin):
         """Register LLM recording commands."""
         return {
             "start chat": self._cmd_start_recording,
-            "end chat": self._cmd_stop_recording,
+            "stop chat": self._cmd_stop_recording,
         }
     
     # Command handlers
