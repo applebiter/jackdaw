@@ -31,7 +31,7 @@ python voice_command_client.py >> logs/voice_command.log 2>&1 &
 VOICE_PID=$!
 
 echo "Starting LLM Query Processor..."
-python llm_query_processor.py > logs/llm_processor.log 2>&1 &
+python -u llm_query_processor.py > logs/llm_processor.log 2>&1 &
 LLM_PID=$!
 
 echo "Starting TTS JACK Client..."
