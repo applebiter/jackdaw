@@ -371,6 +371,8 @@ class VoiceAssistantDashboard:
             if not file_path.exists():
                 return f"❌ File not found: {filename}"
             
+            print(f"[Dashboard] Attempting to play: {file_path}")
+            
             # Import and use ogg_jack_player in a background thread
             # This is the same approach the voice assistant uses
             import threading
@@ -378,22 +380,31 @@ class VoiceAssistantDashboard:
             
             def play_in_thread():
                 try:
+                    print(f"[Dashboard] Stopping current playback...")
                     # Stop any currently playing music
                     stop_playback()
-                    time.sleep(0.2)
+                    time.sleep(0.5)
                     
+                    print(f"[Dashboard] Starting playback of {file_path}")
                     # Play the recording as a single-file playlist
                     play_playlist([str(file_path)])
+                    print(f"[Dashboard] Playback thread started")
                 except Exception as e:
                     print(f"[Dashboard] Error playing recording: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             # Start playback in background thread
             thread = threading.Thread(target=play_in_thread, daemon=True)
             thread.start()
+            print(f"[Dashboard] Playback thread launched")
             
             return f"🎵 Playing on server: {filename}"
         
         except Exception as e:
+            print(f"[Dashboard] Exception in play_recording_on_server: {e}")
+            import traceback
+            traceback.print_exc()
             return f"❌ Error playing file: {e}"
     
     def create_interface(self) -> gr.Blocks:
