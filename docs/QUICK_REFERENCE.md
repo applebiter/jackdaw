@@ -27,11 +27,11 @@ nano voice_assistant_config.json
 "[hostname], stop listening"    - Shutdown all components
 ```
 
-#### LLM Recording
+#### LLM Chat
 ```
-"[hostname], start recording"   - Begin capturing query
+"[hostname], start chat"   - Begin capturing query
 [speak your question]
-"[hostname], stop recording"    - Send to LLM
+"[hostname], stop chat"    - Send to LLM
 [wait for TTS response]
 ```
 
