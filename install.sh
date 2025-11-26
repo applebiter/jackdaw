@@ -184,15 +184,29 @@ echo "=========================================="
 echo ""
 echo "Installing desktop launcher and autostart..."
 
-# Install desktop file
-mkdir -p ~/.local/share/applications
-cp jackdaw.desktop ~/.local/share/applications/
-echo -e "${GREEN}✓ Desktop launcher installed${NC}"
+# Get current directory for absolute paths in desktop file
+INSTALL_DIR=$(pwd)
 
-# Install autostart
-mkdir -p ~/.config/autostart
-cp jackdaw.desktop ~/.config/autostart/
-echo -e "${GREEN}✓ Autostart configured${NC}"
+# Update desktop file with absolute paths
+if [ -f "jackdaw.desktop" ]; then
+    # Create temporary desktop file with absolute paths
+    sed "s|Exec=.*launch_tray_app.sh|Exec=${INSTALL_DIR}/launch_tray_app.sh|" jackdaw.desktop > /tmp/jackdaw.desktop.tmp
+    sed -i "s|Icon=.*jackdaw-icon.png|Icon=${INSTALL_DIR}/jackdaw-icon.png|" /tmp/jackdaw.desktop.tmp
+    
+    # Install desktop file
+    mkdir -p ~/.local/share/applications
+    cp /tmp/jackdaw.desktop.tmp ~/.local/share/applications/jackdaw.desktop
+    chmod +x ~/.local/share/applications/jackdaw.desktop
+    rm /tmp/jackdaw.desktop.tmp
+    echo -e "${GREEN}✓ Desktop launcher installed${NC}"
+    
+    # Install autostart
+    mkdir -p ~/.config/autostart
+    cp ~/.local/share/applications/jackdaw.desktop ~/.config/autostart/
+    echo -e "${GREEN}✓ Autostart configured${NC}"
+else
+    echo -e "${YELLOW}⚠ jackdaw.desktop not found, skipping desktop integration${NC}"
+fi
 
 echo ""
 echo "Jackdaw will:"
