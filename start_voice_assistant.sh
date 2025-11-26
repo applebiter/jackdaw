@@ -35,7 +35,7 @@ python -u llm_query_processor.py > logs/llm_processor.log 2>&1 &
 LLM_PID=$!
 
 echo "Starting TTS JACK Client..."
-python tts_jack_client.py > logs/tts_client.log 2>&1 &
+python -u tts_jack_client.py > logs/tts_client.log 2>&1 &
 TTS_PID=$!
 
 echo ""
