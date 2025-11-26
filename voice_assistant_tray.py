@@ -220,33 +220,48 @@ class VoiceAssistantTray(QObject):
         
         try:
             # Get the directory of this script
-            script_dir = Path(__file__).parent
+            script_dir = Path(__file__).parent.resolve()
             
-            # Use bash to source venv and run Python
-            # This ensures all environment variables and paths are set correctly
-            bash_cmd_voice = f"cd '{script_dir}' && source .venv/bin/activate && python voice_command_client.py"
-            bash_cmd_llm = f"cd '{script_dir}' && source .venv/bin/activate && python -u llm_query_processor.py"
-            bash_cmd_tts = f"cd '{script_dir}' && source .venv/bin/activate && python -u tts_jack_client.py"
+            # Find the venv Python executable
+            venv_python = script_dir / ".venv" / "bin" / "python"
+            if not venv_python.exists():
+                raise FileNotFoundError(f"Virtual environment Python not found at {venv_python}")
+            
+            # Use the venv Python directly with absolute paths
+            print(f"Using Python: {venv_python}")
+            print(f"Working directory: {script_dir}")
+            
+            # Prepare environment with venv paths
+            import os
+            env = os.environ.copy()
+            env['VIRTUAL_ENV'] = str(script_dir / ".venv")
+            env['PATH'] = f"{script_dir / '.venv' / 'bin'}:{env.get('PATH', '')}"
             
             # Start voice command client
             self.voice_process = subprocess.Popen(
-                ["bash", "-c", bash_cmd_voice],
+                [str(venv_python), "voice_command_client.py"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                cwd=str(script_dir),
+                env=env
             )
             
             # Start LLM processor
             self.llm_process = subprocess.Popen(
-                ["bash", "-c", bash_cmd_llm],
+                [str(venv_python), "-u", "llm_query_processor.py"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                cwd=str(script_dir),
+                env=env
             )
             
             # Start TTS client
             self.tts_process = subprocess.Popen(
-                ["bash", "-c", bash_cmd_tts],
+                [str(venv_python), "-u", "tts_jack_client.py"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                cwd=str(script_dir),
+                env=env
             )
             
             self.processes_running = True
