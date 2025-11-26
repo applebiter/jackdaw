@@ -494,19 +494,43 @@ def play_random_ogg_in_directory(root: str):
 def _write_now_playing_status(track_path: Path, position: Optional[int], total: int) -> None:
     """
     Write current track info to a status file for cross-process sharing.
+    Includes audio tags extracted from the file.
     """
     try:
         import json
+        from mutagen import File as MutagenFile
+        
         status_file = Path(".now_playing.json")
         status = {
             'filename': track_path.stem,
             'position': position,
             'total': total,
             'path': str(track_path),
-            'timestamp': __import__('time').time()
+            'timestamp': __import__('time').time(),
+            'tags': {}
         }
+        
+        # Extract audio tags using mutagen
+        try:
+            audio = MutagenFile(track_path, easy=True)
+            if audio is not None:
+                # Common tags
+                tag_keys = ['title', 'artist', 'album', 'albumartist', 'date', 'genre', 
+                           'tracknumber', 'discnumber', 'composer', 'performer', 'comment']
+                for key in tag_keys:
+                    if key in audio:
+                        value = audio[key]
+                        # Handle lists (mutagen returns lists)
+                        status['tags'][key] = value[0] if isinstance(value, list) and value else value
+                
+                # Add duration if available
+                if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
+                    status['duration'] = audio.info.length
+        except Exception as tag_error:
+            print(f"[OggJackPlayer] Could not read tags: {tag_error}")
+        
         with open(status_file, 'w') as f:
-            json.dump(status, f)
+            json.dump(status, f, indent=2)
     except Exception as e:
         print(f"[OggJackPlayer] Error writing status: {e}")
 
@@ -517,7 +541,8 @@ def get_now_playing() -> Optional[dict]:
     Reads from status file for cross-process compatibility.
     
     Returns:
-        Dictionary with keys: 'filename', 'position', 'total', 'path', 'timestamp'
+        Dictionary with keys: 'filename', 'position', 'total', 'path', 'timestamp',
+        'tags' (dict with title, artist, album, etc.), 'duration' (seconds)
         or None if nothing is playing
     """
     try:

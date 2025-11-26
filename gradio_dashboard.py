@@ -74,12 +74,45 @@ class VoiceAssistantDashboard:
             if track_info is None:
                 return "No track currently playing", None
             
-            # Format as markdown
-            filename = track_info['filename']
-            position = track_info['position']
-            total = track_info['total']
+            # Build markdown with tags if available
+            markdown = "### 🎵 Now Playing\n\n"
             
-            markdown = f"### 🎵 Now Playing\n\n**{filename}**\n\nTrack {position}/{total}\n\n"
+            tags = track_info.get('tags', {})
+            
+            # Show title or filename
+            if tags.get('title'):
+                markdown += f"**{tags['title']}**\n\n"
+            else:
+                markdown += f"**{track_info['filename']}**\n\n"
+            
+            # Artist
+            if tags.get('artist'):
+                markdown += f"🎤 Artist: {tags['artist']}\n\n"
+            
+            # Album
+            if tags.get('album'):
+                album = tags['album']
+                if tags.get('date'):
+                    album += f" ({tags['date']})"
+                markdown += f"💿 Album: {album}\n\n"
+            
+            # Genre
+            if tags.get('genre'):
+                markdown += f"🎸 Genre: {tags['genre']}\n\n"
+            
+            # Track position in playlist
+            position = track_info.get('position')
+            total = track_info.get('total')
+            if position and total:
+                markdown += f"📊 Track {position}/{total}\n\n"
+            
+            # Duration
+            duration = track_info.get('duration')
+            if duration:
+                mins = int(duration // 60)
+                secs = int(duration % 60)
+                markdown += f"⏱️ Duration: {mins}:{secs:02d}\n\n"
+            
             return markdown, None
             
         except Exception as e:
