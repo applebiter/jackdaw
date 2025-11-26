@@ -46,9 +46,11 @@ jack_routing.json
 .DS_Store
 Thumbs.db
 
-# Models (too large for git)
-model/
-voices/
+# Models (too large for git, but keep README)
+model/*
+!model/README.md
+voices/*
+!voices/README.md
 
 # Backups
 *.bak
