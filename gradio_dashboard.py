@@ -473,9 +473,14 @@ class VoiceAssistantDashboard:
                     
                     with gr.Row():
                         with gr.Column(scale=2):
+                            # Get initial recordings list
+                            initial_recordings = self.get_recent_recordings()
+                            initial_choices = [r[0] for r in initial_recordings]
+                            print(f"[Dashboard] Creating dropdown with {len(initial_choices)} choices: {initial_choices}")
+                            
                             recordings_dropdown = gr.Dropdown(
                                 label="Select Recording",
-                                choices=[r[0] for r in self.get_recent_recordings()],
+                                choices=initial_choices,
                                 interactive=True
                             )
                         
