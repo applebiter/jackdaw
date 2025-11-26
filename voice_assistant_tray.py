@@ -219,28 +219,34 @@ class VoiceAssistantTray(QObject):
         print("Starting voice assistant components...")
         
         try:
+            # Get the directory of this script
+            script_dir = Path(__file__).parent
+            
+            # Use bash to source venv and run Python
+            # This ensures all environment variables and paths are set correctly
+            bash_cmd_voice = f"cd '{script_dir}' && source .venv/bin/activate && python voice_command_client.py"
+            bash_cmd_llm = f"cd '{script_dir}' && source .venv/bin/activate && python -u llm_query_processor.py"
+            bash_cmd_tts = f"cd '{script_dir}' && source .venv/bin/activate && python -u tts_jack_client.py"
+            
             # Start voice command client
             self.voice_process = subprocess.Popen(
-                [sys.executable, "voice_command_client.py"],
+                ["bash", "-c", bash_cmd_voice],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=Path.cwd()
+                stderr=subprocess.PIPE
             )
             
             # Start LLM processor
             self.llm_process = subprocess.Popen(
-                [sys.executable, "-u", "llm_query_processor.py"],
+                ["bash", "-c", bash_cmd_llm],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=Path.cwd()
+                stderr=subprocess.PIPE
             )
             
             # Start TTS client
             self.tts_process = subprocess.Popen(
-                [sys.executable, "-u", "tts_jack_client.py"],
+                ["bash", "-c", bash_cmd_tts],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=Path.cwd()
+                stderr=subprocess.PIPE
             )
             
             self.processes_running = True
@@ -252,6 +258,8 @@ class VoiceAssistantTray(QObject):
             
         except Exception as e:
             print(f"Error starting voice assistant: {e}")
+            import traceback
+            traceback.print_exc()
             self.stop_voice_assistant()
     
     def stop_voice_assistant(self):
