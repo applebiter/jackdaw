@@ -38,8 +38,8 @@ class LLMRecorderPlugin(VoiceAssistantPlugin):
     def get_commands(self) -> Dict[str, Callable]:
         """Register LLM recording commands."""
         return {
-            "start recording": self._cmd_start_recording,
-            "stop recording": self._cmd_stop_recording,
+            "start chat": self._cmd_start_recording,
+            "end chat": self._cmd_stop_recording,
         }
     
     # Command handlers
