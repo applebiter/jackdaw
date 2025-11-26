@@ -1,0 +1,19 @@
+[Unit]
+Description=Voice Assistant with JACK Audio
+After=network.target sound.target
+Wants=network.target
+
+[Service]
+Type=forking
+User=%i
+WorkingDirectory=/home/%i/jack-voice-assistant
+Environment="PATH=/home/%i/jack-voice-assistant/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/%i/jack-voice-assistant/start_with_dashboard.sh
+ExecStop=/home/%i/jack-voice-assistant/stop_voice_assistant.sh
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

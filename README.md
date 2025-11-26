@@ -5,21 +5,35 @@ A modular, real-time voice assistant system using JACK Audio, Vosk speech recogn
 ## Quick Start
 
 ```bash
-# First time setup: Copy the example config
-cp voice_assistant_config.json.example voice_assistant_config.json
+# Clone the repository
+git clone https://github.com/applebiter/jack-voice-assistant.git
+cd jack-voice-assistant
 
-# Edit config with your settings (Ollama host, music path, wake word, etc.)
-nano voice_assistant_config.json
+# Run the installation script
+./install.sh
 
-# Start all components
+# The installer will offer to set up a systemd service for auto-start at login
+# with the dashboard enabled. If you decline, you can start manually:
+
+# Start with web dashboard (http://localhost:7865)
+./start_with_dashboard.sh
+
+# Or start without dashboard
 ./start_voice_assistant.sh
 
 # Stop all components
 ./stop_voice_assistant.sh
-
-# Or manually:
-Ctrl+C in the terminal where start script is running
 ```
+
+The installation script will:
+- Check for system dependencies (JACK, ffmpeg)
+- Create Python virtual environment
+- Install Python packages
+- Set up directories and config files
+- Guide you through model downloads
+- **Optional**: Install as systemd service for auto-start with dashboard
+
+See `docs/README.md` for detailed setup and `docs/SYSTEMD_SERVICE.md` for service management.
 
 ## Directory Structure
 
