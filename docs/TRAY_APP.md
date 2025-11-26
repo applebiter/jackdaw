@@ -13,12 +13,30 @@ Jackdaw includes a system tray application that provides a graphical interface f
 
 ## Installation
 
-The tray application requires PySide6, which is included in `requirements.txt`:
+The tray application requires PySide6 and Qt platform libraries.
 
+### Python Dependencies
+
+PySide6 is included in `requirements.txt` and installed automatically by `./install.sh`.
+
+### System Dependencies (Required!)
+
+**Debian/Ubuntu:**
 ```bash
-# If not already installed:
-.venv/bin/pip install PySide6
+sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0
 ```
+
+**Fedora:**
+```bash
+sudo dnf install libxcb xcb-util-cursor
+```
+
+**Why are these needed?** PySide6 (Qt) requires XCB platform libraries to display GUI elements on Linux. Without them, you'll see errors like:
+```
+Could not load the Qt platform plugin 'xcb'
+```
+
+The `./install.sh` script checks for these dependencies automatically.
 
 ## Starting Jackdaw
 

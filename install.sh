@@ -44,6 +44,15 @@ if ! command -v ffmpeg &> /dev/null; then
     MISSING_DEPS+=("ffmpeg")
 fi
 
+# Check for Qt/XCB platform libraries (needed for GUI tray app)
+if ! ldconfig -p | grep -q libxcb-xinerama; then
+    MISSING_DEPS+=("libxcb-xinerama0 (for Qt GUI)")
+fi
+
+if ! ldconfig -p | grep -q libxcb-cursor; then
+    MISSING_DEPS+=("libxcb-cursor0 (for Qt GUI)")
+fi
+
 if [ ${#MISSING_DEPS[@]} -ne 0 ]; then
     echo -e "${YELLOW}Warning: Missing system dependencies:${NC}"
     for dep in "${MISSING_DEPS[@]}"; do
@@ -51,8 +60,8 @@ if [ ${#MISSING_DEPS[@]} -ne 0 ]; then
     done
     echo ""
     echo "Install with:"
-    echo "  sudo apt install jackd2 ffmpeg  # Debian/Ubuntu"
-    echo "  sudo dnf install jack-audio-connection-kit ffmpeg  # Fedora"
+    echo "  sudo apt install jackd2 ffmpeg libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0  # Debian/Ubuntu"
+    echo "  sudo dnf install jack-audio-connection-kit ffmpeg libxcb xcb-util-cursor  # Fedora"
     echo ""
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo

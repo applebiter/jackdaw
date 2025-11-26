@@ -27,11 +27,25 @@ cd jackdaw
 After installation, **Jackdaw** appears in your applications menu and starts automatically at login.
 
 The installation script will:
-- Check for system dependencies (JACK, ffmpeg)
+- Check for system dependencies (JACK, ffmpeg, Qt platform libraries)
 - Create Python virtual environment
 - Install Python packages
 - Set up directories and config files
 - Guide you through model downloads
+
+### System Requirements
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install jackd2 ffmpeg libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0
+```
+
+**Fedora:**
+```bash
+sudo dnf install jack-audio-connection-kit ffmpeg libxcb xcb-util-cursor
+```
+
+The Qt platform libraries (`libxcb-*`) are required for the GUI system tray application.
 
 See `docs/README.md` for detailed setup and `docs/SYSTEMD_SERVICE.md` for service management.
 
