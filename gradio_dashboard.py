@@ -31,7 +31,11 @@ class VoiceAssistantDashboard:
         
         # Paths
         self.logs_dir = Path("logs")
-        self.recordings_dir = Path(self.config.get("plugins", {}).get("timemachine", {}).get("output_dir", "~/recordings")).expanduser()
+        # Recordings directory - check config or use default ~/recordings
+        recordings_path = self.config.get("plugins", {}).get("timemachine", {}).get("output_dir")
+        if not recordings_path:
+            recordings_path = str(Path.home() / "recordings")
+        self.recordings_dir = Path(recordings_path).expanduser()
         # Music database - check both old and new config locations
         music_db_path = self.config.get("plugins", {}).get("music_player", {}).get("database_path") or \
                         self.config.get("music", {}).get("database_path", "music_library.sqlite3")
@@ -201,6 +205,7 @@ class VoiceAssistantDashboard:
         """
         try:
             if not self.recordings_dir.exists():
+                print(f"[Dashboard] Recordings directory does not exist: {self.recordings_dir}")
                 return []
             
             recordings = []
@@ -213,10 +218,11 @@ class VoiceAssistantDashboard:
                     mtime.strftime("%Y-%m-%d %H:%M:%S")
                 ))
             
+            print(f"[Dashboard] Found {len(recordings)} recordings in {self.recordings_dir}")
             return recordings
             
         except Exception as e:
-            print(f"Error getting recordings: {e}")
+            print(f"[Dashboard] Error getting recordings: {e}")
             return []
     
     def get_system_status(self) -> str:
@@ -492,8 +498,13 @@ class VoiceAssistantDashboard:
                     )
                     
                     # Wire up buttons
+                    def refresh_recordings():
+                        recordings = self.get_recent_recordings()
+                        choices = [r[0] for r in recordings]
+                        return gr.Dropdown(choices=choices)
+                    
                     recordings_refresh_btn.click(
-                        fn=lambda: gr.Dropdown(choices=[r[0] for r in self.get_recent_recordings()]),
+                        fn=refresh_recordings,
                         outputs=recordings_dropdown
                     )
                     
