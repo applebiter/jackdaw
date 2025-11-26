@@ -85,6 +85,7 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             "set volume low": self._cmd_set_volume_low,
             "set volume medium": self._cmd_set_volume_medium,
             "set volume high": self._cmd_set_volume_high,
+            "set volume loud": self._cmd_set_volume_loud,
             "what's the volume": self._cmd_get_volume,
             
             # Library info
@@ -121,16 +122,20 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
         adjust_volume(-0.1)
     
     def _cmd_set_volume_low(self):
-        """Set volume to 30%."""
-        set_volume(0.3)
+        """Set volume to 20%."""
+        set_volume(0.2)
     
     def _cmd_set_volume_medium(self):
-        """Set volume to 60%."""
-        set_volume(0.6)
+        """Set volume to 50%."""
+        set_volume(0.5)
     
     def _cmd_set_volume_high(self):
-        """Set volume to 90%."""
-        set_volume(0.9)
+        """Set volume to 80%."""
+        set_volume(0.8)
+    
+    def _cmd_set_volume_loud(self):
+        """Set volume to 95%."""
+        set_volume(0.95)
     
     def _cmd_get_volume(self):
         """Report current volume level."""
