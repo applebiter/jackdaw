@@ -29,12 +29,33 @@ import librosa
 
 # Database path
 DB_PATH = Path(__file__).parent.parent / 'music_library.sqlite3'
+SCHEMA_PATH = Path(__file__).parent.parent / 'music_library_schema.sql'
+
+
+def init_database():
+    """Initialize the database with the schema if it doesn't exist."""
+    # Create database file if it doesn't exist
+    if not DB_PATH.exists():
+        print(f"Creating database at {DB_PATH}")
+        DB_PATH.touch()
+    
+    # Load and execute schema
+    if SCHEMA_PATH.exists():
+        conn = sqlite3.connect(DB_PATH)
+        with open(SCHEMA_PATH, 'r') as f:
+            schema = f.read()
+        conn.executescript(schema)
+        conn.commit()
+        conn.close()
+        print("Database initialized with schema")
+    else:
+        print(f"Warning: Schema file not found at {SCHEMA_PATH}")
 
 
 def get_db_connection():
     """Get a connection to the music library database."""
     if not DB_PATH.exists():
-        raise FileNotFoundError(f"Music library database not found at {DB_PATH}")
+        init_database()
     return sqlite3.connect(DB_PATH)
 
 
@@ -164,6 +185,10 @@ def analyze_bpm(filepath: Path) -> Optional[str]:
         
         # Estimate tempo
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        
+        # Convert numpy array to Python float if needed (fixes deprecation warning)
+        if hasattr(tempo, 'item'):
+            tempo = tempo.item()
         
         return str(int(tempo))
         
@@ -314,6 +339,9 @@ def scan_directory(root_dir: str, analyze_bpm: bool = False, update_existing: bo
     if not root_path.exists():
         print(f"[Scanner] Directory does not exist: {root_path}")
         return
+    
+    # Initialize database if needed
+    init_database()
     
     print(f"[Scanner] Scanning directory: {root_path}")
     print(f"[Scanner] BPM analysis: {'enabled' if analyze_bpm else 'disabled'}")
