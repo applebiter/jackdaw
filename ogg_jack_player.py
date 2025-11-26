@@ -531,11 +531,29 @@ def get_now_playing() -> Optional[dict]:
         with open(status_file, 'r') as f:
             status = json.load(f)
         
-        # Check if status is stale (older than 30 seconds means likely stopped)
-        if time.time() - status.get('timestamp', 0) > 30:
-            return None
+        # Check if OggPlayer JACK client is still running
+        # If it exists, we're playing; if not, clear stale status
+        try:
+            result = subprocess.run(
+                ["jack_lsp"],
+                capture_output=True,
+                text=True,
+                timeout=1
+            )
+            if result.returncode == 0 and "OggPlayer" in result.stdout:
+                # Player is active, return status
+                return status
+            else:
+                # Player not found, status is stale - clean up
+                status_file.unlink()
+                return None
+        except Exception:
+            # If we can't check JACK, use timestamp as fallback (10 minutes)
+            if time.time() - status.get('timestamp', 0) > 600:
+                status_file.unlink()
+                return None
+            return status
         
-        return status
     except Exception:
         return None
 
