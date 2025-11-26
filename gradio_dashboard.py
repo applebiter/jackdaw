@@ -371,25 +371,25 @@ class VoiceAssistantDashboard:
             if not file_path.exists():
                 return f"❌ File not found: {filename}"
             
-            # Use the ogg_jack_player to play through JACK
-            # First check if ogg_jack_player.py exists
-            player_script = Path("ogg_jack_player.py")
-            if not player_script.exists():
-                return "❌ ogg_jack_player.py not found"
+            # Import and use ogg_jack_player in a background thread
+            # This is the same approach the voice assistant uses
+            import threading
+            from ogg_jack_player import stop_playback, play_playlist
             
-            # Stop any currently playing music
-            subprocess.run(
-                ["pkill", "-f", "ogg_jack_player.py"],
-                capture_output=True
-            )
-            time.sleep(0.2)
+            def play_in_thread():
+                try:
+                    # Stop any currently playing music
+                    stop_playback()
+                    time.sleep(0.2)
+                    
+                    # Play the recording as a single-file playlist
+                    play_playlist([str(file_path)])
+                except Exception as e:
+                    print(f"[Dashboard] Error playing recording: {e}")
             
-            # Start playback in background
-            subprocess.Popen(
-                [".venv/bin/python", "ogg_jack_player.py", str(file_path)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            # Start playback in background thread
+            thread = threading.Thread(target=play_in_thread, daemon=True)
+            thread.start()
             
             return f"🎵 Playing on server: {filename}"
         
