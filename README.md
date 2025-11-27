@@ -347,19 +347,6 @@ tail -f logs/tts_client.log      # Speech synthesis
 
 ---
 
-## 🤝 Contributing
-
-Contributions welcome! Whether it's:
-- 🐛 Bug reports
-- 💡 Feature suggestions
-- 📝 Documentation improvements
-- 🔌 New plugins
-- 🌍 Translations
-
-Open an issue or pull request on GitHub!
-
----
-
 ## 📜 License
 
 See [LICENSE](LICENSE) file for details.
