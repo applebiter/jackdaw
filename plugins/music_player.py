@@ -117,38 +117,31 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     def _cmd_volume_up(self):
         """Increase volume by 10%."""
         adjust_volume(0.1)
-        vol = get_volume()
-        return f"Volume increased to {int(vol * 100)} percent"
     
     def _cmd_volume_down(self):
         """Decrease volume by 10%."""
         adjust_volume(-0.1)
-        vol = get_volume()
-        return f"Volume decreased to {int(vol * 100)} percent"
     
     def _cmd_set_volume_low(self):
         """Set volume to 20%."""
         set_volume(0.2)
-        return "Volume set to low"
     
     def _cmd_set_volume_medium(self):
         """Set volume to 50%."""
         set_volume(0.5)
-        return "Volume set to medium"
     
     def _cmd_set_volume_high(self):
         """Set volume to 80%."""
         set_volume(0.8)
-        return "Volume set to high"
     
     def _cmd_set_volume_loud(self):
         """Set volume to 95%."""
         set_volume(0.95)
-        return "Volume set to loud"
     
     def _cmd_get_volume(self):
         """Report current volume level."""
         vol = get_volume()
+        print(f"Current volume: {int(vol * 100)}%")
         return f"Current volume is {int(vol * 100)} percent"
     
     def _cmd_pause_music(self):
