@@ -635,10 +635,14 @@ Size: {row['size'] or 'N/A'}
         
         from PySide6.QtWidgets import QFileDialog
         
+        # Create playlists directory if it doesn't exist
+        playlists_dir = Path.cwd() / "playlists"
+        playlists_dir.mkdir(exist_ok=True)
+        
         filename, _ = QFileDialog.getSaveFileName(
             self,
             "Save Playlist",
-            str(Path.home() / "jackdaw_playlist.json"),
+            str(playlists_dir / "jackdaw_playlist.json"),
             "JSON Files (*.json);;All Files (*)"
         )
         
