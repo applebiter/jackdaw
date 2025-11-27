@@ -114,21 +114,33 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
                 universal_newlines=True
             )
             
-            # Wait briefly to check if it starts successfully
-            time.sleep(0.5)
+            # Wait longer to check if it starts successfully
+            time.sleep(2.0)
             if self.streaming_process.poll() is not None:
                 # Process died immediately
                 stderr_output = self.streaming_process.stderr.read()
                 stdout_output = self.streaming_process.stdout.read()
                 error_msg = f"FFmpeg failed to start. Exit code: {self.streaming_process.returncode}"
                 if stderr_output:
-                    error_msg += f"\nStderr: {stderr_output[:500]}"
+                    error_msg += f"\nStderr: {stderr_output[:1000]}"
                 if stdout_output:
                     error_msg += f"\nStdout: {stdout_output[:500]}"
                 logger.error(error_msg)
-                print(f"[IcecastStreamer] {error_msg}")
+                print(f"[IcecastStreamer] ERROR:\n{error_msg}")
+                
+                # Also write to a file for debugging
+                try:
+                    with open("logs/icecast_error.log", "a") as f:
+                        import datetime
+                        f.write(f"\n{'='*60}\n")
+                        f.write(f"{datetime.datetime.now()}\n")
+                        f.write(error_msg)
+                        f.write(f"\n{'='*60}\n")
+                except Exception:
+                    pass
+                
                 self.streaming_process = None
-                return f"Failed to start stream: {error_msg}"
+                return f"Failed to start stream - check logs/icecast_error.log"
             
             # Start monitoring thread
             self.should_monitor = True
