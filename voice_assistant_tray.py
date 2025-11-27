@@ -189,12 +189,16 @@ class VoiceAssistantTray(QObject):
         
         menu.addSeparator()
         
-        # Plugin GUI forms (excluding llm_recorder since we added it above)
+        # Plugin GUI forms (excluding llm_recorder, basic_commands, music_player, and icecast_streamer)
         self.plugin_menu_items = {}
         for plugin in self.plugins:
             # Skip llm_recorder plugin since we integrated it as AI Chat menu item
             if plugin.get_name() == 'llm_recorder':
                 self.llm_recorder_plugin = plugin  # Store reference for widget
+                continue
+            
+            # Skip plugins that don't need menu items (controlled via voice or other menus)
+            if plugin.get_name() in ['basic_commands', 'music_player', 'icecast_streamer', 'buffer']:
                 continue
                 
             if hasattr(plugin, 'create_gui_widget') and callable(getattr(plugin, 'create_gui_widget')):
@@ -219,6 +223,16 @@ class VoiceAssistantTray(QObject):
         view_logs_action = QAction("📋 View Logs", menu)
         view_logs_action.triggered.connect(self.show_logs_viewer)
         menu.addAction(view_logs_action)
+        
+        menu.addSeparator()
+        
+        # Reference submenu
+        reference_menu = menu.addMenu("📖 Reference")
+        
+        # Voice commands reference
+        commands_action = QAction("🎤 Voice Commands", reference_menu)
+        commands_action.triggered.connect(self.show_voice_commands_reference)
+        reference_menu.addAction(commands_action)
         
         menu.addSeparator()
         
@@ -435,6 +449,7 @@ class VoiceAssistantTray(QObject):
     def update_now_playing(self):
         """Update the currently playing track information."""
         try:
+            import time
             status_file = Path(".now_playing.json")
             if not status_file.exists():
                 self.track_changed.emit({})
@@ -442,6 +457,16 @@ class VoiceAssistantTray(QObject):
                 
             with open(status_file, 'r') as f:
                 status = json.load(f)
+                
+                # Check if status is stale (older than 5 seconds)
+                # This handles cases where playback stopped but file wasn't deleted
+                if 'timestamp' in status:
+                    age = time.time() - status['timestamp']
+                    if age > 5.0:
+                        # Status is stale, treat as not playing
+                        self.track_changed.emit({})
+                        return
+                
                 self.track_changed.emit(status)
         except Exception as e:
             # Silently ignore read errors (file might be mid-write)
@@ -648,6 +673,62 @@ class VoiceAssistantTray(QObject):
             
             dialog.setLayout(layout)
             dialog.exec()
+    
+    def show_voice_commands_reference(self):
+        """Show comprehensive voice commands reference grouped by plugin."""
+        dialog = QDialog()
+        dialog.setWindowTitle("Voice Commands Reference")
+        dialog.resize(700, 600)
+        
+        layout = QVBoxLayout()
+        
+        # Header
+        header = QLabel(
+            "<h2>Available Voice Commands</h2>"
+            f"<p>Wake word: <b>{self.config['voice']['recognition'].get('wake_word', 'N/A')}</b></p>"
+            "<p>Say the wake word followed by any command below:</p>"
+        )
+        header.setTextFormat(Qt.RichText)
+        header.setWordWrap(True)
+        layout.addWidget(header)
+        
+        # Scrollable area for commands
+        scroll = QTextEdit()
+        scroll.setReadOnly(True)
+        
+        # Build command reference HTML
+        html = "<style>h3 { color: #2196F3; margin-top: 15px; } "
+        html += "p { margin: 5px 0 5px 20px; } "
+        html += ".command { color: #4CAF50; font-family: monospace; } "
+        html += ".wake { color: #FF9800; font-weight: bold; }</style>"
+        
+        wake_word = self.config['voice']['recognition'].get('wake_word', 'indigo')
+        
+        # Group commands by plugin
+        for plugin in sorted(self.plugins, key=lambda p: p.get_name()):
+            commands = plugin.get_commands()
+            if not commands:
+                continue
+            
+            plugin_name = plugin.get_name().replace('_', ' ').title()
+            plugin_desc = plugin.get_description()
+            
+            html += f"<h3>{plugin_name}</h3>"
+            html += f"<p><i>{plugin_desc}</i></p>"
+            
+            for command in sorted(commands.keys()):
+                html += f'<p><span class="wake">{wake_word}</span> <span class="command">{command}</span></p>'
+        
+        scroll.setHtml(html)
+        layout.addWidget(scroll)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+        
+        dialog.setLayout(layout)
+        dialog.exec()
     
     def show_about(self):
         """Show about dialog."""

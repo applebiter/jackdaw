@@ -68,9 +68,6 @@ class BufferPlugin(VoiceAssistantPlugin):
             "start the buffer": self._cmd_start,
             "stop the buffer": self._cmd_stop,
             "save that": self._cmd_save,
-            "save the last 30 seconds": self._cmd_save,
-            "save what i just played": self._cmd_save,
-            "buffer status": self._cmd_status,
         }
     
     def _load_routing_config(self) -> None:

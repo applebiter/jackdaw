@@ -114,7 +114,7 @@ Say your wake word followed by:
 
 Examples:
 - "indigo, start streaming"
-- "indigo, what's the streaming status"
+- "indigo, stream status"
 - "indigo, stop streaming"
 
 ## Implementation Details

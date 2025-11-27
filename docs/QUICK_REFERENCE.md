@@ -150,7 +150,7 @@ python tools/scan_music_library.py
 "[wake], start the buffer"                Start buffering audio
 "[wake], save that"                       Save last 5 minutes to WAV file
 "[wake], stop the buffer"                 Stop buffering
-"[wake], buffer status"                   Check if running
+
 ```
 
 **Example workflow:**
@@ -158,7 +158,7 @@ python tools/scan_music_library.py
 2. Play guitar, jam, experiment...
 3. You just played something amazing!
 4. `"[wake], save that"` - Captures what you just played
-5. File saved to `~/recordings/timemachine_TIMESTAMP.wav`
+5. File saved to `~/recordings/recording-TIMESTAMP.wav`
 
 **Use cases:** Jam sessions, podcast moments, live performances, experimentation
 

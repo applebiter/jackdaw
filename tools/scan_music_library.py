@@ -82,12 +82,31 @@ def extract_audio_properties(filepath: Path) -> Dict[str, Any]:
             seconds = int(duration_seconds % 60)
             duration_timecode = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
             
+            # Extract bit depth from subtype (e.g., PCM_16, PCM_24, PCM_32, FLOAT, DOUBLE)
+            bits_per_sample = None
+            subtype = audio.subtype
+            if '_' in subtype:
+                # Format like PCM_16, PCM_24, etc.
+                try:
+                    bits_per_sample = subtype.split('_')[1]
+                    if bits_per_sample.isdigit():
+                        bits_per_sample = str(bits_per_sample)
+                    else:
+                        bits_per_sample = None
+                except:
+                    pass
+            elif subtype == 'FLOAT':
+                bits_per_sample = '32'
+            elif subtype == 'DOUBLE':
+                bits_per_sample = '64'
+            # Compressed formats (VORBIS, OPUS, etc.) don't have bit depth
+            
             return {
                 'duration_timecode': duration_timecode,
                 'duration_milliseconds': str(duration_ms),
                 'samplerate': str(audio.samplerate),
                 'channels': str(audio.channels),
-                'bits_per_sample': str(audio.subtype_info.bits_per_sample) if hasattr(audio.subtype_info, 'bits_per_sample') else None,
+                'bits_per_sample': bits_per_sample,
             }
     except Exception as e:
         print(f"[Scanner] Error extracting audio properties from {filepath}: {e}")

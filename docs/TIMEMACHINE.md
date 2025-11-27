@@ -33,7 +33,7 @@ Add to your `voice_assistant_config.json`:
 ```json
 {
   "plugins": {
-    "timemachine": {
+    "buffer": {
       "enabled": true,
       "buffer_seconds": 30,
       "output_dir": "~/recordings",

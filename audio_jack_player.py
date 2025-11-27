@@ -73,6 +73,44 @@ class AudioJackPlayer:
     def shutdown(self, status, reason):
         print(f"JACK shutdown in AudioJackPlayer: {status} - {reason}")
         self._running = False
+    
+    def _restore_saved_connections(self):
+        """Restore saved JACK connections from jack_routing.json"""
+        try:
+            import json
+            from pathlib import Path
+            
+            config_file = Path("jack_routing.json")
+            if not config_file.exists():
+                return
+            
+            with open(config_file, 'r') as f:
+                data = json.load(f)
+            
+            all_connections = data.get('jackdaw_connections', [])
+            if not all_connections:
+                return
+            
+            # Filter for connections from jd_music output ports
+            client_name = self.client.name
+            restored_count = 0
+            
+            for source, dest in all_connections:
+                # Check if this is a connection from our client
+                if source.startswith(f"{client_name}:"):
+                    try:
+                        self.client.connect(source, dest)
+                        restored_count += 1
+                        print(f"[AudioJackPlayer] Restored: {source} -> {dest}")
+                    except jack.JackError:
+                        # Connection already exists or ports not available, skip silently
+                        pass
+            
+            if restored_count > 0:
+                print(f"[AudioJackPlayer] Restored {restored_count} saved connection(s)")
+                
+        except Exception as e:
+            print(f"[AudioJackPlayer] Could not restore connections: {e}")
 
     def process(self, frames):
         """
@@ -201,6 +239,9 @@ class AudioJackPlayer:
         except jack.JackError as e:
             print(f"[AudioJackPlayer] Could not auto-connect: {e}")
             print("  You may need to connect manually in qjackctl/Carla.")
+        
+        # Restore saved connections from jack_routing.json
+        self._restore_saved_connections()
 
         self._running = True
         print("[AudioJackPlayer] Starting playback...")

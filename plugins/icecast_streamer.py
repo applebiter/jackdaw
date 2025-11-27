@@ -29,13 +29,17 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
         self.is_streaming = False
         self.should_monitor = False
         
-        plugin_config = config_manager.get("plugins", {}).get("icecast_streamer", {})
-        self.host = plugin_config.get("host", "localhost")
-        self.port = plugin_config.get("port", 8000)
-        self.password = plugin_config.get("password", "hackme")
-        self.mount = plugin_config.get("mount", "/jackdaw.ogg")
-        self.bitrate = plugin_config.get("bitrate", 128)
-        self.format = plugin_config.get("format", "ogg")  # ogg (vorbis), opus, flac, mp3
+        # config_manager IS the plugin-specific config dict, not the full config
+        self.host = config_manager.get("host", "localhost")
+        self.port = config_manager.get("port", 8000)
+        self.password = config_manager.get("password", "hackme")
+        self.mount = config_manager.get("mount", "/jackdaw.ogg")
+        self.bitrate = config_manager.get("bitrate", 128)
+        self.format = config_manager.get("format", "ogg")  # ogg (vorbis), opus, flac, mp3
+        
+        # Debug: Log what we actually loaded
+        logger.info(f"Icecast config loaded: host={self.host}, port={self.port}, mount={self.mount}, format={self.format}")
+        print(f"[IcecastStreamer] Config: host={self.host}, port={self.port}, mount={self.mount}")
         
         # Validate format - supporting Xiph.org formats plus MP3
         valid_formats = ["ogg", "opus", "flac", "mp3"]
@@ -54,9 +58,6 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             "start streaming": self._start_stream,
             "stop streaming": self._stop_stream,
             "stream status": self._stream_status,
-            "begin broadcast": self._start_stream,
-            "end broadcast": self._stop_stream,
-            "streaming status": self._stream_status,
         }
     
     def _start_stream(self):
@@ -107,24 +108,23 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             
             logger.info(f"Starting stream with command: {' '.join(cmd[:10])}...")  # Don't log password
             
+            # Redirect output to log file for debugging, and use start_new_session to prevent signal propagation
+            log_file = open("logs/ffmpeg_stream.log", "a")
             self.streaming_process = subprocess.Popen(
                 cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True
+                stdin=subprocess.DEVNULL,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,  # Combine stderr into stdout
+                universal_newlines=True,
+                start_new_session=True  # Prevent signal propagation from parent process
             )
             
             # Wait longer to check if it starts successfully
             time.sleep(2.0)
             if self.streaming_process.poll() is not None:
                 # Process died immediately
-                stderr_output = self.streaming_process.stderr.read()
-                stdout_output = self.streaming_process.stdout.read()
                 error_msg = f"FFmpeg failed to start. Exit code: {self.streaming_process.returncode}"
-                if stderr_output:
-                    error_msg += f"\nStderr: {stderr_output[:1000]}"
-                if stdout_output:
-                    error_msg += f"\nStdout: {stdout_output[:500]}"
+                error_msg += "\nPossible causes: JACK not running, Icecast server unreachable, or codec not available"
                 logger.error(error_msg)
                 print(f"[IcecastStreamer] ERROR:\n{error_msg}")
                 
@@ -171,7 +171,7 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             import json
             from pathlib import Path
             
-            config_file = Path("tools/jack_routing.json")
+            config_file = Path("jack_routing.json")
             if not config_file.exists():
                 return None
             
@@ -237,19 +237,19 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             for left_src, right_src in source_pairs:
                 try:
                     result_l = subprocess.run(
-                        ['jack_connect', left_src, 'IcecastStreamer:input_1'], 
+                        ['jack_connect', left_src, 'jd_stream:input_1'], 
                         capture_output=True, timeout=2, text=True
                     )
                     result_r = subprocess.run(
-                        ['jack_connect', right_src, 'IcecastStreamer:input_2'], 
+                        ['jack_connect', right_src, 'jd_stream:input_2'], 
                         capture_output=True, timeout=2, text=True
                     )
                     
                     # Check if connections succeeded (returns 0) or already exist
                     if result_l.returncode == 0 or result_r.returncode == 0:
                         connected.append(f"{left_src}/{right_src}")
-                        print(f"[IcecastStreamer] Connected {left_src} -> IcecastStreamer")
-                        logger.info(f"Connected {left_src}/{right_src} to IcecastStreamer")
+                        print(f"[IcecastStreamer] Connected {left_src} -> jd_stream")
+                        logger.info(f"Connected {left_src}/{right_src} to jd_stream")
                         
                 except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
                     # Source doesn't exist, try next one
@@ -258,7 +258,7 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             if connected:
                 print(f"[IcecastStreamer] Auto-connected {len(connected)} audio source(s)")
             else:
-                print("[IcecastStreamer] No audio sources auto-connected. Use qjackctl to route audio manually.")
+                print("[IcecastStreamer] No audio sources auto-connected. Use 'jack_connect <source> jd_stream:input_1' to route audio.")
                 logger.info("No JACK sources auto-connected")
                 
         except Exception as e:
@@ -271,19 +271,11 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             # Check if process has terminated
             if self.streaming_process.poll() is not None:
                 # Process has ended
-                stderr_output = self.streaming_process.stderr.read()
-                stdout_output = self.streaming_process.stdout.read()
-                
-                if stderr_output:
-                    logger.error(f"Stream process stderr: {stderr_output}")
-                    print(f"[IcecastStreamer] FFmpeg stderr:\n{stderr_output}")
-                if stdout_output:
-                    logger.info(f"Stream process stdout: {stdout_output}")
-                    
                 exit_code = self.streaming_process.returncode
                 if exit_code != 0:
                     logger.error(f"Stream process exited with code {exit_code}")
-                    print(f"[IcecastStreamer] FFmpeg exited with code {exit_code}")
+                    print(f"[IcecastStreamer] FFmpeg exited unexpectedly with code {exit_code}")
+                    print(f"[IcecastStreamer] Check: 1) JACK running 2) Icecast server at {self.host}:{self.port} 3) Correct password")
                 else:
                     logger.info("Stream process ended normally")
                 

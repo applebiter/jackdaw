@@ -341,6 +341,44 @@ class TTSJackClient:
                 
         print("📡 Polling thread stopped")
         
+    def _restore_saved_connections(self):
+        """Restore saved JACK connections from jack_routing.json"""
+        try:
+            import json
+            from pathlib import Path
+            
+            config_file = Path("jack_routing.json")
+            if not config_file.exists():
+                return
+            
+            with open(config_file, 'r') as f:
+                data = json.load(f)
+            
+            all_connections = data.get('jackdaw_connections', [])
+            if not all_connections:
+                return
+            
+            # Filter for connections from jd_tts output ports
+            client_name = self.client.name
+            restored_count = 0
+            
+            for source, dest in all_connections:
+                # Check if this is a connection from our client
+                if source.startswith(f"{client_name}:"):
+                    try:
+                        self.client.connect(source, dest)
+                        restored_count += 1
+                        print(f"✅ Restored: {source} -> {dest}")
+                    except jack.JackError:
+                        # Connection already exists or ports not available, skip silently
+                        pass
+            
+            if restored_count > 0:
+                print(f"✅ Restored {restored_count} saved connection(s)")
+                
+        except Exception as e:
+            print(f"⚠️  Could not restore connections: {e}")
+    
     def start(self):
         """Start the JACK client and polling"""
         print("Starting TTS JACK client...")
@@ -356,6 +394,9 @@ class TTSJackClient:
         except jack.JackError as e:
             print(f"⚠️  Could not auto-connect to system playback: {e}")
             print("   You may need to connect manually")
+        
+        # Restore saved connections from jack_routing.json
+        self._restore_saved_connections()
         
         # Start polling thread
         self.running = True

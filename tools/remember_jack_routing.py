@@ -22,7 +22,10 @@ from pathlib import Path
 
 def main() -> None:
     client = jack.Client("jd_route_inspector")
-    cfg_path = Path("jack_routing.json")
+    # Always save to workspace root, not tools/ directory
+    script_dir = Path(__file__).parent
+    workspace_root = script_dir.parent
+    cfg_path = workspace_root / "jack_routing.json"
     
     # Load existing config if present
     data = {}
@@ -62,21 +65,28 @@ def main() -> None:
     
     print(f"Found {len(jackdaw_clients)} Jackdaw JACK client(s): {', '.join(sorted(jackdaw_clients))}\n")
     
-    # Save all input port connections for each Jackdaw client
+    # Save ALL JACK connections in the graph by iterating through all output ports
+    # This captures the complete routing state, not just Jackdaw-specific connections
     all_connections = []
+    seen_connections = set()  # Avoid duplicates
     
-    for jd_client in sorted(jackdaw_clients):
-        client_ports = [p for p in all_ports if p.name.startswith(f"{jd_client}:") and p.is_input]
-        
-        for port in client_ports:
-            connections = client.get_all_connections(port)
-            if connections:
-                for source_port in connections:
-                    connection_pair = [source_port.name, port.name]
-                    all_connections.append(connection_pair)
-                    print(f"✅ {source_port.name} -> {port.name}")
-            else:
-                print(f"⚠️  No connections to {port.name}")
+    # Get all output ports in the system
+    output_ports = [p for p in all_ports if p.is_output]
+    
+    for port in output_ports:
+        connections = client.get_all_connections(port)
+        if connections:
+            for dest_port in connections:
+                connection_pair = (port.name, dest_port.name)
+                if connection_pair not in seen_connections:
+                    seen_connections.add(connection_pair)
+                    all_connections.append([port.name, dest_port.name])
+                    
+                    # Mark Jackdaw connections specially
+                    is_jackdaw = (port.name.split(':')[0] in jackdaw_clients or 
+                                 dest_port.name.split(':')[0] in jackdaw_clients)
+                    marker = "✅" if is_jackdaw else "  "
+                    print(f"{marker} {port.name} -> {dest_port.name}")
     
     if all_connections:
         data["jackdaw_connections"] = all_connections
