@@ -166,24 +166,51 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             return f"Failed to start stream: {e}"
     
     def _auto_connect_jack(self):
-        """Automatically connect OggPlayer to IcecastStreamer if available"""
+        """Automatically connect audio sources to IcecastStreamer if available"""
         try:
             import subprocess
             # Wait a moment for JACK clients to stabilize
             time.sleep(0.5)
             
-            # Try to connect OggPlayer outputs to IcecastStreamer inputs
-            try:
-                subprocess.run(['jack_connect', 'OggPlayer:out_l', 'IcecastStreamer:input_1'], 
-                             capture_output=True, timeout=2)
-                subprocess.run(['jack_connect', 'OggPlayer:out_r', 'IcecastStreamer:input_2'], 
-                             capture_output=True, timeout=2)
-                print("[IcecastStreamer] Auto-connected OggPlayer to IcecastStreamer")
-                logger.info("Auto-connected OggPlayer to IcecastStreamer")
-            except subprocess.TimeoutExpired:
-                logger.warning("JACK connection timed out")
-            except FileNotFoundError:
-                logger.warning("jack_connect command not found")
+            connected = []
+            
+            # Try multiple audio sources in order of preference
+            source_pairs = [
+                # Live audio input (microphone/line-in)
+                ('system:capture_1', 'system:capture_2'),
+                # PulseAudio output (desktop audio)
+                ('pulse_out:front-left', 'pulse_out:front-right'),
+                # Music player output
+                ('OggPlayer:out_l', 'OggPlayer:out_r'),
+            ]
+            
+            for left_src, right_src in source_pairs:
+                try:
+                    result_l = subprocess.run(
+                        ['jack_connect', left_src, 'IcecastStreamer:input_1'], 
+                        capture_output=True, timeout=2, text=True
+                    )
+                    result_r = subprocess.run(
+                        ['jack_connect', right_src, 'IcecastStreamer:input_2'], 
+                        capture_output=True, timeout=2, text=True
+                    )
+                    
+                    # Check if connections succeeded (returns 0) or already exist
+                    if result_l.returncode == 0 or result_r.returncode == 0:
+                        connected.append(f"{left_src}/{right_src}")
+                        print(f"[IcecastStreamer] Connected {left_src} -> IcecastStreamer")
+                        logger.info(f"Connected {left_src}/{right_src} to IcecastStreamer")
+                        
+                except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+                    # Source doesn't exist, try next one
+                    continue
+            
+            if connected:
+                print(f"[IcecastStreamer] Auto-connected {len(connected)} audio source(s)")
+            else:
+                print("[IcecastStreamer] No audio sources auto-connected. Use qjackctl to route audio manually.")
+                logger.info("No JACK sources auto-connected")
+                
         except Exception as e:
             # Non-fatal - user can connect manually
             logger.debug(f"Auto-connect failed (non-fatal): {e}")
