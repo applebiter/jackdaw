@@ -76,6 +76,9 @@ voiceassistant/
 │   ├── remember_jack_routing.py    # Save JACK routing config
 │   └── scan_music_library.py       # Scan music directory to database
 │
+├── music_library_browser.py   # GUI music library browser & player
+├── launch_music_browser.sh    # Launch the music browser
+│
 ├── tests/                      # Test files
 │   ├── test_database.py
 │   ├── test_local_conversation_store.py
@@ -222,6 +225,22 @@ See `requirements.txt` for Python packages.
 
 **First-time setup:** Download the Vosk model and Piper voice files - see the README files in `model/` and `voices/` directories for download links and instructions.
 
+## GUI Applications
+
+**Music Library Browser** - Browse, search, and play music from your database:
+```bash
+./launch_music_browser.sh
+```
+
+Features:
+- Sortable, searchable table view with pagination
+- Play tracks locally on JACK or stream to Icecast2
+- Dual mode: play + stream simultaneously
+- View detailed track metadata
+- Multi-select for playlists
+
+See `docs/MUSIC_BROWSER.md` for complete guide.
+
 ## Documentation
 
 - `docs/README.md` - Complete setup guide
@@ -229,5 +248,6 @@ See `requirements.txt` for Python packages.
 - `docs/PLUGIN_GUIDE.md` - Plugin development guide (includes GUI)
 - `docs/QUICK_REFERENCE.md` - Command and config reference
 - `docs/MUSIC_DATABASE.md` - Music library system and scanner
+- `docs/MUSIC_BROWSER.md` - GUI music library browser guide
 - `docs/TIMEMACHINE.md` - Retroactive recording plugin guide
 - `docs/STREAMING.md` - Icecast2 streaming setup and usage
