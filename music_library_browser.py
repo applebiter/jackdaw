@@ -132,7 +132,14 @@ class MusicLibraryBrowser(QMainWindow):
         
         layout.addLayout(search_layout)
         
-        # Main splitter for table and details
+        # Main horizontal splitter for table and playlist
+        main_splitter = QSplitter(Qt.Horizontal)
+        
+        # Left side: table and details in vertical splitter
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        
         splitter = QSplitter(Qt.Vertical)
         
         # Track table
@@ -164,7 +171,87 @@ class MusicLibraryBrowser(QMainWindow):
         splitter.addWidget(details_widget)
         splitter.setSizes([600, 200])
         
-        layout.addWidget(splitter)
+        left_layout.addWidget(splitter)
+        main_splitter.addWidget(left_widget)
+        
+        # Right side: Playlist panel
+        playlist_widget = QWidget()
+        playlist_layout = QVBoxLayout(playlist_widget)
+        
+        playlist_header = QLabel("📋 Current Playlist")
+        playlist_header_font = QFont()
+        playlist_header_font.setBold(True)
+        playlist_header_font.setPointSize(12)
+        playlist_header.setFont(playlist_header_font)
+        playlist_layout.addWidget(playlist_header)
+        
+        # Playlist controls
+        playlist_btn_layout = QHBoxLayout()
+        
+        self.add_to_playlist_btn = QPushButton("➕ Add Selected")
+        self.add_to_playlist_btn.setToolTip("Add selected tracks from library to playlist")
+        self.add_to_playlist_btn.clicked.connect(self.on_add_to_playlist)
+        playlist_btn_layout.addWidget(self.add_to_playlist_btn)
+        
+        self.clear_playlist_btn = QPushButton("🗑 Clear")
+        self.clear_playlist_btn.setToolTip("Clear all tracks from playlist")
+        self.clear_playlist_btn.clicked.connect(self.on_clear_playlist)
+        playlist_btn_layout.addWidget(self.clear_playlist_btn)
+        
+        playlist_layout.addLayout(playlist_btn_layout)
+        
+        # Playlist table
+        self.playlist_table = QTableWidget()
+        self.playlist_table.setColumnCount(4)
+        self.playlist_table.setHorizontalHeaderLabels(["#", "Title", "Artist", "Duration"])
+        self.playlist_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.playlist_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.playlist_table.setToolTip("Tracks will play in this order (unless shuffle is enabled)")
+        playlist_layout.addWidget(self.playlist_table)
+        
+        # Playlist reorder controls
+        reorder_layout = QHBoxLayout()
+        
+        self.move_up_btn = QPushButton("⬆ Move Up")
+        self.move_up_btn.setToolTip("Move selected track up in playlist")
+        self.move_up_btn.clicked.connect(self.on_move_up)
+        reorder_layout.addWidget(self.move_up_btn)
+        
+        self.move_down_btn = QPushButton("⬇ Move Down")
+        self.move_down_btn.setToolTip("Move selected track down in playlist")
+        self.move_down_btn.clicked.connect(self.on_move_down)
+        reorder_layout.addWidget(self.move_down_btn)
+        
+        self.remove_from_playlist_btn = QPushButton("➖ Remove")
+        self.remove_from_playlist_btn.setToolTip("Remove selected track from playlist")
+        self.remove_from_playlist_btn.clicked.connect(self.on_remove_from_playlist)
+        reorder_layout.addWidget(self.remove_from_playlist_btn)
+        
+        playlist_layout.addLayout(reorder_layout)
+        
+        # Save/Load playlist
+        save_load_layout = QHBoxLayout()
+        
+        self.save_playlist_btn = QPushButton("💾 Save Playlist")
+        self.save_playlist_btn.setToolTip("Save current playlist to file")
+        self.save_playlist_btn.clicked.connect(self.on_save_playlist)
+        save_load_layout.addWidget(self.save_playlist_btn)
+        
+        self.load_playlist_btn = QPushButton("📂 Load Playlist")
+        self.load_playlist_btn.setToolTip("Load playlist from file")
+        self.load_playlist_btn.clicked.connect(self.on_load_playlist)
+        save_load_layout.addWidget(self.load_playlist_btn)
+        
+        playlist_layout.addLayout(save_load_layout)
+        
+        # Playlist count
+        self.playlist_count_label = QLabel("0 tracks in playlist")
+        playlist_layout.addWidget(self.playlist_count_label)
+        
+        main_splitter.addWidget(playlist_widget)
+        main_splitter.setSizes([900, 400])
+        
+        layout.addWidget(main_splitter)
         
         # Pagination controls
         page_layout = QHBoxLayout()
@@ -434,12 +521,190 @@ Size: {row['size'] or 'N/A'}
         
         return file_paths
     
+    def get_playlist_file_paths(self) -> List[str]:
+        """Get file paths from playlist in order"""
+        file_paths = []
+        for i in range(self.playlist_table.rowCount()):
+            item = self.playlist_table.item(i, 1)
+            if item and hasattr(item, 'file_path'):
+                file_paths.append(item.file_path)
+        return file_paths
+    
+    def update_playlist_display(self):
+        """Refresh the playlist table display"""
+        self.playlist_table.setRowCount(len(self.playlist))
+        
+        for i, track in enumerate(self.playlist):
+            # Track number
+            self.playlist_table.setItem(i, 0, QTableWidgetItem(str(i + 1)))
+            
+            # Title (store file path in item data)
+            title_item = QTableWidgetItem(track.get('title', 'Unknown'))
+            title_item.file_path = track['file_path']
+            self.playlist_table.setItem(i, 1, title_item)
+            
+            # Artist
+            self.playlist_table.setItem(i, 2, QTableWidgetItem(track.get('artist', 'Unknown')))
+            
+            # Duration
+            self.playlist_table.setItem(i, 3, QTableWidgetItem(track.get('duration', '')))
+        
+        self.playlist_count_label.setText(f"{len(self.playlist)} tracks in playlist")
+    
+    def on_add_to_playlist(self):
+        """Add selected tracks to playlist"""
+        selected_rows = self.track_table.selectionModel().selectedRows()
+        
+        if not selected_rows:
+            QMessageBox.information(self, "No Selection", "Please select one or more tracks to add to playlist")
+            return
+        
+        added = 0
+        for row in selected_rows:
+            title = self.track_table.item(row.row(), 0).text()
+            artist = self.track_table.item(row.row(), 1).text()
+            duration = self.track_table.item(row.row(), 5).text()
+            file_path = self.track_table.item(row.row(), 7).text()
+            
+            if file_path and Path(file_path).exists():
+                self.playlist.append({
+                    'title': title,
+                    'artist': artist,
+                    'duration': duration,
+                    'file_path': file_path
+                })
+                added += 1
+        
+        self.update_playlist_display()
+        self.status_label.setText(f"Added {added} tracks to playlist")
+    
+    def on_clear_playlist(self):
+        """Clear all tracks from playlist"""
+        if self.playlist:
+            reply = QMessageBox.question(
+                self,
+                "Clear Playlist",
+                f"Remove all {len(self.playlist)} tracks from playlist?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.playlist.clear()
+                self.update_playlist_display()
+                self.status_label.setText("Playlist cleared")
+    
+    def on_remove_from_playlist(self):
+        """Remove selected track from playlist"""
+        selected_rows = self.playlist_table.selectionModel().selectedRows()
+        if not selected_rows:
+            return
+        
+        # Remove in reverse order to maintain indices
+        for row in sorted([r.row() for r in selected_rows], reverse=True):
+            if 0 <= row < len(self.playlist):
+                del self.playlist[row]
+        
+        self.update_playlist_display()
+    
+    def on_move_up(self):
+        """Move selected track up in playlist"""
+        selected_rows = self.playlist_table.selectionModel().selectedRows()
+        if not selected_rows or selected_rows[0].row() == 0:
+            return
+        
+        row = selected_rows[0].row()
+        self.playlist[row], self.playlist[row - 1] = self.playlist[row - 1], self.playlist[row]
+        self.update_playlist_display()
+        self.playlist_table.selectRow(row - 1)
+    
+    def on_move_down(self):
+        """Move selected track down in playlist"""
+        selected_rows = self.playlist_table.selectionModel().selectedRows()
+        if not selected_rows or selected_rows[0].row() >= len(self.playlist) - 1:
+            return
+        
+        row = selected_rows[0].row()
+        self.playlist[row], self.playlist[row + 1] = self.playlist[row + 1], self.playlist[row]
+        self.update_playlist_display()
+        self.playlist_table.selectRow(row + 1)
+    
+    def on_save_playlist(self):
+        """Save playlist to JSON file"""
+        if not self.playlist:
+            QMessageBox.information(self, "Empty Playlist", "Playlist is empty, nothing to save")
+            return
+        
+        from PySide6.QtWidgets import QFileDialog
+        
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Playlist",
+            str(Path.home() / "jackdaw_playlist.json"),
+            "JSON Files (*.json);;All Files (*)"
+        )
+        
+        if filename:
+            try:
+                import json
+                with open(filename, 'w') as f:
+                    json.dump(self.playlist, f, indent=2)
+                self.status_label.setText(f"Playlist saved to {Path(filename).name}")
+            except Exception as e:
+                QMessageBox.critical(self, "Save Error", f"Failed to save playlist: {e}")
+    
+    def on_load_playlist(self):
+        """Load playlist from JSON file"""
+        from PySide6.QtWidgets import QFileDialog
+        
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load Playlist",
+            str(Path.home()),
+            "JSON Files (*.json);;All Files (*)"
+        )
+        
+        if filename:
+            try:
+                import json
+                with open(filename, 'r') as f:
+                    loaded_playlist = json.load(f)
+                
+                # Verify tracks still exist
+                valid_tracks = []
+                missing = 0
+                for track in loaded_playlist:
+                    if Path(track['file_path']).exists():
+                        valid_tracks.append(track)
+                    else:
+                        missing += 1
+                
+                self.playlist = valid_tracks
+                self.update_playlist_display()
+                
+                msg = f"Loaded {len(valid_tracks)} tracks from {Path(filename).name}"
+                if missing:
+                    msg += f"\n({missing} tracks not found and skipped)"
+                self.status_label.setText(msg)
+                QMessageBox.information(self, "Playlist Loaded", msg)
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Load Error", f"Failed to load playlist: {e}")
+    
     def on_play_local(self):
-        """Play selected tracks on local JACK system"""
-        file_paths = self.get_selected_file_paths()
+        """Play playlist or selected tracks on local JACK system"""
+        # Use playlist if it exists, otherwise use selected tracks
+        if self.playlist:
+            file_paths = self.get_playlist_file_paths()
+            source = "playlist"
+        else:
+            file_paths = self.get_selected_file_paths()
+            source = "selected tracks"
         
         if not file_paths:
-            QMessageBox.warning(self, "No Selection", "Please select one or more tracks to play")
+            QMessageBox.warning(
+                self, 
+                "Nothing to Play", 
+                "Please add tracks to playlist or select tracks from library"
+            )
             return
         
         # Convert to Path objects
@@ -451,7 +716,8 @@ Size: {row['size'] or 'N/A'}
         # Play playlist
         ogg_jack_player.play_playlist(playlist)
         
-        self.status_label.setText(f"Playing {len(file_paths)} tracks on JACK")
+        shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
+        self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
     
     def on_stop_local(self):
         """Stop local playback"""
@@ -459,11 +725,21 @@ Size: {row['size'] or 'N/A'}
         self.status_label.setText("Local playback stopped")
     
     def on_stream_selected(self):
-        """Stream selected tracks to Icecast2"""
-        file_paths = self.get_selected_file_paths()
+        """Stream playlist or selected tracks to Icecast2"""
+        # Use playlist if it exists, otherwise use selected tracks
+        if self.playlist:
+            file_paths = self.get_playlist_file_paths()
+            source = "playlist"
+        else:
+            file_paths = self.get_selected_file_paths()
+            source = "selected tracks"
         
         if not file_paths:
-            QMessageBox.warning(self, "No Selection", "Please select one or more tracks to stream")
+            QMessageBox.warning(
+                self,
+                "Nothing to Stream",
+                "Please add tracks to playlist or select tracks from library"
+            )
             return
         
         # Initialize streamer if needed
@@ -479,7 +755,8 @@ Size: {row['size'] or 'N/A'}
                 ogg_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
                 ogg_jack_player.play_playlist(playlist)
                 
-                self.status_label.setText(f"Streaming {len(file_paths)} tracks to Icecast")
+                shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
+                self.status_label.setText(f"Streaming {len(file_paths)} tracks from {source}{shuffle_text}")
             else:
                 QMessageBox.critical(self, "Stream Error", f"Failed to start stream: {result}")
         else:
