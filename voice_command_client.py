@@ -76,7 +76,7 @@ class VoiceCommandClient:
         self.capture_lock = threading.Lock()
         
         # Initialize JACK client
-        self.client = jack.Client("VoiceCommandClient")
+        self.client = jack.Client("jd_voice")
         self.client.set_process_callback(self.process_callback)
         self.client.set_shutdown_callback(self.shutdown_callback)
         
@@ -127,10 +127,22 @@ class VoiceCommandClient:
             if self.routing_config_path.exists():
                 with open(self.routing_config_path, "r") as f:
                     data = json.load(f)
+                
+                # Try new unified format first
+                all_connections = data.get('jackdaw_connections', [])
+                if all_connections:
+                    # Find connection to jd_voice:input
+                    for conn in all_connections:
+                        if len(conn) == 2 and conn[1] == 'jd_voice:input':
+                            self.voice_input_source = conn[0]
+                            print(f"Remembered JACK source for input: {self.voice_input_source}")
+                            return
+                
+                # Fall back to legacy format
                 src = data.get("voice_input_source")
                 if isinstance(src, str) and src.strip():
                     self.voice_input_source = src.strip()
-                    print(f"Remembered JACK source for input: {self.voice_input_source}")
+                    print(f"Remembered JACK source for input: {self.voice_input_source} (legacy format)")
         except Exception as e:
             print(f"Warning: could not load JACK routing config: {e}")
 

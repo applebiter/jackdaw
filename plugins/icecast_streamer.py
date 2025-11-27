@@ -90,7 +90,7 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
                 'ffmpeg',
                 '-f', 'jack',
                 '-channels', '2',
-                '-i', 'IcecastStreamer',  # JACK client name
+                '-i', 'jd_stream',  # JACK client name
                 '-acodec', codec,
             ]
             
@@ -149,9 +149,9 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             
             self.is_streaming = True
             logger.info(f"Started streaming to {self.host}:{self.port}{self.mount}")
-            print(f"[IcecastStreamer] FFmpeg started successfully, JACK client 'IcecastStreamer' should now be available")
-            print(f"[IcecastStreamer] Use 'jack_connect OggPlayer:out_l IcecastStreamer:input_1' to route audio")
-            print(f"[IcecastStreamer] Use 'jack_connect OggPlayer:out_r IcecastStreamer:input_2' to route audio")
+            print(f"[IcecastStreamer] FFmpeg started successfully, JACK client 'jd_stream' should now be available")
+            print(f"[IcecastStreamer] Use 'jack_connect jd_music:out_l jd_stream:input_1' to route audio")
+            print(f"[IcecastStreamer] Use 'jack_connect jd_music:out_r jd_stream:input_2' to route audio")
             
             # Try to auto-connect if OggPlayer is already running
             self._auto_connect_jack()
@@ -166,7 +166,7 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             return f"Failed to start stream: {e}"
     
     def _load_saved_connections(self):
-        """Load saved IcecastStreamer connections from jack_routing.json"""
+        """Load saved jd_stream connections from jack_routing.json"""
         try:
             import json
             from pathlib import Path
@@ -178,6 +178,18 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             with open(config_file, 'r') as f:
                 data = json.load(f)
             
+            # Try new unified format first
+            all_connections = data.get('jackdaw_connections', [])
+            if all_connections:
+                # Filter for connections to jd_stream
+                stream_connections = [
+                    conn for conn in all_connections
+                    if len(conn) == 2 and conn[1].startswith('jd_stream:')
+                ]
+                if stream_connections:
+                    return stream_connections
+            
+            # Fall back to legacy format
             return data.get("icecast_inputs", None)
         except Exception as e:
             logger.debug(f"Could not load saved connections: {e}")
@@ -219,7 +231,7 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
                 # PulseAudio output (desktop audio)
                 ('pulse_out:front-left', 'pulse_out:front-right'),
                 # Music player output
-                ('OggPlayer:out_l', 'OggPlayer:out_r'),
+                ('jd_music:out_l', 'jd_music:out_r'),
             ]
             
             for left_src, right_src in source_pairs:

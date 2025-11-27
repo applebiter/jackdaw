@@ -578,7 +578,7 @@ def _play_music_loop(root: str):
             
             _playlist_position = (_playlist_position + 1) % len(oggs)  # Wrap around to start
         
-        player = OggJackPlayer(client_name="OggPlayer")
+        player = OggJackPlayer(client_name="jd_music")
         player.play_blocking(choice)
 
         # If stop was requested during playback, halt

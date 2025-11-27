@@ -9,4 +9,4 @@ Terminal=false
 Categories=AudioVideo;Audio;Utility;
 Keywords=voice;assistant;jack;audio;music;
 StartupNotify=true
-X-GNOME-Autostart-enabled=true
+#X-GNOME-Autostart-enabled=true

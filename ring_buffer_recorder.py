@@ -28,7 +28,7 @@ class RingBufferRecorder:
     
     def __init__(
         self,
-        client_name: str = "RingBufferRecorder",
+        client_name: str = "jd_buffer",
         buffer_seconds: float = 30.0,
         num_channels: int = 2,
         output_dir: str = "~/recordings",

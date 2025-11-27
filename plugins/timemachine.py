@@ -33,7 +33,7 @@ class TimemachinePlugin(VoiceAssistantPlugin):
         self.file_prefix = config.get('file_prefix', 'recording-')
         self.channels = config.get('channels', 2)
         self.format = config.get('format', 'WAV').upper()
-        self.jack_name = config.get('jack_name', 'RingBufferRecorder')
+        self.jack_name = config.get('jack_name', 'jd_buffer')
         self.auto_connect = config.get('auto_connect', True)
         
         # Runtime state
@@ -80,11 +80,25 @@ class TimemachinePlugin(VoiceAssistantPlugin):
                 import json
                 with open(self.routing_config_path, 'r') as f:
                     data = json.load(f)
-                connections = data.get('timemachine_inputs', [])
-                if isinstance(connections, list):
-                    self.remembered_connections = connections
-                    if connections:
-                        print(f"[{self.get_name()}] Remembered {len(connections)} JACK connection(s)")
+                
+                # Try new unified format first
+                all_connections = data.get('jackdaw_connections', [])
+                if all_connections:
+                    # Filter for connections to this client
+                    self.remembered_connections = [
+                        conn for conn in all_connections
+                        if len(conn) == 2 and conn[1].startswith(f"{self.jack_name}:")
+                    ]
+                    if self.remembered_connections:
+                        print(f"[{self.get_name()}] Remembered {len(self.remembered_connections)} JACK connection(s)")
+                        return
+                
+                # Fall back to legacy format for backwards compatibility
+                legacy_connections = data.get('timemachine_inputs', [])
+                if isinstance(legacy_connections, list):
+                    self.remembered_connections = legacy_connections
+                    if legacy_connections:
+                        print(f"[{self.get_name()}] Remembered {len(legacy_connections)} JACK connection(s) (legacy format)")
         except Exception as e:
             print(f"[{self.get_name()}] Warning: could not load JACK routing config: {e}")
     

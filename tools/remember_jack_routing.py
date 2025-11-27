@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Capture and remember JACK routing for voice assistant components.
+"""Capture and remember JACK routing for all Jackdaw components.
 
 Usage:
   python remember_jack_routing.py
 
-After manually connecting your preferred sources to:
-- `VoiceCommandClient:input` (for voice recognition)
-- `RingBufferRecorder:in_1` and `RingBufferRecorder:in_2` (for retroactive recording)
-- `IcecastStreamer:input_1` and `IcecastStreamer:input_2` (for streaming to Icecast)
+Automatically discovers all Jackdaw JACK clients (prefixed with "jd_"):
+- jd_voice (voice recognition)
+- jd_tts (text-to-speech output)
+- jd_music (music playback)
+- jd_buffer (timemachine recording)
+- jd_stream (Icecast streaming)
 
-Run this script to save the connections. They will be auto-restored on startup.
+After manually connecting your preferred audio sources to any Jackdaw clients in qjackctl/Carla,
+run this script to save ALL the connections. They will be auto-restored on next startup.
 """
 
 import jack
@@ -18,7 +21,7 @@ from pathlib import Path
 
 
 def main() -> None:
-    client = jack.Client("RoutingInspector")
+    client = jack.Client("jd_route_inspector")
     cfg_path = Path("jack_routing.json")
     
     # Load existing config if present
@@ -30,79 +33,59 @@ def main() -> None:
         except:
             pass
     
-    # Check VoiceCommandClient:input
-    voice_port_name = "VoiceCommandClient:input"
-    voice_ports = [p for p in client.get_ports() if p.name == voice_port_name]
-    if voice_ports:
-        connections = client.get_all_connections(voice_ports[0])
-        if connections:
-            source_port = connections[0].name
-            data["voice_input_source"] = source_port
-            print(f"✅ Voice input: {source_port} -> {voice_port_name}")
-        else:
-            print(f"⚠️  No connections to {voice_port_name}")
-    else:
-        print(f"⚠️  {voice_port_name} not found (voice assistant not running?)")
+    # Find all Jackdaw clients (those starting with "jd_")
+    all_ports = client.get_ports()
+    jackdaw_clients = set()
     
-    # Check ring buffer recorder inputs (new Python-based recorder)
-    buffer_connections = []
-    recorder_found = False
-    for channel in [1, 2]:
-        buf_port_name = f"RingBufferRecorder:in_{channel}"
-        buf_ports = [p for p in client.get_ports() if p.name == buf_port_name]
-        if buf_ports:
-            recorder_found = True
-            connections = client.get_all_connections(buf_ports[0])
+    for port in all_ports:
+        port_name = port.name
+        if port_name.startswith("jd_"):
+            client_name = port_name.split(":")[0]
+            jackdaw_clients.add(client_name)
+    
+    # Also check for legacy client names for backwards compatibility
+    legacy_names = ["VoiceCommandClient", "RingBufferRecorder", "TimeMachine", "IcecastStreamer", "OggPlayer", "TTSClient"]
+    for port in all_ports:
+        port_name = port.name
+        for legacy in legacy_names:
+            if port_name.startswith(f"{legacy}:"):
+                jackdaw_clients.add(legacy)
+                break
+    
+    if not jackdaw_clients:
+        print("⚠️  No Jackdaw JACK clients found. Is the voice assistant running?")
+        print("\nMake sure you've started the components you want to save:")
+        print("  - Voice assistant (automatic)")
+        print("  - Say 'indigo start the buffer' for timemachine")
+        print("  - Say 'indigo start streaming' for Icecast")
+        return
+    
+    print(f"Found {len(jackdaw_clients)} Jackdaw JACK client(s): {', '.join(sorted(jackdaw_clients))}\n")
+    
+    # Save all input port connections for each Jackdaw client
+    all_connections = []
+    
+    for jd_client in sorted(jackdaw_clients):
+        client_ports = [p for p in all_ports if p.name.startswith(f"{jd_client}:") and p.is_input]
+        
+        for port in client_ports:
+            connections = client.get_all_connections(port)
             if connections:
-                for conn in connections:
-                    buffer_connections.append([conn.name, buf_port_name])
-                    print(f"✅ Ring Buffer: {conn.name} -> {buf_port_name}")
+                for source_port in connections:
+                    connection_pair = [source_port.name, port.name]
+                    all_connections.append(connection_pair)
+                    print(f"✅ {source_port.name} -> {port.name}")
+            else:
+                print(f"⚠️  No connections to {port.name}")
     
-    # Also check for legacy TimeMachine inputs (for backwards compatibility)
-    if not recorder_found:
-        for channel in [1, 2]:
-            tm_port_name = f"TimeMachine:in_{channel}"
-            tm_ports = [p for p in client.get_ports() if p.name == tm_port_name]
-            if tm_ports:
-                connections = client.get_all_connections(tm_ports[0])
-                if connections:
-                    for conn in connections:
-                        buffer_connections.append([conn.name, tm_port_name])
-                        print(f"✅ Timemachine: {conn.name} -> {tm_port_name}")
-    
-    if not buffer_connections and not recorder_found:
-        print(f"⚠️  RingBufferRecorder not found (buffer not started?)")
-    
-    if buffer_connections:
-        data["timemachine_inputs"] = buffer_connections
-    
-    # Check IcecastStreamer inputs (for streaming)
-    icecast_connections = []
-    icecast_found = False
-    for channel in [1, 2]:
-        ice_port_name = f"IcecastStreamer:input_{channel}"
-        ice_ports = [p for p in client.get_ports() if p.name == ice_port_name]
-        if ice_ports:
-            icecast_found = True
-            connections = client.get_all_connections(ice_ports[0])
-            if connections:
-                for conn in connections:
-                    icecast_connections.append([conn.name, ice_port_name])
-                    print(f"✅ IcecastStreamer: {conn.name} -> {ice_port_name}")
-    
-    if not icecast_connections and icecast_found:
-        print(f"⚠️  IcecastStreamer has no connections")
-    elif not icecast_found:
-        print(f"⚠️  IcecastStreamer not found (streaming not started?)")
-    
-    if icecast_connections:
-        data["icecast_inputs"] = icecast_connections
+    if all_connections:
+        data["jackdaw_connections"] = all_connections
     
     # Save config
-    if data:
+    if all_connections:
         with cfg_path.open("w") as f:
             json.dump(data, f, indent=2)
-        print(f"\n💾 Saved JACK routing to {cfg_path}")
+        print(f"\n💾 Saved {len(all_connections)} JACK connection(s) to {cfg_path}")
     else:
         print("\n❌ No connections found to save.")
         print("\nTo use this tool:")

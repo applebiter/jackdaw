@@ -43,7 +43,7 @@ class TTSJackClient:
         self.init_piper()
         
         # Initialize JACK client
-        self.client = jack.Client("TTSClient")
+        self.client = jack.Client("jd_tts")
         self.client.set_process_callback(self.process_callback)
         self.client.set_shutdown_callback(self.shutdown_callback)
         
