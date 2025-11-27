@@ -173,21 +173,61 @@ These formats are patent-free, royalty-free, and benefit the common good of the 
 
 You can connect multiple sources simultaneously - JACK will mix them automatically.
 
-## Networked Collaboration Scenarios
+## Networked Audio Architecture
 
-Jackdaw's streaming capability enables powerful collaborative use cases:
+Understanding the different networking technologies and their use cases:
 
-### Distributed Jam Sessions
-Musicians in different locations run Jackdaw instances that stream to a central Icecast2 server. Each musician's audio is captured and broadcast independently or mixed together.
+### Real-Time Collaboration: JackTrip
 
-### Multi-DJ Broadcasts
-Multiple DJs contribute to the same stream using separate Jackdaw instances. The Icecast2 server can handle multiple mount points or sources.
+For **low-latency, real-time collaboration** (jam sessions, ensemble playing), use **JackTrip**:
+- Connects JACK systems over network with minimal latency (typically 20-50ms)
+- Musicians can actually play together in apparent real-time
+- Each host runs JACK and JackTrip to create a distributed audio network
+- All participants hear each other with delay short enough for musical collaboration
 
-### Recording Studio Broadcasting
-Stream live studio sessions while maintaining full JACK routing flexibility. Route any combination of tracks, microphones, or instruments to the stream.
+**Example**: Two musicians on different hosts use JackTrip to jam together. Their JACK audio buses are networked, allowing real-time interaction.
 
-### Podcast Production
-Multiple hosts on different machines contribute audio that gets mixed and streamed in real-time. Each host controls their local setup with voice commands.
+### Broadcasting: Icecast2
+
+For **broadcasting and listening** (streaming to audience), use **Icecast2**:
+- Significant latency (seconds to tens of seconds) due to buffering and encoding
+- **Not suitable for real-time musical interaction**
+- Perfect for distributing finished mixes to listeners
+- Listeners experience substantial delay from the live JACK signal
+
+**Example**: A musician or ensemble uses JackTrip for their real-time collaboration, then one host sends a mix-down to Icecast2 for the audience to listen.
+
+### Combined Workflow Scenarios
+
+#### Distributed Jam with Broadcasting
+1. Multiple musicians connect via **JackTrip** for low-latency jamming
+2. One host (or all) runs Jackdaw with Icecast streaming enabled
+3. That host creates a mix-down of the JackTrip session
+4. The mix is streamed to **Icecast2** for audience listening
+5. Musicians jam in real-time; audience listens with delay
+
+#### Multi-Location DJ Broadcast
+1. DJs in different locations each run their own Jackdaw + Icecast2 setup
+2. Each streams to different mount points (`/dj1.ogg`, `/dj2.ogg`, `/dj3.ogg`)
+3. Listeners choose which DJ stream to tune into
+4. Or: A master host uses JackTrip to receive all DJ feeds, mixes them, and broadcasts the final mix
+
+#### Recording Studio Broadcasting
+1. Studio uses JACK for internal routing (tracks, instruments, microphones)
+2. Engineer creates monitor mixes within JACK graph
+3. Jackdaw streams one or more mixes to Icecast2:
+   - Raw performance feed
+   - Processed/mastered feed
+   - Commentary track
+4. Remote collaborators can use JackTrip to participate in real-time
+5. Audience listens via Icecast2 with typical streaming delay
+
+#### Podcast/Talk Show Production
+1. Hosts in different locations connect via **JackTrip** for real-time conversation
+2. One host runs Jackdaw to capture the mixed JackTrip audio
+3. Stream goes to Icecast2 for live listeners
+4. Simultaneously record locally for later editing
+5. Hosts interact naturally; listeners hear with broadcast delay
 
 ## Extending the Plugin
 
