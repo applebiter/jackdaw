@@ -214,8 +214,12 @@ class OggJackPlayer:
             print("[OggJackPlayer] Stop requested; halting playback.")
 
         print("[OggJackPlayer] Playback finished; deactivating client.")
-        self.client.deactivate()
-        self.client.close()
+        try:
+            self.client.deactivate()
+            self.client.close()
+            print("[OggJackPlayer] JACK client closed successfully.")
+        except Exception as e:
+            print(f"[OggJackPlayer] Error closing JACK client: {e}")
 
 
 def _collect_ogg_files(root_dir: Path) -> List[Path]:
@@ -503,7 +507,21 @@ def play_random_ogg_in_directory(root: str):
     if _playback_thread and _playback_thread.is_alive():
         _stop_requested.set()
         print("[OggJackPlayer] Stopping previous playback...")
-        _playback_thread.join(timeout=2.0)
+        _playback_thread.join(timeout=3.0)
+        
+        # If thread is still alive, force it and wait a bit more
+        if _playback_thread.is_alive():
+            print("[OggJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
+            _playback_thread.join(timeout=2.0)
+            
+            # If STILL alive, abort to prevent overlapping playback
+            if _playback_thread.is_alive():
+                print("[OggJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
+                return
+    
+    # Give JACK client time to fully close
+    import time
+    time.sleep(0.2)
     
     _current_playlist = None  # Clear any custom playlist
     _playlist_position = 0  # Reset position
@@ -693,6 +711,11 @@ def play_playlist(file_paths: List[str], library_root: str = "/"):
             if _playback_thread.is_alive():
                 print("[OggJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
                 return
+    
+    # Give JACK client time to fully close
+    import time
+    time.sleep(0.2)
+    print("[OggJackPlayer] Previous playback stopped, starting new playlist...")
     
     # Convert strings to Path objects
     _current_playlist = [Path(p) for p in file_paths]
