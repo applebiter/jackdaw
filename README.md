@@ -74,8 +74,8 @@ cd jackdaw
 "[wake word], play artist Pink Floyd"         # Play music
 "[wake word], next track"                     # Skip track
 "[wake word], volume up"                      # Adjust volume
-"[wake word], start recording"                # Begin AI query
-"[wake word], stop recording"                 # Send to AI and get response
+"[wake word], start chat"                     # Begin AI query
+"[wake word], stop chat"                      # Send to AI and get response
 "[wake word], start streaming"                # Begin Icecast2 broadcast
 "[wake word], save that"                      # Retroactive recording
 "[wake word], stop listening"                 # Shut down
@@ -213,7 +213,7 @@ python tools/scan_music_library.py
 ### AI Chat with Conversation Memory
 Ask questions and get spoken responses using Ollama LLM. Jackdaw remembers your conversation history.
 
-**Commands:** "start recording" → ask your question → "stop recording"
+**Commands:** "start chat" → ask your question → "stop chat"
 
 ### Icecast2 Streaming
 Broadcast your audio to the internet with simple voice commands. Perfect for internet radio or podcasting.
