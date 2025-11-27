@@ -14,16 +14,48 @@ This is a lightweight model (~40MB) that provides:
 
 ## Installation
 
+### Quick Install (Recommended)
+
+Run these commands from the jackdaw directory:
+
+```bash
+# Download the model (40 MB)
+wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+
+# Extract it
+unzip vosk-model-small-en-us-0.15.zip
+
+# Move files to model directory
+rm -rf model/*  # Clear placeholder files
+mv vosk-model-small-en-us-0.15/* model/
+
+# Clean up
+rm vosk-model-small-en-us-0.15.zip
+rmdir vosk-model-small-en-us-0.15
+```
+
+**That's it!** The model is now installed.
+
+### Manual Installation
+
 1. Visit https://alphacephei.com/vosk/models
 2. Download **vosk-model-small-en-us-0.15** (or the current small US English model)
 3. Extract the downloaded archive
 4. Copy/move all the extracted files into this `model/` directory
 
-After extraction, this directory should contain:
+### Verify Installation
+
+After installation, this directory should contain:
 - `am/` - Acoustic model files
 - `conf/` - Configuration files
 - `graph/` - Language model graph
 - `ivector/` - i-Vector extractor files
+
+**Check it:**
+```bash
+ls -la model/
+# Should show: am/ conf/ graph/ ivector/
+```
 
 ## Alternative Models
 

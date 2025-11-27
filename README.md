@@ -1,53 +1,107 @@
-# Jackdaw Voice Assistant
+# Jackdaw Voice Assistant 🐦‍⬛
 
-A modular, real-time voice assistant system using JACK Audio, Vosk speech recognition, Ollama LLM, and Piper TTS.
+**A privacy-first, voice-controlled audio system that lives in your professional audio workflow.**
 
-**Jackdaw** is a voice-controlled networked audio system for musical collaboration, audio content management, and streaming. Built on JACK Audio, it enables real-time audio routing across networked environments. Use it for retroactive recording, music library management, live streaming to Icecast2 servers, and collaborative audio projects. The flexible plugin architecture makes it easy to extend functionality for your specific audio workflow needs.
+Jackdaw is a modular voice assistant built on JACK Audio, featuring speech recognition (Vosk), local AI chat (Ollama), and text-to-speech (Piper). Control your music library, stream to the internet, record retroactively, and collaborate over networks—all with your voice, all running locally on your machine.
 
-## Quick Start
+**No cloud. No subscriptions. No privacy concerns.** Everything runs on your computer.
+
+---
+
+## ✨ What Can Jackdaw Do?
+
+- 🎵 **Control your music library** - "Play artist Pink Floyd", "Next track", "Shuffle on"
+- 🎙️ **Stream to Icecast2** - Broadcast audio to the internet with voice commands
+- ⏮️ **Retroactive recording** - Save audio that already happened with timemachine
+- 💬 **Chat with local AI** - Ask questions, get spoken responses (via Ollama)
+- 🌐 **Network collaboration** - Real-time audio with JackTrip
+- 🎛️ **Professional audio routing** - Integrates seamlessly with JACK ecosystem
+- 🔌 **Extensible plugins** - Add your own voice commands easily
+
+---
+
+## 🚀 Quick Start
+
+**New to Jackdaw?** Read **[GETTING_STARTED.md](GETTING_STARTED.md)** for a complete beginner-friendly guide!
+
+**Already familiar with JACK?** Here's the express setup:
 
 ```bash
-# Clone the repository
+# 1. Install system dependencies
+sudo apt install jackd2 ffmpeg libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 git  # Ubuntu/Debian
+sudo dnf install jack-audio-connection-kit ffmpeg libxcb xcb-util-cursor git          # Fedora
+
+# 2. Install Ollama (optional, for AI features)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull granite3.1:2b
+
+# 3. Clone and install Jackdaw
 git clone https://github.com/applebiter/jackdaw.git
 cd jackdaw
-
-# Run the installation script
 ./install.sh
 
-# Launch Jackdaw from your applications menu or:
+# 4. Download models (follow prompts from installer)
+# - Vosk speech recognition: https://alphacephei.com/vosk/models
+# - Piper TTS voices: https://huggingface.co/rhasspy/piper-voices
+
+# 5. Launch!
 ./launch_tray_app.sh
-
-# Or start manually without GUI:
-./start_voice_assistant.sh
-
-# Stop all components
-./stop_voice_assistant.sh
+# Or from your applications menu: Search "Jackdaw"
 ```
 
-After installation, **Jackdaw** appears in your applications menu and starts automatically at login.
+**That's it!** Jackdaw appears in your system tray. Connect your microphone and speakers in your JACK patchbay, then say your wake word followed by commands.
 
-The installation script will:
-- Check for system dependencies (JACK, ffmpeg, Qt platform libraries)
-- Create Python virtual environment
-- Install Python packages
-- Set up directories and config files
-- Guide you through model downloads
+---
 
-### System Requirements
+## 📖 Documentation
 
-**Debian/Ubuntu:**
-```bash
-sudo apt install jackd2 ffmpeg libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** ⭐ **Start here!** Complete beginner guide
+- **[docs/README.md](docs/README.md)** - Detailed system documentation
+- **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - All voice commands at a glance
+- **[docs/TRAY_APP.md](docs/TRAY_APP.md)** - Using the system tray interface
+- **[docs/MUSIC_DATABASE.md](docs/MUSIC_DATABASE.md)** - Music library system guide
+- **[docs/MUSIC_BROWSER.md](docs/MUSIC_BROWSER.md)** - GUI music browser and playlists
+- **[docs/STREAMING.md](docs/STREAMING.md)** - Icecast2 streaming and JackTrip setup
+- **[docs/TIMEMACHINE.md](docs/TIMEMACHINE.md)** - Retroactive recording explained
+- **[docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md)** - Create custom voice commands
+
+---
+
+## 🎤 Example Voice Commands
+
+```
+"[wake word], hello"                          # Test command
+"[wake word], play artist Pink Floyd"         # Play music
+"[wake word], next track"                     # Skip track
+"[wake word], volume up"                      # Adjust volume
+"[wake word], start recording"                # Begin AI query
+"[wake word], stop recording"                 # Send to AI and get response
+"[wake word], start streaming"                # Begin Icecast2 broadcast
+"[wake word], save that"                      # Retroactive recording
+"[wake word], stop listening"                 # Shut down
 ```
 
-**Fedora:**
-```bash
-sudo dnf install jack-audio-connection-kit ffmpeg libxcb xcb-util-cursor
-```
+**Default wake word:** "alpha" (change in `voice_assistant_config.json`)
 
-The Qt platform libraries (`libxcb-*`) are required for the GUI system tray application.
+See **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** for complete command list.
 
-See `docs/README.md` for detailed setup and `docs/SYSTEMD_SERVICE.md` for service management.
+---
+
+## 💻 System Requirements
+
+- **OS:** Linux (Ubuntu, Fedora, Arch, Debian, etc.)
+- **Python:** 3.8 or newer
+- **RAM:** 4GB minimum, 8GB+ recommended for AI features
+- **Disk:** 2GB free space (more for music libraries)
+- **Audio:** Microphone and speakers/headphones
+
+**Required system packages:**
+- JACK Audio (jackd2 or pipewire-jack)
+- FFmpeg (audio processing)
+- Qt/XCB libraries (for GUI)
+- Ollama (optional, for AI chat)
+
+All included in the installation script!
 
 ## Directory Structure
 
@@ -143,111 +197,194 @@ Edit `voice_assistant_config.json` to customize:
 - VAD settings
 - Session timeouts
 
-## Available Commands
+## 🔧 Core Features
 
-Say your wake word followed by:
+### Voice-Controlled Music Player
+Play and control your music library entirely by voice. Supports Ogg Vorbis, Opus, FLAC, and MP3 formats.
 
-**Basic Commands:**
-- **hello** - Test command
-- **stop listening** - Shut down assistant
+**Scan your music:**
+```bash
+source .venv/bin/activate
+python tools/scan_music_library.py
+```
 
-**Music Player:**
-- **play random track** - Play music from library
-- **play artist <name>** - Play tracks by artist (e.g., "play artist pink floyd")
-- **play album <name>** - Play album (e.g., "play album dark side of the moon")
-- **play song <title>** - Play song by title
-- **play genre <genre>** - Play tracks from genre
-- **next track** - Skip to next song (sequential or random based on mode)
-- **stop playing music** - Stop playback
-- **shuffle on/off** - Enable/disable shuffle mode (default: sequential)
-- **toggle shuffle** - Switch between shuffle and sequential
-- **volume up/down** - Adjust volume by 10%
-- **set volume low/medium/high** - Set to 30%/60%/90%
-- **what's the volume** - Report current volume
+**Voice commands:** "play artist...", "play album...", "next track", "shuffle on", "volume up"
 
-**LLM Recording:**
-- **start recording** - Begin capturing text for LLM
-- **stop recording** - Send captured text to LLM
+### AI Chat with Conversation Memory
+Ask questions and get spoken responses using Ollama LLM. Jackdaw remembers your conversation history.
 
-**Timemachine (Retroactive Recording):**
-- **start the buffer** - Begin buffering audio for retroactive save
-- **stop the buffer** - Stop buffering
-- **save that** - Save the last N seconds to WAV file
-- **buffer status** - Check if timemachine is running
+**Commands:** "start recording" → ask your question → "stop recording"
 
-**Icecast2 Streaming:**
-- **start streaming** - Begin broadcasting to Icecast2 server
-- **stop streaming** - End the broadcast
-- **stream status** - Check current streaming status
-- **begin broadcast** / **end broadcast** - Alternative commands
+### Icecast2 Streaming
+Broadcast your audio to the internet with simple voice commands. Perfect for internet radio or podcasting.
 
-See `docs/STREAMING.md` for setup and configuration.
+**Commands:** "start streaming", "stop streaming", "stream status"
 
-## Adding New Functionality
+See **[docs/STREAMING.md](docs/STREAMING.md)** for server setup.
 
-Create a new plugin in `plugins/` directory. See `docs/PLUGIN_GUIDE.md` for details.
+### Retroactive Recording (Timemachine)
+Keep a rolling audio buffer and save recordings of things that already happened.
 
-Example:
+**Commands:** "start the buffer", "save that" (saves last 5 minutes), "stop the buffer"
+
+See **[docs/TIMEMACHINE.md](docs/TIMEMACHINE.md)** for details.
+
+### GUI Music Browser
+Browse and control your music library with a graphical interface featuring:
+- Searchable, sortable table view
+- Playlist management with drag-and-drop
+- Local playback or streaming
+- Save/load playlists as JSON
+
+**Launch:** `./launch_music_browser.sh` or from the tray menu
+
+### Network Audio Collaboration
+Use JackTrip for real-time, low-latency audio collaboration over the internet. Jam with friends across the globe!
+
+See **[docs/STREAMING.md](docs/STREAMING.md)** for JackTrip setup and usage.
+
+## 🔌 Extensible Plugin System
+
+Create custom voice commands easily! Jackdaw's plugin architecture makes it simple to add new functionality.
+
+**Quick example:**
 ```python
 from plugin_base import VoiceAssistantPlugin
 
 class MyPlugin(VoiceAssistantPlugin):
-    def get_name(self): return "my_plugin"
-    def get_description(self): return "My custom commands"
+    def get_name(self):
+        return "my_plugin"
+    
+    def get_description(self):
+        return "My custom voice commands"
+    
     def get_commands(self):
-        return {"do something": self._handler}
-    def _handler(self):
-        print("Command executed!")
+        return {
+            "do something cool": self._do_it,
+            "another command": self._other_action
+        }
+    
+    def _do_it(self):
+        print("Doing something cool!")
+        # Your code here
 ```
 
-Enable in config:
-```json
-{
-  "plugins": {
-    "my_plugin": {"enabled": true}
-  }
-}
+Save as `plugins/my_plugin.py`, enable in config, and start using your commands!
+
+**Plugins can also have GUI interfaces** - add control panels to the system tray menu.
+
+See **[docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md)** for complete plugin development guide.
+
+---
+
+## 🗂️ Project Structure
+
+```
+jackdaw/
+├── 📄 GETTING_STARTED.md           ⭐ Start here!
+├── 📄 README.md                    This file
+├── 🛠️ install.sh                   Automated installer
+├── 🚀 launch_tray_app.sh           Launch GUI
+├── ▶️ start_voice_assistant.sh     Launch CLI mode
+├── ⏹️ stop_voice_assistant.sh      Shutdown script
+│
+├── 📁 docs/                        📚 Full documentation
+│   ├── README.md                   Detailed setup guide
+│   ├── QUICK_REFERENCE.md          Command cheat sheet
+│   ├── TRAY_APP.md                 GUI application guide
+│   ├── MUSIC_DATABASE.md           Music library system
+│   ├── MUSIC_BROWSER.md            GUI browser guide
+│   ├── STREAMING.md                Icecast2 & JackTrip
+│   ├── TIMEMACHINE.md              Retroactive recording
+│   └── PLUGIN_GUIDE.md             Plugin development
+│
+├── 📁 plugins/                     🔌 Voice command plugins
+│   ├── basic_commands.py           Hello, stop listening
+│   ├── music_player.py             Music control
+│   ├── llm_recorder.py             AI chat capture
+│   ├── timemachine.py              Retroactive recording
+│   └── icecast_streamer.py         Icecast2 streaming
+│
+├── 📁 tools/                       🔧 Utility scripts
+│   ├── scan_music_library.py       Index your music
+│   ├── inspect_conversations.py    View chat history
+│   └── remember_jack_routing.py    Save JACK connections
+│
+├── 🎵 music_library_browser.py     GUI music browser
+├── 🎙️ voice_command_client.py      Speech recognition
+├── 🤖 llm_query_processor.py       AI chat handler
+├── 🔊 tts_jack_client.py           Text-to-speech
+├── 🎶 ogg_jack_player.py           Music player
+├── 🎛️ voice_assistant_tray.py      System tray GUI
+│
+├── 📁 model/                       🧠 Vosk speech model (download)
+├── 📁 voices/                      🗣️ Piper TTS voices (download)
+├── 📁 logs/                        📋 Runtime logs
+└── ⚙️ voice_assistant_config.json  Configuration file
 ```
 
-## Logs
+---
 
-All logs are written to `logs/` directory and auto-rotate at 10MB.
+## 🐛 Troubleshooting
 
-## Dependencies
+**Jackdaw not responding?**
+- Check logs in `logs/` directory
+- Verify audio connections in JACK patchbay
+- See **[GETTING_STARTED.md](GETTING_STARTED.md#troubleshooting)** for detailed help
 
-- Python 3.8+
-- JACK Audio Connection Kit
-- Vosk speech recognition model (see `model/README`)
-- Piper TTS voice model (see `voices/README.md`)
-- Ollama LLM server
+**Common issues:**
+- **No wake word detection:** Check microphone connection, try different wake word
+- **No speech output:** Verify TTS connections, check FFmpeg installed
+- **Music won't play:** Run music scanner, check player connections
+- **AI not responding:** Verify Ollama is running (`ollama list`)
 
-See `requirements.txt` for Python packages.
-
-**First-time setup:** Download the Vosk model and Piper voice files - see the README files in `model/` and `voices/` directories for download links and instructions.
-
-## GUI Applications
-
-**Music Library Browser** - Browse, search, and play music from your database:
+**Logs are your friend:**
 ```bash
-./launch_music_browser.sh
+tail -f logs/voice_command.log   # Voice recognition
+tail -f logs/llm_processor.log   # AI chat
+tail -f logs/tts_client.log      # Speech synthesis
 ```
 
-Features:
-- Sortable, searchable table view with pagination
-- Play tracks locally on JACK or stream to Icecast2
-- Dual mode: play + stream simultaneously
-- View detailed track metadata
-- Multi-select for playlists
+---
 
-See `docs/MUSIC_BROWSER.md` for complete guide.
+## 🤝 Contributing
 
-## Documentation
+Contributions welcome! Whether it's:
+- 🐛 Bug reports
+- 💡 Feature suggestions
+- 📝 Documentation improvements
+- 🔌 New plugins
+- 🌍 Translations
 
-- `docs/README.md` - Complete setup guide
-- `docs/TRAY_APP.md` - System tray application guide
-- `docs/PLUGIN_GUIDE.md` - Plugin development guide (includes GUI)
-- `docs/QUICK_REFERENCE.md` - Command and config reference
-- `docs/MUSIC_DATABASE.md` - Music library system and scanner
-- `docs/MUSIC_BROWSER.md` - GUI music library browser guide
-- `docs/TIMEMACHINE.md` - Retroactive recording plugin guide
-- `docs/STREAMING.md` - Icecast2 streaming setup and usage
+Open an issue or pull request on GitHub!
+
+---
+
+## 📜 License
+
+See [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Credits
+
+Jackdaw is built on the shoulders of giants:
+
+- **[Vosk](https://alphacephei.com/vosk/)** - Offline speech recognition
+- **[Piper](https://github.com/rhasspy/piper)** - Fast, local text-to-speech
+- **[Ollama](https://ollama.com)** - Local LLM runtime
+- **[JACK Audio](https://jackaudio.org)** - Professional audio routing
+- **[PySide6](https://www.qt.io/qt-for-python)** - GUI framework
+- **[Mutagen](https://mutagen.readthedocs.io/)** - Audio metadata handling
+
+Special thanks to the open source community and **[Xiph.Org](https://xiph.org/)** for Ogg Vorbis, Opus, and FLAC - the foundation of open audio formats.
+
+---
+
+## 🚀 Get Started Now!
+
+Ready to try Jackdaw? Head over to **[GETTING_STARTED.md](GETTING_STARTED.md)** for the complete setup guide!
+
+**Questions?** Open an issue on [GitHub](https://github.com/applebiter/jackdaw/issues).
+
+**Enjoy your voice-controlled audio system!** 🎵🎤🐦‍⬛

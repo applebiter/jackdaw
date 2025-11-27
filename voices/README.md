@@ -2,25 +2,55 @@
 
 This directory should contain Piper text-to-speech voice models.
 
-## Download
+## Quick Installation (Recommended)
 
-**Primary Source (HuggingFace):**
+Run these commands from the jackdaw directory:
+
+```bash
+cd voices/
+
+# Download the recommended voice (lessac - clear and professional)
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+
+# Verify you got both files
+ls -lh en_US-lessac-medium.*
+# Should show two files: .onnx and .onnx.json
+
+cd ..
+```
+
+**That's it!** The voice is now installed and ready to use.
+
+### Want a Different Voice?
+
+**Listen to samples first:** https://rhasspy.github.io/piper-samples/
+
+**Then download from HuggingFace:**
 1. Visit: https://huggingface.co/rhasspy/piper-voices/tree/main/en
 2. Navigate to your desired language folder (e.g., `en/en_US/`)
-3. Select a voice (e.g., `lessac/medium/`)
+3. Select a voice (e.g., `amy/medium/`)
 4. Download **BOTH** files:
    - Click on the `.onnx` file → Click "Download" button
    - Click on the `.onnx.json` file → Click "Download" button
+5. Place both files in the `voices/` directory
 
-**Alternative (GitHub Releases):**
-- Visit: https://github.com/rhasspy/piper/releases
-- Browse voice samples: https://rhasspy.github.io/piper-samples/
+**Alternative (Command Line):**
+```bash
+cd voices/
+# Replace with your chosen voice URL
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json
+cd ..
+```
 
-## Important
+## ⚠️ IMPORTANT
 
 **Always download BOTH files for each voice:**
-- `voice-name.onnx` - The model file
+- `voice-name.onnx` - The model file (~20-30 MB)
 - `voice-name.onnx.json` - The configuration file (required!)
+
+**Missing the .json file?** Jackdaw will fail to start with an error!
 
 ## Recommended Voices
 
@@ -35,42 +65,41 @@ This directory should contain Piper text-to-speech voice models.
 - `medium` - Balanced speed/quality (~20-30 MB)
 - `high` - Best quality, slower (~50-100 MB)
 
-## Installation
+## Download Multiple Voices (Optional)
 
-**From HuggingFace (recommended):**
+You can install multiple voices and switch between them in the config:
+
 ```bash
 cd voices/
 
-# Example: Download lessac voice from HuggingFace
-wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
-wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+# Amy voice (friendly, conversational)
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json
+
+# Joe voice (male)
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/joe/medium/en_US-joe-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/joe/medium/en_US-joe-medium.onnx.json
+
+cd ..
 ```
 
-**Or from GitHub Releases:**
-```bash
-cd voices/
+## Directory Structure
 
-# Example: Download from GitHub release
-wget https://github.com/rhasspy/piper/releases/download/v1.2.0/en_US-lessac-medium.onnx
-wget https://github.com/rhasspy/piper/releases/download/v1.2.0/en_US-lessac-medium.onnx.json
-```
-
-## Structure
-
-After downloading, this directory should contain:
+After downloading, this directory should look like:
 ```
 voices/
 ├── README.md (this file)
 ├── en_US-lessac-medium.onnx
 ├── en_US-lessac-medium.onnx.json
-├── en_US-amy-medium.onnx
-├── en_US-amy-medium.onnx.json
-└── ... (other voices)
+├── en_US-amy-medium.onnx (optional)
+├── en_US-amy-medium.onnx.json (optional)
+└── ... (other voices you download)
 ```
 
 ## Configuration
 
 The voice model is configured in `voice_assistant_config.json`:
+
 ```json
 {
   "voice": {
@@ -80,6 +109,19 @@ The voice model is configured in `voice_assistant_config.json`:
   }
 }
 ```
+
+**To switch voices:** Change `model_path` to point to a different `.onnx` file:
+
+```bash
+nano voice_assistant_config.json
+```
+
+Examples:
+- `"voices/en_US-lessac-medium.onnx"` - Professional, clear
+- `"voices/en_US-amy-medium.onnx"` - Friendly, conversational
+- `"voices/en_US-joe-medium.onnx"` - Male voice
+
+Restart Jackdaw after changing voices.
 
 ## Voice Samples
 
