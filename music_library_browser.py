@@ -277,7 +277,7 @@ class MusicLibraryBrowser(QMainWindow):
         offset = self.current_page * self.page_size
         query = f"""
             SELECT id, title, artist, album, genre, year, duration_timecode, 
-                   bpm, file_path
+                   beats_per_minute, location || '/' || filename as file_path
             FROM sounds
             {where_clause}
             ORDER BY {self.current_sort_column} {self.current_sort_order}
@@ -297,7 +297,7 @@ class MusicLibraryBrowser(QMainWindow):
             self.track_table.setItem(i, 3, QTableWidgetItem(row['genre'] or ''))
             self.track_table.setItem(i, 4, QTableWidgetItem(str(row['year'] or '')))
             self.track_table.setItem(i, 5, QTableWidgetItem(row['duration_timecode'] or ''))
-            self.track_table.setItem(i, 6, QTableWidgetItem(str(row['bpm'] or '')))
+            self.track_table.setItem(i, 6, QTableWidgetItem(str(row['beats_per_minute'] or '')))
             self.track_table.setItem(i, 7, QTableWidgetItem(row['file_path'] or ''))
             
             # Store row ID in first column
@@ -313,7 +313,7 @@ class MusicLibraryBrowser(QMainWindow):
     
     def on_header_clicked(self, logical_index: int):
         """Handle column header click for sorting"""
-        columns = ["title", "artist", "album", "genre", "year", "duration_timecode", "bpm", "file_path"]
+        columns = ["title", "artist", "album", "genre", "year", "duration_timecode", "beats_per_minute", "file_path"]
         clicked_column = columns[logical_index]
         
         # Toggle sort order if same column
@@ -381,17 +381,17 @@ class MusicLibraryBrowser(QMainWindow):
             details = f"""
 Title: {row['title'] or 'Unknown'}
 Artist: {row['artist'] or 'Unknown'}
-Album Artist: {row['album_artist'] or 'N/A'}
+Album Artist: {row['albumartist'] or 'N/A'}
 Album: {row['album'] or 'Unknown'}
 Genre: {row['genre'] or 'N/A'}
 Year: {row['year'] or 'N/A'}
-Track: {row['track_number'] or 'N/A'} / Disc: {row['disc_number'] or 'N/A'}
+Track: {row['tracknumber'] or 'N/A'} / Disc: {row['discnumber'] or 'N/A'}
 
-Duration: {row['duration_timecode']} ({row['duration_ms']} ms)
-BPM: {row['bpm'] or 'N/A'}
+Duration: {row['duration_timecode']} ({row['duration_milliseconds']} ms)
+BPM: {row['beats_per_minute'] or 'N/A'}
 
 Audio Format:
-  Sample Rate: {row['sample_rate']} Hz
+  Sample Rate: {row['samplerate']} Hz
   Channels: {row['channels']}
   Bits per Sample: {row['bits_per_sample']}
   Bitrate: {row['bitrate']} kbps
@@ -401,8 +401,8 @@ Producer: {row['producer'] or 'N/A'}
 Engineer: {row['engineer'] or 'N/A'}
 Label: {row['label'] or 'N/A'}
 
-File: {row['file_path']}
-Size: {row['file_size_mb']:.2f} MB
+File: {row['location']}/{row['filename']}
+Size: {row['size'] or 'N/A'}
             """.strip()
             self.track_details.setPlainText(details)
     
