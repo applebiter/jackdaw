@@ -166,6 +166,13 @@ class VoiceAssistantTray(QObject):
         # Tools submenu
         tools_menu = menu.addMenu("🔧 Tools")
         
+        # Music browser action
+        music_browser_action = QAction("🎵 Music Library Browser", tools_menu)
+        music_browser_action.triggered.connect(self.launch_music_browser)
+        tools_menu.addAction(music_browser_action)
+        
+        tools_menu.addSeparator()
+        
         # Remember JACK routing action
         remember_routing_action = QAction("💾 Save JACK Connections", tools_menu)
         remember_routing_action.triggered.connect(self.remember_jack_routing)
@@ -489,6 +496,55 @@ class VoiceAssistantTray(QObject):
         
         dialog.setLayout(layout)
         dialog.exec()
+    
+    def launch_music_browser(self):
+        """Launch the music library browser application."""
+        try:
+            script_dir = Path(__file__).parent.resolve()
+            venv_python = script_dir / ".venv" / "bin" / "python"
+            
+            # Check if database exists
+            db_path = script_dir / "music_library.sqlite3"
+            if not db_path.exists():
+                dialog = QDialog()
+                dialog.setWindowTitle("Database Not Found")
+                layout = QVBoxLayout()
+                
+                msg = QLabel(
+                    "Music library database not found.\n\n"
+                    "Please run the music scanner first:\n"
+                    "python tools/scan_music_library.py /path/to/music"
+                )
+                layout.addWidget(msg)
+                
+                close_btn = QPushButton("Close")
+                close_btn.clicked.connect(dialog.close)
+                layout.addWidget(close_btn)
+                
+                dialog.setLayout(layout)
+                dialog.exec()
+                return
+            
+            # Launch the browser in a separate process
+            import os
+            env = os.environ.copy()
+            env['VIRTUAL_ENV'] = str(script_dir / ".venv")
+            env['PATH'] = f"{script_dir / '.venv' / 'bin'}:{env.get('PATH', '')}"
+            
+            subprocess.Popen(
+                [str(venv_python), "music_library_browser.py"],
+                cwd=str(script_dir),
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            
+            print("Music library browser launched")
+            
+        except Exception as e:
+            print(f"Error launching music browser: {e}")
+            import traceback
+            traceback.print_exc()
     
     def remember_jack_routing(self):
         """Run the remember_jack_routing.py script."""
