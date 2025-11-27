@@ -88,6 +88,7 @@ class MusicLibraryBrowser(QMainWindow):
         self.init_ui()
         self.connect_database()
         self.load_tracks()
+        self.update_button_labels()  # Initialize button labels
         
         # Update streaming status periodically
         self.status_timer = QTimer()
@@ -564,6 +565,17 @@ Size: {row['size'] or 'N/A'}
         
         self.playlist_count_label.setText(f"{len(self.playlist)} tracks in playlist")
     
+    def update_button_labels(self):
+        """Update play button labels based on whether playlist exists"""
+        if self.playlist:
+            self.play_local_btn.setText(f"▶ Play Playlist on JACK ({len(self.playlist)} tracks)")
+            self.stream_btn.setText(f"📡 Stream Playlist to Icecast ({len(self.playlist)} tracks)")
+            self.play_both_btn.setText(f"▶📡 Play + Stream Playlist ({len(self.playlist)} tracks)")
+        else:
+            self.play_local_btn.setText("▶ Play Selected on JACK")
+            self.stream_btn.setText("📡 Stream Selected to Icecast")
+            self.play_both_btn.setText("▶📡 Play + Stream Selected")
+    
     def on_add_to_playlist(self):
         """Add selected tracks to playlist"""
         selected_rows = self.track_table.selectionModel().selectedRows()
@@ -589,6 +601,7 @@ Size: {row['size'] or 'N/A'}
                 added += 1
         
         self.update_playlist_display()
+        self.update_button_labels()
         self.status_label.setText(f"Added {added} tracks to playlist")
     
     def on_clear_playlist(self):
@@ -603,6 +616,7 @@ Size: {row['size'] or 'N/A'}
             if reply == QMessageBox.Yes:
                 self.playlist.clear()
                 self.update_playlist_display()
+                self.update_button_labels()
                 self.status_label.setText("Playlist cleared")
     
     def on_remove_from_playlist(self):
@@ -696,6 +710,7 @@ Size: {row['size'] or 'N/A'}
                 
                 self.playlist = valid_tracks
                 self.update_playlist_display()
+                self.update_button_labels()
                 
                 msg = f"Loaded {len(valid_tracks)} tracks from {Path(filename).name}"
                 if missing:
