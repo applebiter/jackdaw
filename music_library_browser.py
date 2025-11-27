@@ -107,22 +107,26 @@ class MusicLibraryBrowser(QMainWindow):
         # Search and filter controls
         search_layout = QHBoxLayout()
         
-        search_layout.addWidget(QLabel("Search:"))
+        search_layout.addWidget(QLabel("🔍 Search:"))
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Enter search term...")
+        self.search_input.setToolTip("Search for tracks by the selected field (press Enter to search)")
         self.search_input.returnPressed.connect(self.on_search)
         search_layout.addWidget(self.search_input)
         
         search_layout.addWidget(QLabel("Field:"))
         self.search_field_combo = QComboBox()
         self.search_field_combo.addItems(["artist", "album", "title", "genre", "year"])
+        self.search_field_combo.setToolTip("Choose which field to search in")
         search_layout.addWidget(self.search_field_combo)
         
-        self.search_btn = QPushButton("Search")
+        self.search_btn = QPushButton("🔎 Search")
+        self.search_btn.setToolTip("Filter tracks by search term")
         self.search_btn.clicked.connect(self.on_search)
         search_layout.addWidget(self.search_btn)
         
-        self.clear_search_btn = QPushButton("Clear")
+        self.clear_search_btn = QPushButton("✖ Clear")
+        self.clear_search_btn.setToolTip("Clear search and show all tracks")
         self.clear_search_btn.clicked.connect(self.on_clear_search)
         search_layout.addWidget(self.clear_search_btn)
         
@@ -137,6 +141,7 @@ class MusicLibraryBrowser(QMainWindow):
         self.track_table.setHorizontalHeaderLabels([
             "Title", "Artist", "Album", "Genre", "Year", "Duration", "BPM", "Path"
         ])
+        self.track_table.setToolTip("Click column headers to sort • Ctrl+Click to select multiple • Shift+Click for ranges")
         self.track_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.track_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.track_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
@@ -164,14 +169,16 @@ class MusicLibraryBrowser(QMainWindow):
         # Pagination controls
         page_layout = QHBoxLayout()
         
-        self.prev_btn = QPushButton("Previous")
+        self.prev_btn = QPushButton("◀ Previous")
+        self.prev_btn.setToolTip("Go to previous page")
         self.prev_btn.clicked.connect(self.on_previous_page)
         page_layout.addWidget(self.prev_btn)
         
         self.page_label = QLabel("Page 1 of 1")
         page_layout.addWidget(self.page_label)
         
-        self.next_btn = QPushButton("Next")
+        self.next_btn = QPushButton("Next ▶")
+        self.next_btn.setToolTip("Go to next page")
         self.next_btn.clicked.connect(self.on_next_page)
         page_layout.addWidget(self.next_btn)
         
@@ -181,6 +188,7 @@ class MusicLibraryBrowser(QMainWindow):
         self.page_size_spin = QSpinBox()
         self.page_size_spin.setRange(10, 500)
         self.page_size_spin.setValue(100)
+        self.page_size_spin.setToolTip("Number of tracks to show per page (10-500)")
         self.page_size_spin.valueChanged.connect(self.on_page_size_changed)
         page_layout.addWidget(self.page_size_spin)
         
@@ -193,14 +201,17 @@ class MusicLibraryBrowser(QMainWindow):
         # Local JACK playback
         local_layout = QHBoxLayout()
         self.play_local_btn = QPushButton("▶ Play Selected on JACK")
+        self.play_local_btn.setToolTip("Play selected tracks through JACK audio system\nTracks play in table order (or shuffled if enabled)")
         self.play_local_btn.clicked.connect(self.on_play_local)
         local_layout.addWidget(self.play_local_btn)
         
         self.stop_local_btn = QPushButton("⏹ Stop Local Playback")
+        self.stop_local_btn.setToolTip("Stop currently playing music")
         self.stop_local_btn.clicked.connect(self.on_stop_local)
         local_layout.addWidget(self.stop_local_btn)
         
-        self.shuffle_checkbox = QCheckBox("Shuffle")
+        self.shuffle_checkbox = QCheckBox("🔀 Shuffle Playback")
+        self.shuffle_checkbox.setToolTip("When enabled: play selected tracks in random order\nWhen disabled: play in table order (use column headers to sort)")
         local_layout.addWidget(self.shuffle_checkbox)
         
         playback_layout.addLayout(local_layout)
@@ -208,10 +219,12 @@ class MusicLibraryBrowser(QMainWindow):
         # Icecast streaming
         stream_layout = QHBoxLayout()
         self.stream_selected_btn = QPushButton("📡 Stream Selected to Icecast")
+        self.stream_selected_btn.setToolTip("Start streaming selected tracks to Icecast2 server\nRequires Icecast configuration in voice_assistant_config.json")
         self.stream_selected_btn.clicked.connect(self.on_stream_selected)
         stream_layout.addWidget(self.stream_selected_btn)
         
         self.stop_stream_btn = QPushButton("⏹ Stop Streaming")
+        self.stop_stream_btn.setToolTip("Stop broadcasting to Icecast2")
         self.stop_stream_btn.clicked.connect(self.on_stop_stream)
         stream_layout.addWidget(self.stop_stream_btn)
         
@@ -223,10 +236,13 @@ class MusicLibraryBrowser(QMainWindow):
         # Dual mode
         dual_layout = QHBoxLayout()
         self.dual_play_btn = QPushButton("🔊 Play Local + Stream")
+        self.dual_play_btn.setToolTip("Play locally AND stream to Icecast simultaneously\nRequires JACK routing: connect ogg_player to both system:playback and IcecastStreamer")
         self.dual_play_btn.clicked.connect(self.on_dual_play)
         dual_layout.addWidget(self.dual_play_btn)
         
-        dual_layout.addWidget(QLabel("(Plays on JACK and streams to Icecast simultaneously)"))
+        help_label = QLabel("💡 Tip: Use Ctrl+Click to select multiple tracks, Shift+Click for ranges, Click column headers to sort")
+        help_label.setWordWrap(True)
+        dual_layout.addWidget(help_label)
         dual_layout.addStretch()
         
         playback_layout.addLayout(dual_layout)
