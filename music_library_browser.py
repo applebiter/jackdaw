@@ -130,6 +130,11 @@ class MusicLibraryBrowser(QMainWindow):
         self.clear_search_btn.clicked.connect(self.on_clear_search)
         search_layout.addWidget(self.clear_search_btn)
         
+        self.select_all_btn = QPushButton("☑ Select All")
+        self.select_all_btn.setToolTip("Select all visible tracks in the library")
+        self.select_all_btn.clicked.connect(self.on_select_all)
+        search_layout.addWidget(self.select_all_btn)
+        
         layout.addLayout(search_layout)
         
         # Main horizontal splitter for table and playlist
@@ -442,6 +447,14 @@ class MusicLibraryBrowser(QMainWindow):
         self.current_page = 0
         self.load_tracks()
     
+    def on_select_all(self):
+        """Select all visible tracks in the current table"""
+        self.track_table.selectAll()
+    
+    def on_previous_page(self):
+        """Select all visible tracks in the current table"""
+        self.track_table.selectAll()
+    
     def on_previous_page(self):
         """Go to previous page"""
         if self.current_page > 0:
@@ -710,6 +723,9 @@ Size: {row['size'] or 'N/A'}
                 "Please add tracks to playlist or select tracks from library"
             )
             return
+        
+        # Stop any existing playback first
+        ogg_jack_player.stop_playback()
         
         # Convert to Path objects
         playlist = [Path(p) for p in file_paths]
