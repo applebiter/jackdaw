@@ -2,7 +2,7 @@
 
 A modular, real-time voice assistant system using JACK Audio, Vosk speech recognition, Ollama LLM, and Piper TTS.
 
-**Jackdaw** combines JACK Audio connectivity with voice control and is designed to grow toward a full DAW (Digital Audio Workstation) with voice command capabilities.
+**Jackdaw** is a voice-controlled networked audio system for musical collaboration, audio content management, and streaming. Built on JACK Audio, it enables real-time audio routing across networked environments. Use it for retroactive recording, music library management, live streaming to Icecast2 servers, and collaborative audio projects. The flexible plugin architecture makes it easy to extend functionality for your specific audio workflow needs.
 
 ## Quick Start
 
