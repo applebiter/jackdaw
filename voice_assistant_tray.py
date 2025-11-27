@@ -318,30 +318,35 @@ class VoiceAssistantTray(QObject):
     
     def update_status(self):
         """Update status information from voice assistant."""
-        # Check if processes are still running
-        if self.processes_running:
-            all_alive = all(
-                p and p.poll() is None 
-                for p in [self.voice_process, self.llm_process, self.tts_process]
-            )
-            if not all_alive:
-                print("Warning: Some processes died unexpectedly")
-                self.stop_voice_assistant()
-        
-        # Update currently playing track
-        self.update_now_playing()
+        try:
+            # Check if processes are still running
+            if self.processes_running:
+                all_alive = all(
+                    p and p.poll() is None 
+                    for p in [self.voice_process, self.llm_process, self.tts_process]
+                )
+                if not all_alive:
+                    print("Warning: Some processes died unexpectedly")
+                    self.stop_voice_assistant()
+            
+            # Update currently playing track
+            self.update_now_playing()
+        except Exception as e:
+            print(f"Error in update_status: {e}")
     
     def update_now_playing(self):
         """Update the currently playing track information."""
         try:
             status_file = Path(".now_playing.json")
-            if status_file.exists():
-                with open(status_file, 'r') as f:
-                    status = json.load(f)
-                self.track_changed.emit(status)
-            else:
+            if not status_file.exists():
                 self.track_changed.emit({})
-        except Exception:
+                return
+                
+            with open(status_file, 'r') as f:
+                status = json.load(f)
+                self.track_changed.emit(status)
+        except Exception as e:
+            # Silently ignore read errors (file might be mid-write)
             pass
     
     def on_status_changed(self, status: str):
@@ -528,9 +533,30 @@ class VoiceAssistantTray(QObject):
 
 
 def main():
-    """Main entry point."""
-    app = VoiceAssistantTray()
-    sys.exit(app.run())
+    """Main entry point with exception handling."""
+    import traceback
+    
+    try:
+        app = VoiceAssistantTray()
+        sys.exit(app.run())
+    except Exception as e:
+        print(f"Fatal error in tray application: {e}")
+        traceback.print_exc()
+        
+        # Try to log the error
+        try:
+            log_path = Path("logs/tray_crash.log")
+            log_path.parent.mkdir(exist_ok=True)
+            with open(log_path, "a") as f:
+                from datetime import datetime
+                f.write(f"\n\n=== Crash at {datetime.now()} ===\n")
+                f.write(f"Error: {e}\n")
+                f.write(traceback.format_exc())
+            print(f"Error logged to {log_path}")
+        except:
+            pass
+        
+        sys.exit(1)
 
 
 if __name__ == '__main__':
