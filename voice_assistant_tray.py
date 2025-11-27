@@ -525,7 +525,8 @@ class VoiceAssistantTray(QObject):
         """Quit the application."""
         self.stop_voice_assistant()
         self.plugin_loader.cleanup_all_plugins()
-        QApplication.quit()
+        # Exit with code 0 so launcher knows it's intentional
+        QApplication.exit(0)
     
     def run(self):
         """Run the application."""
