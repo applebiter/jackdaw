@@ -219,12 +219,14 @@ class OggJackPlayer:
 
 
 def _collect_ogg_files(root_dir: Path) -> List[Path]:
-    oggs: List[Path] = []
+    """Collect all supported audio files (Ogg, Opus, FLAC, MP3)"""
+    audio_files: List[Path] = []
+    supported_extensions = ('.ogg', '.opus', '.flac', '.mp3')
     for dirpath, _, filenames in os.walk(root_dir):
         for fn in filenames:
-            if fn.lower().endswith(".ogg"):
-                oggs.append(Path(dirpath) / fn)
-    return oggs
+            if fn.lower().endswith(supported_extensions):
+                audio_files.append(Path(dirpath) / fn)
+    return audio_files
 
 
 def skip_to_next_track():
@@ -419,7 +421,7 @@ def _play_music_loop(root: str):
 
         oggs = _collect_ogg_files(root_dir)
         if not oggs:
-            print(f"[OggJackPlayer] No .ogg files found under: {root_dir}")
+            print(f"[OggJackPlayer] No audio files found under: {root_dir}")
             return
 
     while True:
@@ -481,8 +483,8 @@ def _play_music_loop(root: str):
 
 def play_random_ogg_in_directory(root: str):
     """
-    Traverse a directory recursively, pick a random .ogg, and play it
-    over JACK via a new client. Runs in a background thread so voice
+    Traverse a directory recursively, pick a random audio file (Ogg, Opus, FLAC, MP3),
+    and play it over JACK via a new client. Runs in a background thread so voice
     recognition continues to work.
 
     This is the function you can call from your voice command parser.
@@ -490,7 +492,7 @@ def play_random_ogg_in_directory(root: str):
     Example voice handler in voice_command_client.py:
 
         def cmd_play_random_ogg():
-            play_random_ogg_in_directory("/path/to/your/ogg/library")
+            play_random_ogg_in_directory("/path/to/your/music/library")
 
         client.register_command("play random track", cmd_play_random_ogg)
     """

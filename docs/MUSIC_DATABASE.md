@@ -22,12 +22,18 @@ python tools/scan_music_library.py /path/to/your/music --bpm
 ```
 
 The scanner will:
-- Recursively find all `.ogg` and `.flac` files
+- Recursively find all audio files: `.ogg` (Vorbis), `.opus`, `.flac`, `.mp3`
 - Extract metadata tags (artist, album, title, genre, year, etc.)
 - Analyze audio properties (duration, sample rate, bit depth, channels)
 - Optionally analyze beats per minute (BPM)
 - Insert everything into `music_library.sqlite3`
 - Skip duplicates automatically
+
+**Supported Formats:**
+- **Ogg Vorbis** (.ogg) - Open, lossy compression
+- **Opus** (.opus) - Modern, efficient open codec
+- **FLAC** (.flac) - Lossless open compression
+- **MP3** (.mp3) - Ubiquitous lossy format
 
 **What it extracts:**
 - **Audio format**: sample rate, channels, bits per sample, bitrate

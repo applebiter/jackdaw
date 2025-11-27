@@ -2,7 +2,7 @@
 """
 Music Library Scanner
 
-Recursively scans a directory for OGG and FLAC files, extracts metadata,
+Recursively scans a directory for audio files (OGG, FLAC, MP3, Opus), extracts metadata,
 analyzes audio properties (including BPM), and populates the music database.
 
 This script replicates the functionality of:
@@ -23,6 +23,8 @@ import argparse
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
 from mutagen.oggvorbis import OggVorbis
+from mutagen.mp3 import MP3
+from mutagen.oggopus import OggOpus
 import soundfile as sf
 import librosa
 
@@ -348,9 +350,15 @@ def scan_directory(root_dir: str, analyze_bpm: bool = False, update_existing: bo
     print(f"[Scanner] Update existing: {'yes' if update_existing else 'no'}")
     print()
     
-    # Collect all audio files
+    # Collect all audio files (Xiph.org formats + MP3)
     audio_files = []
-    for ext in ['*.ogg', '*.flac', '*.OGG', '*.FLAC']:
+    extensions = [
+        '*.ogg', '*.OGG',      # Ogg Vorbis
+        '*.opus', '*.OPUS',    # Opus
+        '*.flac', '*.FLAC',    # FLAC
+        '*.mp3', '*.MP3'       # MP3
+    ]
+    for ext in extensions:
         audio_files.extend(root_path.rglob(ext))
     
     total_files = len(audio_files)
