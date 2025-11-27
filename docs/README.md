@@ -241,16 +241,17 @@ All hosts keep their own conversation history in a **local SQLite file**:
 
 ```
 User on host: "[wake word], start recording"
-User: "What's the weather like?"
+User: "Who were the members of The Beatles?"
 User: "[wake word], stop recording"
 → host stores query in its local SQLite DB, sends to LLM, stores response
+→ LLM responds with "John Lennon, Paul McCartney, George Harrison, and Ringo Starr"
 
 Later...
 User on same host: "[wake word], start recording"  
-User: "Should I bring an umbrella?"
+User: "Which one played lead guitar?"
 User: "[wake word], stop recording"
-→ host loads previous weather conversation from its local DB
-→ LLM has context to provide relevant answer
+→ host loads previous Beatles conversation from its local DB
+→ LLM has context and responds "George Harrison was the lead guitarist"
 ```
 
 ### Inspecting the Local Database
