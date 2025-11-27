@@ -216,6 +216,42 @@ class OggJackPlayer:
                 except Exception:
                     pass
             
+            # Check for cross-process skip signal
+            skip_signal = Path(".skip_track")
+            if skip_signal.exists():
+                print("[OggJackPlayer] Skip signal detected from another process during playback")
+                _skip_requested.set()
+                try:
+                    skip_signal.unlink()
+                except Exception:
+                    pass
+            
+            # Check for cross-process volume signal
+            volume_signal = Path(".volume_level")
+            if volume_signal.exists():
+                try:
+                    import json
+                    data = json.loads(volume_signal.read_text())
+                    global _volume
+                    _volume = data.get("volume", _volume)
+                    print(f"[OggJackPlayer] Volume updated from another process during playback: {int(_volume * 100)}%")
+                    volume_signal.unlink()
+                except Exception:
+                    pass
+            
+            # Check for cross-process shuffle signal (will take effect on next track)
+            shuffle_signal = Path(".shuffle_mode")
+            if shuffle_signal.exists():
+                try:
+                    import json
+                    data = json.loads(shuffle_signal.read_text())
+                    global _shuffle_mode
+                    _shuffle_mode = data.get("shuffle", _shuffle_mode)
+                    print(f"[OggJackPlayer] Shuffle mode updated from another process during playback: {'shuffle' if _shuffle_mode else 'sequential'}")
+                    shuffle_signal.unlink()
+                except Exception:
+                    pass
+            
             time.sleep(0.1)
 
         if _skip_requested.is_set():
@@ -259,6 +295,14 @@ def skip_to_next_track():
     """
     global _skip_requested
     _skip_requested.set()
+    
+    # Create signal file for cross-process communication
+    try:
+        skip_signal = Path(".skip_track")
+        skip_signal.touch()
+    except Exception:
+        pass
+    
     print("[OggJackPlayer] Skip requested; will play next track.")
 
 
@@ -318,6 +362,15 @@ def set_volume(level: float):
     """
     global _volume
     _volume = max(0.0, min(1.0, level))  # Clamp to [0.0, 1.0]
+    
+    # Create signal file for cross-process communication
+    try:
+        import json
+        volume_signal = Path(".volume_level")
+        volume_signal.write_text(json.dumps({"volume": _volume}))
+    except Exception:
+        pass
+    
     print(f"[OggJackPlayer] Volume set to {int(_volume * 100)}%")
 
 
@@ -387,6 +440,15 @@ def set_shuffle_mode(shuffle: bool):
     """
     global _shuffle_mode
     _shuffle_mode = shuffle
+    
+    # Create signal file for cross-process communication
+    try:
+        import json
+        shuffle_signal = Path(".shuffle_mode")
+        shuffle_signal.write_text(json.dumps({"shuffle": shuffle}))
+    except Exception:
+        pass
+    
     mode = "shuffle" if shuffle else "sequential"
     print(f"[OggJackPlayer] Playback mode set to {mode}")
 
@@ -450,6 +512,42 @@ def _play_music_loop(root: str):
             _stop_requested.set()
             try:
                 stop_signal.unlink()  # Clean up signal file
+            except Exception:
+                pass
+        
+        # Check for cross-process skip signal
+        skip_signal = Path(".skip_track")
+        if skip_signal.exists():
+            print("[OggJackPlayer] Skip signal detected from another process")
+            _skip_requested.set()
+            try:
+                skip_signal.unlink()
+            except Exception:
+                pass
+        
+        # Check for cross-process shuffle signal
+        shuffle_signal = Path(".shuffle_mode")
+        if shuffle_signal.exists():
+            try:
+                import json
+                data = json.loads(shuffle_signal.read_text())
+                global _shuffle_mode
+                _shuffle_mode = data.get("shuffle", _shuffle_mode)
+                print(f"[OggJackPlayer] Shuffle mode updated from another process: {'shuffle' if _shuffle_mode else 'sequential'}")
+                shuffle_signal.unlink()
+            except Exception:
+                pass
+        
+        # Check for cross-process volume signal
+        volume_signal = Path(".volume_level")
+        if volume_signal.exists():
+            try:
+                import json
+                data = json.loads(volume_signal.read_text())
+                global _volume
+                _volume = data.get("volume", _volume)
+                print(f"[OggJackPlayer] Volume updated from another process: {int(_volume * 100)}%")
+                volume_signal.unlink()
             except Exception:
                 pass
 
