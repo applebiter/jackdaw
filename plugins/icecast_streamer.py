@@ -114,6 +114,22 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
                 universal_newlines=True
             )
             
+            # Wait briefly to check if it starts successfully
+            time.sleep(0.5)
+            if self.streaming_process.poll() is not None:
+                # Process died immediately
+                stderr_output = self.streaming_process.stderr.read()
+                stdout_output = self.streaming_process.stdout.read()
+                error_msg = f"FFmpeg failed to start. Exit code: {self.streaming_process.returncode}"
+                if stderr_output:
+                    error_msg += f"\nStderr: {stderr_output[:500]}"
+                if stdout_output:
+                    error_msg += f"\nStdout: {stdout_output[:500]}"
+                logger.error(error_msg)
+                print(f"[IcecastStreamer] {error_msg}")
+                self.streaming_process = None
+                return f"Failed to start stream: {error_msg}"
+            
             # Start monitoring thread
             self.should_monitor = True
             self.monitor_thread = threading.Thread(target=self._monitor_stream, daemon=True)
@@ -121,6 +137,7 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             
             self.is_streaming = True
             logger.info(f"Started streaming to {self.host}:{self.port}{self.mount}")
+            print(f"[IcecastStreamer] FFmpeg started successfully, JACK client 'IcecastStreamer' should now be available")
             return "Stream started"
             
         except FileNotFoundError:
@@ -137,10 +154,20 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             if self.streaming_process.poll() is not None:
                 # Process has ended
                 stderr_output = self.streaming_process.stderr.read()
+                stdout_output = self.streaming_process.stdout.read()
+                
                 if stderr_output:
-                    logger.error(f"Stream process ended with error: {stderr_output}")
+                    logger.error(f"Stream process stderr: {stderr_output}")
+                    print(f"[IcecastStreamer] FFmpeg stderr:\n{stderr_output}")
+                if stdout_output:
+                    logger.info(f"Stream process stdout: {stdout_output}")
+                    
+                exit_code = self.streaming_process.returncode
+                if exit_code != 0:
+                    logger.error(f"Stream process exited with code {exit_code}")
+                    print(f"[IcecastStreamer] FFmpeg exited with code {exit_code}")
                 else:
-                    logger.info("Stream process ended")
+                    logger.info("Stream process ended normally")
                 
                 self.is_streaming = False
                 self.streaming_process = None
