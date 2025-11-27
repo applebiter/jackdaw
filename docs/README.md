@@ -160,9 +160,9 @@ Or use voice command: **"[wake word], stop listening"**
 
 All commands must be prefaced with your wake word (e.g., "alpha"):
 
-- **"[wake word], start recording"** - Begin capturing text for LLM query
+- **"[wake word], start chat"** - Begin capturing text for LLM query
 - *Speak your question or request*
-- **"[wake word], stop recording"** - End capture and send to LLM
+- **"[wake word], stop chat"** - End capture and send to LLM
 - **"[wake word], stop listening"** - Shut down all components
 
 ### Connecting Audio
@@ -240,16 +240,16 @@ All hosts keep their own conversation history in a **local SQLite file**:
 ### Example Workflow
 
 ```
-User on host: "[wake word], start recording"
+User on host: "[wake word], start chat"
 User: "Who were the members of The Beatles?"
-User: "[wake word], stop recording"
+User: "[wake word], stop chat"
 → host stores query in its local SQLite DB, sends to LLM, stores response
 → LLM responds with "John Lennon, Paul McCartney, George Harrison, and Ringo Starr"
 
 Later...
-User on same host: "[wake word], start recording"  
+User on same host: "[wake word], start chat"  
 User: "Which one played lead guitar?"
-User: "[wake word], stop recording"
+User: "[wake word], stop chat"
 → host loads previous Beatles conversation from its local DB
 → LLM has context and responds "George Harrison was the lead guitarist"
 ```
@@ -309,9 +309,9 @@ On any host:
 # - Connect TTSJackClient outputs to speakers
 
 # Speak commands:
-"[your wake word], start recording"
+"[your wake word], start chat"
 "What is the capital of France?"
-"[your wake word], stop recording"
+"[your wake word], stop chat"
 # Wait for TTS response
 
 # Check database for stored conversation

@@ -396,20 +396,20 @@ cd ~/jackdaw
 
 ### Chatting with AI
 
-**Start recording your question:**
+**Start the chat:**
 ```
-"[wake word], start recording"
+"[wake word], start chat"
 ```
 
 **Ask your question:**
 ```
-"What's the weather forecast for tomorrow?"
+"Who were the original members of The Beatles?"
 ```
 (Or any question you'd ask ChatGPT)
 
 **Send it to the AI:**
 ```
-"[wake word], stop recording"
+"[wake word], stop chat"
 ```
 
 **Wait for response:**

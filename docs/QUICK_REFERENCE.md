@@ -16,8 +16,8 @@ Replace `[wake]` with your configured wake word (default: "alpha")
 | | `[wake], next track` | Skip to next song |
 | | `[wake], volume up/down` | Adjust volume ±10% |
 | | `[wake], shuffle on` | Enable random playback |
-| **AI Chat** | `[wake], start recording` | Begin question capture |
-| | `[wake], stop recording` | Send to AI and get response |
+| **AI Chat** | `[wake], start chat` | Begin question capture |
+| | `[wake], stop chat` | Send to AI and get response |
 | **Recording** | `[wake], start the buffer` | Begin retroactive recording |
 | | `[wake], save that` | Save last 5 minutes to file |
 | **Streaming** | `[wake], start streaming` | Broadcast to Icecast2 |
@@ -84,9 +84,9 @@ python tools/scan_music_library.py
 
 #### AI Chat
 ```
-"[wake], start recording"          Begin capturing your question
+"[wake], start chat"               Begin capturing your question
     [speak your question/request]
-"[wake], stop recording"           Send to AI and get spoken response
+"[wake], stop chat"                Send to AI and get spoken response
 ```
 
 **Examples:**
