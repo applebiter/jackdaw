@@ -569,12 +569,12 @@ Size: {row['size'] or 'N/A'}
         """Update play button labels based on whether playlist exists"""
         if self.playlist:
             self.play_local_btn.setText(f"▶ Play Playlist on JACK ({len(self.playlist)} tracks)")
-            self.stream_btn.setText(f"📡 Stream Playlist to Icecast ({len(self.playlist)} tracks)")
-            self.play_both_btn.setText(f"▶📡 Play + Stream Playlist ({len(self.playlist)} tracks)")
+            self.stream_selected_btn.setText(f"📡 Stream Playlist to Icecast ({len(self.playlist)} tracks)")
+            self.dual_play_btn.setText(f"🔊 Play + Stream Playlist ({len(self.playlist)} tracks)")
         else:
             self.play_local_btn.setText("▶ Play Selected on JACK")
-            self.stream_btn.setText("📡 Stream Selected to Icecast")
-            self.play_both_btn.setText("▶📡 Play + Stream Selected")
+            self.stream_selected_btn.setText("📡 Stream Selected to Icecast")
+            self.dual_play_btn.setText("🔊 Play Local + Stream")
     
     def on_add_to_playlist(self):
         """Add selected tracks to playlist"""
