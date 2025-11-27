@@ -777,6 +777,9 @@ Size: {row['size'] or 'N/A'}
             )
             return
         
+        # Stop any existing local playback first
+        ogg_jack_player.stop_playback()
+        
         # Initialize streamer if needed
         if not self.streamer:
             self.streamer = IcecastStreamerPlugin(self.config_manager)
@@ -814,6 +817,9 @@ Size: {row['size'] or 'N/A'}
             QMessageBox.warning(self, "No Selection", "Please select one or more tracks to play")
             return
         
+        # Stop any existing local playback first
+        ogg_jack_player.stop_playback()
+        
         # Start streaming
         if not self.streamer:
             self.streamer = IcecastStreamerPlugin(self.config_manager)
@@ -850,6 +856,10 @@ Size: {row['size'] or 'N/A'}
     
     def closeEvent(self, event):
         """Clean up on window close"""
+        # Stop any local playback
+        ogg_jack_player.stop_playback()
+        
+        # Stop any streaming
         if self.streamer and self.streamer.is_streaming:
             self.streamer._stop_stream()
         

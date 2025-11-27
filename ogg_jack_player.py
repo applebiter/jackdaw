@@ -687,7 +687,12 @@ def play_playlist(file_paths: List[str], library_root: str = "/"):
         # If thread is still alive, force it and wait a bit more
         if _playback_thread.is_alive():
             print("[OggJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
-            _playback_thread.join(timeout=1.0)
+            _playback_thread.join(timeout=2.0)
+            
+            # If STILL alive, abort to prevent overlapping playback
+            if _playback_thread.is_alive():
+                print("[OggJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
+                return
     
     # Convert strings to Path objects
     _current_playlist = [Path(p) for p in file_paths]
