@@ -150,14 +150,43 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             self.is_streaming = True
             logger.info(f"Started streaming to {self.host}:{self.port}{self.mount}")
             print(f"[IcecastStreamer] FFmpeg started successfully, JACK client 'IcecastStreamer' should now be available")
-            return "Stream started"
+            print(f"[IcecastStreamer] Use 'jack_connect OggPlayer:out_l IcecastStreamer:input_1' to route audio")
+            print(f"[IcecastStreamer] Use 'jack_connect OggPlayer:out_r IcecastStreamer:input_2' to route audio")
             
+            # Try to auto-connect if OggPlayer is already running
+            self._auto_connect_jack()
+            
+            return "Stream started"
+    
         except FileNotFoundError:
             logger.error("FFmpeg not found. Please install ffmpeg with JACK support.")
             return "Error: FFmpeg not installed"
         except Exception as e:
             logger.error(f"Failed to start stream: {e}")
             return f"Failed to start stream: {e}"
+    
+    def _auto_connect_jack(self):
+        """Automatically connect OggPlayer to IcecastStreamer if available"""
+        try:
+            import subprocess
+            # Wait a moment for JACK clients to stabilize
+            time.sleep(0.5)
+            
+            # Try to connect OggPlayer outputs to IcecastStreamer inputs
+            try:
+                subprocess.run(['jack_connect', 'OggPlayer:out_l', 'IcecastStreamer:input_1'], 
+                             capture_output=True, timeout=2)
+                subprocess.run(['jack_connect', 'OggPlayer:out_r', 'IcecastStreamer:input_2'], 
+                             capture_output=True, timeout=2)
+                print("[IcecastStreamer] Auto-connected OggPlayer to IcecastStreamer")
+                logger.info("Auto-connected OggPlayer to IcecastStreamer")
+            except subprocess.TimeoutExpired:
+                logger.warning("JACK connection timed out")
+            except FileNotFoundError:
+                logger.warning("jack_connect command not found")
+        except Exception as e:
+            # Non-fatal - user can connect manually
+            logger.debug(f"Auto-connect failed (non-fatal): {e}")
     
     def _monitor_stream(self):
         """Monitor the streaming process for errors"""
