@@ -10,6 +10,8 @@ import sys
 import json
 import subprocess
 import threading
+import signal
+import atexit
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -36,6 +38,11 @@ class VoiceAssistantTray(QObject):
     def __init__(self):
         super().__init__()
         
+        # Setup signal handlers for clean shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+        atexit.register(self._cleanup_on_exit)
+        
         # Load configuration
         self.config_file = Path("voice_assistant_config.json")
         with open(self.config_file, 'r') as f:
@@ -59,6 +66,9 @@ class VoiceAssistantTray(QObject):
         if not self.app:
             self.app = QApplication(sys.argv)
         
+        # Make Ctrl+C work
+        self.app.setQuitOnLastWindowClosed(False)
+        
         self.tray_icon = QSystemTrayIcon()
         self.setup_tray_icon()
         
@@ -67,9 +77,45 @@ class VoiceAssistantTray(QObject):
         self.status_timer.timeout.connect(self.update_status)
         self.status_timer.start(2000)  # Update every 2 seconds
         
+        # Watchdog timer to keep app alive
+        self.watchdog_timer = QTimer()
+        self.watchdog_timer.timeout.connect(self._watchdog_tick)
+        self.watchdog_timer.start(5000)  # Check every 5 seconds
+        
         # Connect signals
         self.status_changed.connect(self.on_status_changed)
         self.track_changed.connect(self.on_track_changed)
+    
+    def _signal_handler(self, signum, frame):
+        """Handle system signals for clean shutdown"""
+        print(f"\nReceived signal {signum}, shutting down gracefully...")
+        self.quit_application()
+    
+    def _cleanup_on_exit(self):
+        """Cleanup handler for atexit"""
+        try:
+            if self.processes_running:
+                self.stop_voice_assistant()
+        except:
+            pass
+    
+    def _watchdog_tick(self):
+        """Periodic watchdog check to ensure tray is still functional"""
+        try:
+            # Write heartbeat file
+            heartbeat_file = Path(".tray_heartbeat")
+            from datetime import datetime
+            heartbeat_file.write_text(datetime.now().isoformat())
+            
+            # Verify we can still interact with Qt objects
+            if self.tray_icon and self.tray_icon.isVisible():
+                pass  # All good
+            else:
+                print("Warning: Tray icon is not visible")
+        except Exception as e:
+            print(f"Watchdog error: {e}")
+            import traceback
+            traceback.print_exc()
     
     def setup_tray_icon(self):
         """Set up the system tray icon and menu."""
@@ -321,18 +367,26 @@ class VoiceAssistantTray(QObject):
         try:
             # Check if processes are still running
             if self.processes_running:
-                all_alive = all(
-                    p and p.poll() is None 
-                    for p in [self.voice_process, self.llm_process, self.tts_process]
-                )
-                if not all_alive:
-                    print("Warning: Some processes died unexpectedly")
-                    self.stop_voice_assistant()
+                try:
+                    all_alive = all(
+                        p and p.poll() is None 
+                        for p in [self.voice_process, self.llm_process, self.tts_process]
+                    )
+                    if not all_alive:
+                        print("Warning: Some processes died unexpectedly")
+                        self.stop_voice_assistant()
+                except Exception as e:
+                    print(f"Error checking process status: {e}")
             
             # Update currently playing track
-            self.update_now_playing()
+            try:
+                self.update_now_playing()
+            except Exception as e:
+                print(f"Error updating now playing: {e}")
         except Exception as e:
             print(f"Error in update_status: {e}")
+            import traceback
+            traceback.print_exc()
     
     def update_now_playing(self):
         """Update the currently playing track information."""
@@ -351,29 +405,38 @@ class VoiceAssistantTray(QObject):
     
     def on_status_changed(self, status: str):
         """Handle status change signal."""
-        self.status_action.setText(f"Status: {status}")
-        
-        # Update icon based on status
-        is_active = (status == "Running")
-        icon = self.create_icon(is_active=is_active)
-        self.tray_icon.setIcon(icon)
-        
-        if status == "Running":
-            self.tray_icon.setToolTip(f"Jackdaw - {status}\nWake word: {self.config['voice']['recognition'].get('wake_word', 'N/A')}")
-        else:
-            self.tray_icon.setToolTip(f"Jackdaw - {status}")
+        try:
+            if self.status_action:
+                self.status_action.setText(f"Status: {status}")
+            
+            # Update icon based on status
+            is_active = (status == "Running")
+            icon = self.create_icon(is_active=is_active)
+            if self.tray_icon:
+                self.tray_icon.setIcon(icon)
+            
+                if status == "Running":
+                    self.tray_icon.setToolTip(f"Jackdaw - {status}\nWake word: {self.config['voice']['recognition'].get('wake_word', 'N/A')}")
+                else:
+                    self.tray_icon.setToolTip(f"Jackdaw - {status}")
+        except Exception as e:
+            print(f"Error updating status UI: {e}")
     
     def on_track_changed(self, status: dict):
         """Handle track change signal."""
-        if status and 'tags' in status and status['tags']:
-            tags = status['tags']
-            title = tags.get('title', status.get('filename', 'Unknown'))
-            artist = tags.get('artist', 'Unknown Artist')
-            text = f"♪ {title} - {artist}"
-        else:
-            text = "No track playing"
-        
-        self.track_action.setText(text)
+        try:
+            if status and 'tags' in status and status['tags']:
+                tags = status['tags']
+                title = tags.get('title', status.get('filename', 'Unknown'))
+                artist = tags.get('artist', 'Unknown Artist')
+                text = f"♪ {title} - {artist}"
+            else:
+                text = "No track playing"
+            
+            if self.track_action:
+                self.track_action.setText(text)
+        except Exception as e:
+            print(f"Error updating track UI: {e}")
     
     def show_plugin_gui(self, plugin):
         """Show the GUI form for a plugin."""
