@@ -85,6 +85,8 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             "set volume low": self._cmd_set_volume_low,
             "set volume medium": self._cmd_set_volume_medium,
             "set volume high": self._cmd_set_volume_high,
+            "set volume hi": self._cmd_set_volume_high,  # Alternative recognition
+            "volume high": self._cmd_set_volume_high,  # Shorter variant
             "set volume loud": self._cmd_set_volume_loud,
             "what's the volume": self._cmd_get_volume,
             
