@@ -231,8 +231,8 @@ class OggJackPlayer:
             if volume_signal.exists():
                 try:
                     import json
-                    data = json.loads(volume_signal.read_text())
                     global _volume
+                    data = json.loads(volume_signal.read_text())
                     _volume = data.get("volume", _volume)
                     print(f"[OggJackPlayer] Volume updated from another process during playback: {int(_volume * 100)}%")
                     volume_signal.unlink()
@@ -244,8 +244,8 @@ class OggJackPlayer:
             if shuffle_signal.exists():
                 try:
                     import json
-                    data = json.loads(shuffle_signal.read_text())
                     global _shuffle_mode
+                    data = json.loads(shuffle_signal.read_text())
                     _shuffle_mode = data.get("shuffle", _shuffle_mode)
                     print(f"[OggJackPlayer] Shuffle mode updated from another process during playback: {'shuffle' if _shuffle_mode else 'sequential'}")
                     shuffle_signal.unlink()
@@ -530,8 +530,8 @@ def _play_music_loop(root: str):
         if shuffle_signal.exists():
             try:
                 import json
-                data = json.loads(shuffle_signal.read_text())
                 global _shuffle_mode
+                data = json.loads(shuffle_signal.read_text())
                 _shuffle_mode = data.get("shuffle", _shuffle_mode)
                 print(f"[OggJackPlayer] Shuffle mode updated from another process: {'shuffle' if _shuffle_mode else 'sequential'}")
                 shuffle_signal.unlink()
@@ -543,8 +543,8 @@ def _play_music_loop(root: str):
         if volume_signal.exists():
             try:
                 import json
-                data = json.loads(volume_signal.read_text())
                 global _volume
+                data = json.loads(volume_signal.read_text())
                 _volume = data.get("volume", _volume)
                 print(f"[OggJackPlayer] Volume updated from another process: {int(_volume * 100)}%")
                 volume_signal.unlink()
