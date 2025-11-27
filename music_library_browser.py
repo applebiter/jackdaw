@@ -739,7 +739,7 @@ Size: {row['size'] or 'N/A'}
             )
             return
         
-        # Stop any existing playback first
+        # Stop any existing playback first - this waits up to 2 seconds
         ogg_jack_player.stop_playback()
         
         # Convert to Path objects

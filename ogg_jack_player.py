@@ -289,9 +289,10 @@ def stop_playback():
     # Wait for playback thread to finish (with timeout)
     if _playback_thread and _playback_thread.is_alive():
         print("[OggJackPlayer] Waiting for playback to stop...")
-        _playback_thread.join(timeout=2.0)
+        _playback_thread.join(timeout=3.0)
         if _playback_thread.is_alive():
-            print("[OggJackPlayer] Warning: Playback thread did not stop in time")
+            print("[OggJackPlayer] Warning: Playback thread did not stop in time, waiting longer...")
+            _playback_thread.join(timeout=2.0)
 
 
 def set_volume(level: float):
@@ -681,7 +682,12 @@ def play_playlist(file_paths: List[str], library_root: str = "/"):
     if _playback_thread and _playback_thread.is_alive():
         _stop_requested.set()
         print("[OggJackPlayer] Stopping previous playback...")
-        _playback_thread.join(timeout=2.0)
+        _playback_thread.join(timeout=3.0)
+        
+        # If thread is still alive, force it and wait a bit more
+        if _playback_thread.is_alive():
+            print("[OggJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
+            _playback_thread.join(timeout=1.0)
     
     # Convert strings to Path objects
     _current_playlist = [Path(p) for p in file_paths]
