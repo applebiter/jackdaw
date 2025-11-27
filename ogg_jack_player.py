@@ -206,6 +206,16 @@ class OggJackPlayer:
 
         # Block until playback finishes, JACK stops, skip or stop is requested
         while self._running and self._playing and not _skip_requested.is_set() and not _stop_requested.is_set():
+            # Check for cross-process stop signal
+            stop_signal = Path(".stop_playback")
+            if stop_signal.exists():
+                print("[OggJackPlayer] Stop signal detected from another process during playback")
+                _stop_requested.set()
+                try:
+                    stop_signal.unlink()
+                except Exception:
+                    pass
+            
             time.sleep(0.1)
 
         if _skip_requested.is_set():
