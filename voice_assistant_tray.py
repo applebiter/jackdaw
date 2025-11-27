@@ -60,6 +60,7 @@ class VoiceAssistantTray(QObject):
         # Load plugins
         self.plugin_loader = PluginLoader(self.config)
         self.plugins = self.plugin_loader.load_all_plugins()
+        self.llm_recorder_plugin = None  # Will be set during menu setup
         
         # Create tray icon
         self.app = QApplication.instance()
@@ -150,9 +151,52 @@ class VoiceAssistantTray(QObject):
         
         menu.addSeparator()
         
-        # Plugin GUI forms
+        # Music submenu
+        music_menu = menu.addMenu("🎵 Music")
+        
+        # Music browser action
+        music_browser_action = QAction("📂 Library Browser", music_menu)
+        music_browser_action.triggered.connect(self.launch_music_browser)
+        music_menu.addAction(music_browser_action)
+        
+        music_menu.addSeparator()
+        
+        # Music playback controls
+        next_track_action = QAction("⏭ Next Track", music_menu)
+        next_track_action.triggered.connect(self.music_next_track)
+        music_menu.addAction(next_track_action)
+        
+        stop_music_action = QAction("⏹ Stop Playback", music_menu)
+        stop_music_action.triggered.connect(self.music_stop)
+        music_menu.addAction(stop_music_action)
+        
+        music_menu.addSeparator()
+        
+        volume_up_action = QAction("🔊 Volume Up", music_menu)
+        volume_up_action.triggered.connect(self.music_volume_up)
+        music_menu.addAction(volume_up_action)
+        
+        volume_down_action = QAction("🔉 Volume Down", music_menu)
+        volume_down_action.triggered.connect(self.music_volume_down)
+        music_menu.addAction(volume_down_action)
+        
+        menu.addSeparator()
+        
+        # AI Chat submenu - open the widget instead of inline controls
+        chat_action = QAction("🤖 AI Chat", menu)
+        chat_action.triggered.connect(self.show_chat_widget)
+        menu.addAction(chat_action)
+        
+        menu.addSeparator()
+        
+        # Plugin GUI forms (excluding llm_recorder since we added it above)
         self.plugin_menu_items = {}
         for plugin in self.plugins:
+            # Skip llm_recorder plugin since we integrated it as AI Chat menu item
+            if plugin.get_name() == 'llm_recorder':
+                self.llm_recorder_plugin = plugin  # Store reference for widget
+                continue
+                
             if hasattr(plugin, 'create_gui_widget') and callable(getattr(plugin, 'create_gui_widget')):
                 plugin_name = plugin.get_name()
                 action = QAction(f"🔧 {plugin.get_description()}", menu)
@@ -165,13 +209,6 @@ class VoiceAssistantTray(QObject):
         
         # Tools submenu
         tools_menu = menu.addMenu("🔧 Tools")
-        
-        # Music browser action
-        music_browser_action = QAction("🎵 Music Library Browser", tools_menu)
-        music_browser_action.triggered.connect(self.launch_music_browser)
-        tools_menu.addAction(music_browser_action)
-        
-        tools_menu.addSeparator()
         
         # Remember JACK routing action
         remember_routing_action = QAction("💾 Save JACK Connections", tools_menu)
@@ -647,6 +684,48 @@ class VoiceAssistantTray(QObject):
         
         dialog.setLayout(layout)
         dialog.exec()
+    
+    def music_next_track(self):
+        """Skip to next track."""
+        try:
+            import audio_jack_player
+            audio_jack_player.skip_to_next_track()
+        except Exception as e:
+            print(f"Error skipping track: {e}")
+    
+    def music_stop(self):
+        """Stop music playback."""
+        try:
+            import audio_jack_player
+            audio_jack_player.stop_playback()
+        except Exception as e:
+            print(f"Error stopping music: {e}")
+    
+    def music_volume_up(self):
+        """Increase volume by 10%."""
+        try:
+            import audio_jack_player
+            audio_jack_player.adjust_volume(0.1)
+        except Exception as e:
+            print(f"Error adjusting volume: {e}")
+    
+    def music_volume_down(self):
+        """Decrease volume by 10%."""
+        try:
+            import audio_jack_player
+            audio_jack_player.adjust_volume(-0.1)
+        except Exception as e:
+            print(f"Error adjusting volume: {e}")
+    
+    def show_chat_widget(self):
+        """Show the AI Chat interface widget."""
+        try:
+            if self.llm_recorder_plugin:
+                self.show_plugin_gui(self.llm_recorder_plugin)
+            else:
+                print("LLM recorder plugin not available")
+        except Exception as e:
+            print(f"Error showing chat widget: {e}")
     
     def quit_application(self):
         """Quit the application."""

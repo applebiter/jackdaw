@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Simple OGG player over JACK.
+Multi-format audio player over JACK.
+
+Supports Ogg Vorbis, Opus, FLAC, and MP3 formats.
 
 Usage example (from another module):
 
-    from ogg_jack_player import play_random_ogg_in_directory
+    from audio_jack_player import play_random_audio_in_directory
 
     # Somewhere in a command handler:
-    play_random_ogg_in_directory("/path/to/samples")
+    play_random_audio_in_directory("/path/to/music")
 """
 
 import os
@@ -37,13 +39,13 @@ _current_track: Optional[Path] = None  # Currently playing track
 _total_tracks: int = 0  # Total tracks in current playlist/library
 
 
-class OggJackPlayer:
+class AudioJackPlayer:
     """
-    Play an OGG Vorbis file over JACK, resampled to JACK's sample rate.
+    Play audio files (Ogg, Opus, FLAC, MP3) over JACK, resampled to JACK's sample rate.
 
     - Creates its own JACK client (stereo out).
     - Auto-connects to system:playback_1 and system:playback_2.
-    - Uses ffmpeg to convert the OGG to a temporary WAV file
+    - Uses ffmpeg to convert the audio to a temporary WAV file
       at the JACK sample rate and 2 channels (stereo).
     - Streams the WAV into JACK in real time.
     """
@@ -69,7 +71,7 @@ class OggJackPlayer:
         self._running = False
 
     def shutdown(self, status, reason):
-        print(f"JACK shutdown in OggJackPlayer: {status} - {reason}")
+        print(f"JACK shutdown in AudioJackPlayer: {status} - {reason}")
         self._running = False
 
     def process(self, frames):
@@ -110,12 +112,12 @@ class OggJackPlayer:
         out_r[:] = chunk[:, 1] * _volume
         self._position = end_pos
 
-    def _decode_ogg_to_wav(self, ogg_path: Path) -> Optional[Path]:
+    def _decode_audio_to_wav(self, audio_path: Path) -> Optional[Path]:
         """
-        Use ffmpeg to decode and resample the ogg file into a stereo WAV
+        Use ffmpeg to decode and resample the audio file into a stereo WAV
         at JACK's sample rate.
         """
-        tmp = tempfile.NamedTemporaryFile(suffix="_ogg_resampled.wav", delete=False)
+        tmp = tempfile.NamedTemporaryFile(suffix="_audio_resampled.wav", delete=False)
         tmp_path = Path(tmp.name)
         tmp.close()
 
@@ -123,39 +125,39 @@ class OggJackPlayer:
             "ffmpeg",
             "-y",
             "-i",
-            str(ogg_path),
+            str(audio_path),
             "-ac",
             "2",  # stereo
             "-ar",
             str(self.sample_rate),
             str(tmp_path),
         ]
-        print(f"[OggJackPlayer] Running ffmpeg: {' '.join(cmd)}")
+        print(f"[AudioJackPlayer] Running ffmpeg: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
-            print(f"[OggJackPlayer] ffmpeg error:\n{result.stderr}")
+            print(f"[AudioJackPlayer] ffmpeg error:\n{result.stderr}")
             tmp_path.unlink(missing_ok=True)
             return None
 
         return tmp_path
 
-    def load_ogg(self, ogg_path: Path) -> bool:
+    def load_audio(self, audio_path: Path) -> bool:
         """
-        Convert and load an OGG file into memory for playback.
+        Convert and load an audio file into memory for playback.
         """
-        ogg_path = ogg_path.expanduser().resolve()
-        if not ogg_path.exists():
-            print(f"[OggJackPlayer] File not found: {ogg_path}")
+        audio_path = audio_path.expanduser().resolve()
+        if not audio_path.exists():
+            print(f"[AudioJackPlayer] File not found: {audio_path}")
             return False
 
-        wav_path = self._decode_ogg_to_wav(ogg_path)
+        wav_path = self._decode_audio_to_wav(audio_path)
         if not wav_path:
             return False
 
         try:
             data, sr = sf.read(str(wav_path), dtype="float32")
         except Exception as e:
-            print(f"[OggJackPlayer] Error reading WAV: {e}")
+            print(f"[AudioJackPlayer] Error reading WAV: {e}")
             wav_path.unlink(missing_ok=True)
             return False
 
@@ -168,7 +170,7 @@ class OggJackPlayer:
         if sr != self.sample_rate:
             # Should not happen if ffmpeg respected -ar, but guard anyway
             print(
-                f"[OggJackPlayer] Warning: WAV SR {sr} != JACK SR {self.sample_rate}"
+                f"[AudioJackPlayer] Warning: WAV SR {sr} != JACK SR {self.sample_rate}"
             )
 
         self._audio = data
@@ -179,13 +181,13 @@ class OggJackPlayer:
         wav_path.unlink(missing_ok=True)
         return True
 
-    def play_blocking(self, ogg_path: Path):
+    def play_blocking(self, audio_path: Path):
         """
-        Load and play an OGG file, blocking until finished.
+        Load and play an audio file, blocking until finished.
         """
-        print(f"[OggJackPlayer] Preparing to play: {ogg_path}")
-        if not self.load_ogg(ogg_path):
-            print("[OggJackPlayer] Failed to load OGG; aborting.")
+        print(f"[AudioJackPlayer] Preparing to play: {audio_path}")
+        if not self.load_audio(audio_path):
+            print("[AudioJackPlayer] Failed to load audio; aborting.")
             return
 
         # Activate JACK client
@@ -195,13 +197,13 @@ class OggJackPlayer:
         try:
             self.client.connect(self.out_l, "system:playback_1")
             self.client.connect(self.out_r, "system:playback_2")
-            print("[OggJackPlayer] Connected to system:playback_1/2")
+            print("[AudioJackPlayer] Connected to system:playback_1/2")
         except jack.JackError as e:
-            print(f"[OggJackPlayer] Could not auto-connect: {e}")
+            print(f"[AudioJackPlayer] Could not auto-connect: {e}")
             print("  You may need to connect manually in qjackctl/Carla.")
 
         self._running = True
-        print("[OggJackPlayer] Starting playback...")
+        print("[AudioJackPlayer] Starting playback...")
         import time
 
         # Block until playback finishes, JACK stops, skip or stop is requested
@@ -209,7 +211,7 @@ class OggJackPlayer:
             # Check for cross-process stop signal
             stop_signal = Path(".stop_playback")
             if stop_signal.exists():
-                print("[OggJackPlayer] Stop signal detected from another process during playback")
+                print("[AudioJackPlayer] Stop signal detected from another process during playback")
                 _stop_requested.set()
                 try:
                     stop_signal.unlink()
@@ -219,7 +221,7 @@ class OggJackPlayer:
             # Check for cross-process skip signal
             skip_signal = Path(".skip_track")
             if skip_signal.exists():
-                print("[OggJackPlayer] Skip signal detected from another process during playback")
+                print("[AudioJackPlayer] Skip signal detected from another process during playback")
                 _skip_requested.set()
                 try:
                     skip_signal.unlink()
@@ -234,7 +236,7 @@ class OggJackPlayer:
                     import json
                     data = json.loads(volume_signal.read_text())
                     _volume = data.get("volume", _volume)
-                    print(f"[OggJackPlayer] Volume updated from another process during playback: {int(_volume * 100)}%")
+                    print(f"[AudioJackPlayer] Volume updated from another process during playback: {int(_volume * 100)}%")
                     volume_signal.unlink()
                 except Exception:
                     pass
@@ -247,7 +249,7 @@ class OggJackPlayer:
                     import json
                     data = json.loads(shuffle_signal.read_text())
                     _shuffle_mode = data.get("shuffle", _shuffle_mode)
-                    print(f"[OggJackPlayer] Shuffle mode updated from another process during playback: {'shuffle' if _shuffle_mode else 'sequential'}")
+                    print(f"[AudioJackPlayer] Shuffle mode updated from another process during playback: {'shuffle' if _shuffle_mode else 'sequential'}")
                     shuffle_signal.unlink()
                 except Exception:
                     pass
@@ -255,20 +257,20 @@ class OggJackPlayer:
             time.sleep(0.1)
 
         if _skip_requested.is_set():
-            print("[OggJackPlayer] Skip requested; stopping current track.")
+            print("[AudioJackPlayer] Skip requested; stopping current track.")
         elif _stop_requested.is_set():
-            print("[OggJackPlayer] Stop requested; halting playback.")
+            print("[AudioJackPlayer] Stop requested; halting playback.")
 
-        print("[OggJackPlayer] Playback finished; deactivating client.")
+        print("[AudioJackPlayer] Playback finished; deactivating client.")
         try:
             self.client.deactivate()
             self.client.close()
-            print("[OggJackPlayer] JACK client closed successfully.")
+            print("[AudioJackPlayer] JACK client closed successfully.")
         except Exception as e:
-            print(f"[OggJackPlayer] Error closing JACK client: {e}")
+            print(f"[AudioJackPlayer] Error closing JACK client: {e}")
 
 
-def _collect_ogg_files(root_dir: Path) -> List[Path]:
+def _collect_audio_files(root_dir: Path) -> List[Path]:
     """Collect all supported audio files (Ogg, Opus, FLAC, MP3)"""
     audio_files: List[Path] = []
     supported_extensions = ('.ogg', '.opus', '.flac', '.mp3')
@@ -281,12 +283,12 @@ def _collect_ogg_files(root_dir: Path) -> List[Path]:
 
 def skip_to_next_track():
     """
-    Signal the current OGG playback to stop and play the next random track
+    Signal the current audio playback to stop and play the next random track
     from the same directory.
 
     Call this from a voice command handler, e.g.:
 
-        from ogg_jack_player import skip_to_next_track
+        from audio_jack_player import skip_to_next_track
 
         def cmd_next_track():
             skip_to_next_track()
@@ -303,7 +305,7 @@ def skip_to_next_track():
     except Exception:
         pass
     
-    print("[OggJackPlayer] Skip requested; will play next track.")
+    print("[AudioJackPlayer] Skip requested; will play next track.")
 
 
 def stop_playback():
@@ -316,7 +318,7 @@ def stop_playback():
 
     Call this from a voice command handler, e.g.:
 
-        from ogg_jack_player import stop_playback
+        from audio_jack_player import stop_playback
 
         def cmd_stop_music():
             stop_playback()
@@ -325,7 +327,7 @@ def stop_playback():
     """
     global _stop_requested, _playback_thread, _current_track
     _stop_requested.set()
-    print("[OggJackPlayer] Stop requested; will halt playback.")
+    print("[AudioJackPlayer] Stop requested; will halt playback.")
     
     # Create stop signal file for cross-process communication
     try:
@@ -346,10 +348,10 @@ def stop_playback():
     
     # Wait for playback thread to finish (with timeout)
     if _playback_thread and _playback_thread.is_alive():
-        print("[OggJackPlayer] Waiting for playback to stop...")
+        print("[AudioJackPlayer] Waiting for playback to stop...")
         _playback_thread.join(timeout=3.0)
         if _playback_thread.is_alive():
-            print("[OggJackPlayer] Warning: Playback thread did not stop in time, waiting longer...")
+            print("[AudioJackPlayer] Warning: Playback thread did not stop in time, waiting longer...")
             _playback_thread.join(timeout=2.0)
 
 
@@ -371,7 +373,7 @@ def set_volume(level: float):
     except Exception:
         pass
     
-    print(f"[OggJackPlayer] Volume set to {int(_volume * 100)}%")
+    print(f"[AudioJackPlayer] Volume set to {int(_volume * 100)}%")
 
 
 def get_volume() -> float:
@@ -393,7 +395,7 @@ def adjust_volume(delta: float):
     """
     global _volume
     _volume = max(0.0, min(1.0, _volume + delta))
-    print(f"[OggJackPlayer] Volume adjusted to {int(_volume * 100)}%")
+    print(f"[AudioJackPlayer] Volume adjusted to {int(_volume * 100)}%")
 
 
 def pause_playback():
@@ -406,7 +408,7 @@ def pause_playback():
     global _paused
     if not _paused.is_set():
         _paused.set()
-        print("[OggJackPlayer] Playback paused")
+        print("[AudioJackPlayer] Playback paused")
 
 
 def resume_playback():
@@ -418,7 +420,7 @@ def resume_playback():
     global _paused
     if _paused.is_set():
         _paused.clear()
-        print("[OggJackPlayer] Playback resumed")
+        print("[AudioJackPlayer] Playback resumed")
 
 
 def is_paused() -> bool:
@@ -450,7 +452,7 @@ def set_shuffle_mode(shuffle: bool):
         pass
     
     mode = "shuffle" if shuffle else "sequential"
-    print(f"[OggJackPlayer] Playback mode set to {mode}")
+    print(f"[AudioJackPlayer] Playback mode set to {mode}")
 
 
 def get_shuffle_mode() -> bool:
@@ -473,7 +475,7 @@ def toggle_shuffle_mode() -> bool:
     global _shuffle_mode
     _shuffle_mode = not _shuffle_mode
     mode = "shuffle" if _shuffle_mode else "sequential"
-    print(f"[OggJackPlayer] Playback mode toggled to {mode}")
+    print(f"[AudioJackPlayer] Playback mode toggled to {mode}")
     return _shuffle_mode
 
 
@@ -487,18 +489,18 @@ def _play_music_loop(root: str):
     
     # Use custom playlist if set, otherwise scan directory
     if _current_playlist:
-        oggs = _current_playlist
+        audio_files = _current_playlist
         mode = "shuffle" if _shuffle_mode else "sequential"
-        print(f"[OggJackPlayer] Playing from custom playlist ({len(oggs)} tracks, {mode} mode)")
+        print(f"[AudioJackPlayer] Playing from custom playlist ({len(audio_files)} tracks, {mode} mode)")
     else:
         root_dir = Path(root).expanduser()
         if not root_dir.exists():
-            print(f"[OggJackPlayer] Directory does not exist: {root_dir}")
+            print(f"[AudioJackPlayer] Directory does not exist: {root_dir}")
             return
 
-        oggs = _collect_ogg_files(root_dir)
-        if not oggs:
-            print(f"[OggJackPlayer] No audio files found under: {root_dir}")
+        audio_files = _collect_audio_files(root_dir)
+        if not audio_files:
+            print(f"[AudioJackPlayer] No audio files found under: {root_dir}")
             return
 
     while True:
@@ -508,7 +510,7 @@ def _play_music_loop(root: str):
         # Check for cross-process stop signal
         stop_signal = Path(".stop_playback")
         if stop_signal.exists():
-            print("[OggJackPlayer] Stop signal detected from another process")
+            print("[AudioJackPlayer] Stop signal detected from another process")
             _stop_requested.set()
             try:
                 stop_signal.unlink()  # Clean up signal file
@@ -518,7 +520,7 @@ def _play_music_loop(root: str):
         # Check for cross-process skip signal
         skip_signal = Path(".skip_track")
         if skip_signal.exists():
-            print("[OggJackPlayer] Skip signal detected from another process")
+            print("[AudioJackPlayer] Skip signal detected from another process")
             _skip_requested.set()
             try:
                 skip_signal.unlink()
@@ -532,7 +534,7 @@ def _play_music_loop(root: str):
                 import json
                 data = json.loads(shuffle_signal.read_text())
                 _shuffle_mode = data.get("shuffle", _shuffle_mode)
-                print(f"[OggJackPlayer] Shuffle mode updated from another process: {'shuffle' if _shuffle_mode else 'sequential'}")
+                print(f"[AudioJackPlayer] Shuffle mode updated from another process: {'shuffle' if _shuffle_mode else 'sequential'}")
                 shuffle_signal.unlink()
             except Exception:
                 pass
@@ -544,55 +546,55 @@ def _play_music_loop(root: str):
                 import json
                 data = json.loads(volume_signal.read_text())
                 _volume = data.get("volume", _volume)
-                print(f"[OggJackPlayer] Volume updated from another process: {int(_volume * 100)}%")
+                print(f"[AudioJackPlayer] Volume updated from another process: {int(_volume * 100)}%")
                 volume_signal.unlink()
             except Exception:
                 pass
 
         # If stop was requested, halt completely
         if _stop_requested.is_set():
-            print("[OggJackPlayer] Stopping playback.")
+            print("[AudioJackPlayer] Stopping playback.")
             _current_playlist = None  # Clear playlist on stop
             _playlist_position = 0
             break
 
         # Select track based on shuffle mode
         if _shuffle_mode:
-            choice = random.choice(oggs)
-            print(f"[OggJackPlayer] Selected random track: {choice}")
+            choice = random.choice(audio_files)
+            print(f"[AudioJackPlayer] Selected random track: {choice}")
             # Update status for shuffle mode
             _current_track = choice
-            _total_tracks = len(oggs)
-            _write_now_playing_status(choice, None, len(oggs))
+            _total_tracks = len(audio_files)
+            _write_now_playing_status(choice, None, len(audio_files))
         else:
             # Sequential playback
-            choice = oggs[_playlist_position]
-            print(f"[OggJackPlayer] Playing track {_playlist_position + 1}/{len(oggs)}: {choice}")
+            choice = audio_files[_playlist_position]
+            print(f"[AudioJackPlayer] Playing track {_playlist_position + 1}/{len(audio_files)}: {choice}")
             
             # Update global current track info
             _current_track = choice
-            _total_tracks = len(oggs)
+            _total_tracks = len(audio_files)
             
             # Write status to file for cross-process sharing
-            _write_now_playing_status(choice, _playlist_position + 1, len(oggs))
+            _write_now_playing_status(choice, _playlist_position + 1, len(audio_files))
             
-            _playlist_position = (_playlist_position + 1) % len(oggs)  # Wrap around to start
+            _playlist_position = (_playlist_position + 1) % len(audio_files)  # Wrap around to start
         
-        player = OggJackPlayer(client_name="jd_music")
+        player = AudioJackPlayer(client_name="jd_music")
         player.play_blocking(choice)
 
         # If stop was requested during playback, halt
         if _stop_requested.is_set():
-            print("[OggJackPlayer] Stopping playback.")
+            print("[AudioJackPlayer] Stopping playback.")
             _current_playlist = None  # Clear playlist on stop
             _playlist_position = 0
             break
 
         # Whether skipped or naturally finished, play next track
-        print("[OggJackPlayer] Auto-playing next track...")
+        print("[AudioJackPlayer] Auto-playing next track...")
 
 
-def play_random_ogg_in_directory(root: str):
+def play_random_audio_in_directory(root: str):
     """
     Traverse a directory recursively, pick a random audio file (Ogg, Opus, FLAC, MP3),
     and play it over JACK via a new client. Runs in a background thread so voice
@@ -602,27 +604,27 @@ def play_random_ogg_in_directory(root: str):
 
     Example voice handler in voice_command_client.py:
 
-        def cmd_play_random_ogg():
-            play_random_ogg_in_directory("/path/to/your/music/library")
+        def cmd_play_random_track():
+            play_random_audio_in_directory("/path/to/your/music/library")
 
-        client.register_command("play random track", cmd_play_random_ogg)
+        client.register_command("play random track", cmd_play_random_track)
     """
     global _current_playlist, _stop_requested, _playlist_position, _playback_thread
     
     # Stop any currently playing music first
     if _playback_thread and _playback_thread.is_alive():
         _stop_requested.set()
-        print("[OggJackPlayer] Stopping previous playback...")
+        print("[AudioJackPlayer] Stopping previous playback...")
         _playback_thread.join(timeout=3.0)
         
         # If thread is still alive, force it and wait a bit more
         if _playback_thread.is_alive():
-            print("[OggJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
+            print("[AudioJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
             _playback_thread.join(timeout=2.0)
             
             # If STILL alive, abort to prevent overlapping playback
             if _playback_thread.is_alive():
-                print("[OggJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
+                print("[AudioJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
                 return
     
     # Give JACK client time to fully close
@@ -638,9 +640,9 @@ def play_random_ogg_in_directory(root: str):
         stop_signal = Path(".stop_playback")
         if stop_signal.exists():
             stop_signal.unlink()
-            print("[OggJackPlayer] Cleaned up old stop signal")
+            print("[AudioJackPlayer] Cleaned up old stop signal")
     except Exception as e:
-        print(f"[OggJackPlayer] Warning: Could not clean stop signal: {e}")
+        print(f"[AudioJackPlayer] Warning: Could not clean stop signal: {e}")
     
     # Start playback in a background thread
     _playback_thread = threading.Thread(target=_play_music_loop, args=(root,), daemon=True)
@@ -710,7 +712,7 @@ def _write_now_playing_status(track_path: Path, position: Optional[int], total: 
                 
                 conn.close()
         except Exception as db_error:
-            print(f"[OggJackPlayer] Database query failed, falling back to file: {db_error}")
+            print(f"[AudioJackPlayer] Database query failed, falling back to file: {db_error}")
             # Fallback to reading file if database fails
             try:
                 from mutagen import File as MutagenFile
@@ -726,12 +728,12 @@ def _write_now_playing_status(track_path: Path, position: Optional[int], total: 
                     if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
                         status['duration'] = audio.info.length
             except Exception as tag_error:
-                print(f"[OggJackPlayer] Could not read tags from file: {tag_error}")
+                print(f"[AudioJackPlayer] Could not read tags from file: {tag_error}")
         
         with open(status_file, 'w') as f:
             json.dump(status, f, indent=2)
     except Exception as e:
-        print(f"[OggJackPlayer] Error writing status: {e}")
+        print(f"[AudioJackPlayer] Error writing status: {e}")
 
 
 def get_now_playing() -> Optional[dict]:
@@ -799,29 +801,29 @@ def play_playlist(file_paths: List[str], library_root: str = "/"):
     global _current_playlist, _stop_requested, _playlist_position, _playback_thread
     
     if not file_paths:
-        print("[OggJackPlayer] Empty playlist provided")
+        print("[AudioJackPlayer] Empty playlist provided")
         return
     
     # Stop any currently playing music first
     if _playback_thread and _playback_thread.is_alive():
         _stop_requested.set()
-        print("[OggJackPlayer] Stopping previous playback...")
+        print("[AudioJackPlayer] Stopping previous playback...")
         _playback_thread.join(timeout=3.0)
         
         # If thread is still alive, force it and wait a bit more
         if _playback_thread.is_alive():
-            print("[OggJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
+            print("[AudioJackPlayer] Warning: Previous playback did not stop cleanly, forcing...")
             _playback_thread.join(timeout=2.0)
             
             # If STILL alive, abort to prevent overlapping playback
             if _playback_thread.is_alive():
-                print("[OggJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
+                print("[AudioJackPlayer] ERROR: Cannot stop previous playback! Aborting to prevent overlap.")
                 return
     
     # Give JACK client time to fully close
     import time
     time.sleep(0.2)
-    print("[OggJackPlayer] Previous playback stopped, starting new playlist...")
+    print("[AudioJackPlayer] Previous playback stopped, starting new playlist...")
     
     # Convert strings to Path objects
     _current_playlist = [Path(p) for p in file_paths]
@@ -833,12 +835,12 @@ def play_playlist(file_paths: List[str], library_root: str = "/"):
         stop_signal = Path(".stop_playback")
         if stop_signal.exists():
             stop_signal.unlink()
-            print("[OggJackPlayer] Cleaned up old stop signal")
+            print("[AudioJackPlayer] Cleaned up old stop signal")
     except Exception as e:
-        print(f"[OggJackPlayer] Warning: Could not clean stop signal: {e}")
+        print(f"[AudioJackPlayer] Warning: Could not clean stop signal: {e}")
     
     mode = "shuffle" if _shuffle_mode else "sequential"
-    print(f"[OggJackPlayer] Starting playlist with {len(_current_playlist)} tracks ({mode} mode)")
+    print(f"[AudioJackPlayer] Starting playlist with {len(_current_playlist)} tracks ({mode} mode)")
     
     # Start playback in a background thread (use library_root as placeholder)
     _playback_thread = threading.Thread(target=_play_music_loop, args=(library_root,), daemon=True)

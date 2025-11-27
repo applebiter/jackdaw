@@ -3,14 +3,14 @@
 Music Player Plugin
 
 Provides voice commands for playing, controlling, and managing music playback
-through the OGG JACK player. Supports both directory-based random playback
+through the audio JACK player. Supports both directory-based random playback
 and database-driven queries (artist, album, genre, etc.).
 """
 
 from typing import Dict, Callable, Any
 from plugin_base import VoiceAssistantPlugin
-from ogg_jack_player import (
-    play_random_ogg_in_directory,
+from audio_jack_player import (
+    play_random_audio_in_directory,
     play_playlist,
     skip_to_next_track,
     stop_playback,
@@ -102,7 +102,7 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     def _cmd_play_random(self):
         """Play a random track from the music library."""
         if self.music_library_path:
-            play_random_ogg_in_directory(self.music_library_path)
+            play_random_audio_in_directory(self.music_library_path)
         else:
             print(f"[{self.get_name()}] No music library path configured")
     

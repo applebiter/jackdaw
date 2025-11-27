@@ -8,7 +8,7 @@ Jackdaw is a voice assistant that lives in your audio system. Instead of being y
 
 - **Control your music library by voice** - "Play artist Pink Floyd", "Next track", "Volume up"
 - **Stream to Icecast2 servers** - Broadcast your audio to the internet
-- **Record retroactively** - Save audio that already happened using timemachine
+- **Record retroactively** - Save audio that already happened using buffer
 - **Chat with an AI** - Ask questions and get spoken responses using local LLM (Ollama)
 - **Collaborate over networks** - Use JackTrip for real-time audio with friends
 
@@ -421,9 +421,9 @@ Jackdaw will:
 **Conversation memory:**
 Jackdaw remembers previous conversations! Ask follow-up questions and it will understand context.
 
-### Retroactive Recording (Timemachine)
+### Retroactive Recording (Buffer)
 
-Ever wish you could record something that just happened? Timemachine keeps a rolling buffer:
+Ever wish you could record something that just happened? The buffer keeps a rolling recording:
 
 ```
 "[wake word], start the buffer"
@@ -685,7 +685,7 @@ A: Minimum 2GB:
 - Your music library database: varies
 
 **Q: What if I don't have a music library?**
-A: That's fine! You can still use all other features (AI chat, timemachine recording, streaming). Music features are optional.
+A: That's fine! You can still use all other features (AI chat, buffer recording, streaming). Music features are optional.
 
 **Q: Can I use Jackdaw without JACK Audio?**
 A: No, JACK is fundamental to how Jackdaw routes audio. But don't worry - JACK is easier than it sounds! This guide walks you through it.

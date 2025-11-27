@@ -12,7 +12,7 @@ Jackdaw is a modular voice assistant built on JACK Audio, featuring speech recog
 
 - 🎵 **Control your music library** - "Play artist Pink Floyd", "Next track", "Shuffle on"
 - 🎙️ **Stream to Icecast2** - Broadcast audio to the internet with voice commands
-- ⏮️ **Retroactive recording** - Save audio that already happened with timemachine
+- ⏮️ **Retroactive recording** - Save audio that already happened with buffer
 - 💬 **Chat with local AI** - Ask questions, get spoken responses (via Ollama)
 - 🌐 **Network collaboration** - Real-time audio with JackTrip
 - 🎛️ **Professional audio routing** - Integrates seamlessly with JACK ecosystem
@@ -122,7 +122,7 @@ voiceassistant/
 │   ├── basic_commands.py      # Hello, stop listening, etc.
 │   ├── llm_recorder.py        # Start/stop recording for LLM
 │   ├── music_player.py        # Music playback & volume control
-│   ├── timemachine.py         # Retroactive audio recording
+│   ├── buffer.py              # Retroactive audio recording
 │   └── icecast_streamer.py    # Icecast2 streaming plugin
 │
 ├── tools/                      # Utility scripts
@@ -161,7 +161,7 @@ voiceassistant/
 ├── voice_command_client.py    # Main voice recognition & command dispatcher
 ├── llm_query_processor.py     # LLM query handler with conversation history
 ├── tts_jack_client.py         # Text-to-speech JACK client
-├── ogg_jack_player.py         # Music player with skip/volume control
+├── audio_jack_player.py       # Multi-format music player with skip/volume control
 ├── music_query.py             # Music database query handler
 ├── ring_buffer_recorder.py    # Python-based retroactive audio recorder
 ├── plugin_base.py             # Plugin base class
@@ -222,7 +222,7 @@ Broadcast your audio to the internet with simple voice commands. Perfect for int
 
 See **[docs/STREAMING.md](docs/STREAMING.md)** for server setup.
 
-### Retroactive Recording (Timemachine)
+### Retroactive Recording (Buffer)
 Keep a rolling audio buffer and save recordings of things that already happened.
 
 **Commands:** "start the buffer", "save that" (saves last 5 minutes), "stop the buffer"
@@ -302,7 +302,7 @@ jackdaw/
 │   ├── basic_commands.py           Hello, stop listening
 │   ├── music_player.py             Music control
 │   ├── llm_recorder.py             AI chat capture
-│   ├── timemachine.py              Retroactive recording
+│   ├── buffer.py                   Retroactive recording
 │   └── icecast_streamer.py         Icecast2 streaming
 │
 ├── 📁 tools/                       🔧 Utility scripts
@@ -314,7 +314,7 @@ jackdaw/
 ├── 🎙️ voice_command_client.py      Speech recognition
 ├── 🤖 llm_query_processor.py       AI chat handler
 ├── 🔊 tts_jack_client.py           Text-to-speech
-├── 🎶 ogg_jack_player.py           Music player
+├── 🎶 audio_jack_player.py         Multi-format music player
 ├── 🎛️ voice_assistant_tray.py      System tray GUI
 │
 ├── 📁 model/                       🧠 Vosk speech model (download)

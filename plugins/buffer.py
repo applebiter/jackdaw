@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Timemachine Plugin
+Buffer Plugin
 
 Provides retroactive audio recording using a Python-based ring buffer.
 Maintains a rolling buffer of recent audio, allowing you to "go back in time"
@@ -15,7 +15,7 @@ from plugin_base import VoiceAssistantPlugin
 from ring_buffer_recorder import RingBufferRecorder
 
 
-class TimemachinePlugin(VoiceAssistantPlugin):
+class BufferPlugin(VoiceAssistantPlugin):
     """
     Plugin for retroactive audio recording.
     
@@ -33,7 +33,7 @@ class TimemachinePlugin(VoiceAssistantPlugin):
         self.file_prefix = config.get('file_prefix', 'recording-')
         self.channels = config.get('channels', 2)
         self.format = config.get('format', 'WAV').upper()
-        self.jack_name = config.get('jack_name', 'jd_buffer')
+        self.jack_name = 'jd_buffer'  # Fixed JACK client name
         self.auto_connect = config.get('auto_connect', True)
         
         # Runtime state
@@ -43,7 +43,7 @@ class TimemachinePlugin(VoiceAssistantPlugin):
         self.remembered_connections = []  # Store [(source, dest)] tuples
         
     def get_name(self) -> str:
-        return "timemachine"
+        return "buffer"
     
     def get_description(self) -> str:
         return "Retroactive audio recording - save what was just played/recorded"
@@ -63,7 +63,7 @@ class TimemachinePlugin(VoiceAssistantPlugin):
             self._stop_recorder()
     
     def get_commands(self) -> Dict[str, Callable]:
-        """Register timemachine commands."""
+        """Register buffer recording commands."""
         return {
             "start the buffer": self._cmd_start,
             "stop the buffer": self._cmd_stop,
@@ -94,7 +94,7 @@ class TimemachinePlugin(VoiceAssistantPlugin):
                         return
                 
                 # Fall back to legacy format for backwards compatibility
-                legacy_connections = data.get('timemachine_inputs', [])
+                legacy_connections = data.get('timemachine_inputs', [])  # Old config key
                 if isinstance(legacy_connections, list):
                     self.remembered_connections = legacy_connections
                     if legacy_connections:
@@ -121,8 +121,8 @@ class TimemachinePlugin(VoiceAssistantPlugin):
         
         for source, dest in self.remembered_connections:
             try:
-                # Update destination port name if it references old TimeMachine client
-                if ':' in dest and dest.split(':')[0] in ['TimeMachine', 'timemachine']:
+                # Update destination port name if it references old client names
+                if ':' in dest and dest.split(':')[0] in ['TimeMachine', 'timemachine', 'RingBufferRecorder']:
                     # Map old port names to new ones
                     port_num = dest.split('_')[-1] if '_' in dest else '1'
                     dest = f"{self.jack_name}:in_{port_num}"

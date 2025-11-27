@@ -31,7 +31,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont
 
 # Import playback functions
-import ogg_jack_player
+import audio_jack_player
 from plugins.icecast_streamer import IcecastStreamerPlugin
 
 
@@ -740,23 +740,23 @@ Size: {row['size'] or 'N/A'}
             return
         
         # Stop any existing playback first - this waits up to 2 seconds
-        ogg_jack_player.stop_playback()
+        audio_jack_player.stop_playback()
         
         # Convert to Path objects
         playlist = [Path(p) for p in file_paths]
         
         # Set shuffle mode
-        ogg_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
+        audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
         
         # Play playlist
-        ogg_jack_player.play_playlist(playlist)
+        audio_jack_player.play_playlist(playlist)
         
         shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
         self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
     
     def on_stop_local(self):
         """Stop local playback"""
-        ogg_jack_player.stop_playback()
+        audio_jack_player.stop_playback()
         self.status_label.setText("Local playback stopped")
     
     def on_stream_selected(self):
@@ -778,7 +778,7 @@ Size: {row['size'] or 'N/A'}
             return
         
         # Stop any existing local playback first
-        ogg_jack_player.stop_playback()
+        audio_jack_player.stop_playback()
         
         # Initialize streamer if needed
         if not self.streamer:
@@ -790,8 +790,8 @@ Size: {row['size'] or 'N/A'}
             if "started" in result.lower():
                 # Now play the tracks (they'll be routed to the stream)
                 playlist = [Path(p) for p in file_paths]
-                ogg_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
-                ogg_jack_player.play_playlist(playlist)
+                audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
+                audio_jack_player.play_playlist(playlist)
                 
                 shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
                 self.status_label.setText(f"Streaming {len(file_paths)} tracks from {source}{shuffle_text}")
@@ -800,7 +800,7 @@ Size: {row['size'] or 'N/A'}
         else:
             # Already streaming, just update playlist
             playlist = [Path(p) for p in file_paths]
-            ogg_jack_player.play_playlist(playlist)
+            audio_jack_player.play_playlist(playlist)
             self.status_label.setText(f"Updated stream playlist with {len(file_paths)} tracks")
     
     def on_stop_stream(self):
@@ -818,7 +818,7 @@ Size: {row['size'] or 'N/A'}
             return
         
         # Stop any existing local playback first
-        ogg_jack_player.stop_playback()
+        audio_jack_player.stop_playback()
         
         # Start streaming
         if not self.streamer:
@@ -832,8 +832,8 @@ Size: {row['size'] or 'N/A'}
         
         # Play tracks (will output to JACK, which can be routed to both speakers and stream)
         playlist = [Path(p) for p in file_paths]
-        ogg_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
-        ogg_jack_player.play_playlist(playlist)
+        audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
+        audio_jack_player.play_playlist(playlist)
         
         self.status_label.setText(f"Playing {len(file_paths)} tracks locally and streaming")
         QMessageBox.information(
@@ -857,7 +857,7 @@ Size: {row['size'] or 'N/A'}
     def closeEvent(self, event):
         """Clean up on window close"""
         # Stop any local playback
-        ogg_jack_player.stop_playback()
+        audio_jack_player.stop_playback()
         
         # Stop any streaming
         if self.streamer and self.streamer.is_streaming:
