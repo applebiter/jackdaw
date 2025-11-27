@@ -59,6 +59,7 @@ voiceassistant/
 │   ├── QUICK_REFERENCE.md     # Command reference
 │   ├── MUSIC_DATABASE.md      # Music library system guide
 │   ├── TIMEMACHINE.md         # Retroactive recording plugin
+│   ├── STREAMING.md           # Icecast2 streaming guide
 │   ├── IMPLEMENTATION_SUMMARY.md
 │   └── brainstorm.md
 │
@@ -67,7 +68,8 @@ voiceassistant/
 │   ├── basic_commands.py      # Hello, stop listening, etc.
 │   ├── llm_recorder.py        # Start/stop recording for LLM
 │   ├── music_player.py        # Music playback & volume control
-│   └── timemachine.py         # Retroactive audio recording
+│   ├── timemachine.py         # Retroactive audio recording
+│   └── icecast_streamer.py    # Icecast2 streaming plugin
 │
 ├── tools/                      # Utility scripts
 │   ├── inspect_conversations.py    # View SQLite conversations
@@ -170,6 +172,14 @@ Say your wake word followed by:
 - **save that** - Save the last N seconds to WAV file
 - **buffer status** - Check if timemachine is running
 
+**Icecast2 Streaming:**
+- **start streaming** - Begin broadcasting to Icecast2 server
+- **stop streaming** - End the broadcast
+- **stream status** - Check current streaming status
+- **begin broadcast** / **end broadcast** - Alternative commands
+
+See `docs/STREAMING.md` for setup and configuration.
+
 ## Adding New Functionality
 
 Create a new plugin in `plugins/` directory. See `docs/PLUGIN_GUIDE.md` for details.
@@ -220,3 +230,4 @@ See `requirements.txt` for Python packages.
 - `docs/QUICK_REFERENCE.md` - Command and config reference
 - `docs/MUSIC_DATABASE.md` - Music library system and scanner
 - `docs/TIMEMACHINE.md` - Retroactive recording plugin guide
+- `docs/STREAMING.md` - Icecast2 streaming setup and usage
