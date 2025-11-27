@@ -73,7 +73,8 @@
       "password": "hackme",
       "mount": "/jackdaw.ogg",
       "bitrate": 128,
-      "format": "ogg"
+      "format": "ogg",
+      "comment": "Supported formats: ogg (Vorbis), opus, flac, mp3. Xiph.org formats recommended: ogg, opus, flac"
     }
   }
 }

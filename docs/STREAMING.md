@@ -18,7 +18,7 @@ The plugin uses FFmpeg to create a JACK client named `IcecastStreamer` with ster
 
 ### 1. System Requirements
 
-**FFmpeg with JACK support:**
+**FFmpeg with JACK and codec support:**
 ```bash
 # Debian/Ubuntu
 sudo apt install ffmpeg
@@ -28,7 +28,12 @@ sudo dnf install ffmpeg
 
 # Verify JACK support
 ffmpeg -devices 2>&1 | grep jack
+
+# Verify codec support (should show libopus, libvorbis, flac, libmp3lame)
+ffmpeg -codecs 2>&1 | grep -E "opus|vorbis|flac|mp3"
 ```
+
+Most modern FFmpeg builds include all Xiph.org codecs (Opus, Vorbis, FLAC) by default.
 
 ### 2. Configure the Plugin
 
@@ -54,11 +59,46 @@ Edit `voice_assistant_config.json`:
 - `host`: Icecast2 server hostname or IP
 - `port`: Server port (default: 8000)
 - `password`: Source password (set in Icecast2 config)
-- `mount`: Stream mount point (e.g., `/jackdaw.ogg` or `/jackdaw.mp3`)
-- `bitrate`: Audio bitrate in kbps (128 recommended)
-- `format`: Stream format - `ogg` (Vorbis) or `mp3` (LAME)
+- `mount`: Stream mount point (e.g., `/jackdaw.ogg`, `/jackdaw.opus`, `/jackdaw.flac`)
+- `bitrate`: Audio bitrate in kbps (ignored for FLAC which is lossless)
+- `format`: Stream format - `ogg` (Vorbis), `opus`, `flac`, or `mp3`
 
-### 3. Start Jackdaw
+**Format Recommendations (Xiph.org formats):**
+- **opus**: Best for low-latency streaming, excellent quality at low bitrates (64-96 kbps)
+- **ogg**: Classic Vorbis codec, good balance of quality and compatibility (128 kbps)
+- **flac**: Lossless compression, highest quality, larger bandwidth requirements
+- **mp3**: Widespread compatibility but not open source (128 kbps)
+
+### 3. Choose Your Format
+
+**Example configurations for different use cases:**
+
+```json
+// High-quality lossless streaming (studio/archival)
+"icecast_streamer": {
+  "enabled": true,
+  "format": "flac",
+  "mount": "/jackdaw.flac"
+}
+
+// Low-latency, efficient streaming (recommended for live broadcasts)
+"icecast_streamer": {
+  "enabled": true,
+  "format": "opus",
+  "bitrate": 96,
+  "mount": "/jackdaw.opus"
+}
+
+// Classic streaming (maximum compatibility)
+"icecast_streamer": {
+  "enabled": true,
+  "format": "ogg",
+  "bitrate": 128,
+  "mount": "/jackdaw.ogg"
+}
+```
+
+### 4. Start Jackdaw
 
 The plugin loads automatically when enabled. Restart Jackdaw if it's already running.
 
@@ -81,17 +121,27 @@ Examples:
 
 The plugin is implemented in `plugins/icecast_streamer.py` and uses FFmpeg to:
 1. Create a JACK client named `IcecastStreamer` with stereo input
-2. Encode audio in real-time (Ogg Vorbis or MP3)
+2. Encode audio in real-time using Xiph.org or other codecs
 3. Stream to Icecast2 using the `icecast://` protocol
 
 The plugin monitors the streaming process and logs any errors. It gracefully handles start/stop commands and cleans up resources when disabled.
 
 **Key Features:**
 - Voice-controlled start/stop
-- Support for both Ogg Vorbis and MP3 formats
-- Configurable bitrate
+- Support for Xiph.org formats (Ogg Vorbis, Opus, FLAC) and MP3
+- Configurable bitrate (or lossless for FLAC)
 - Process monitoring and error logging
 - Automatic cleanup on shutdown
+
+**About Xiph.org Formats:**
+
+Jackdaw's streaming plugin supports the excellent open formats maintained by [Xiph.org](https://xiph.org/):
+
+- **Opus**: Modern, low-latency codec perfect for live streaming. Superior quality at low bitrates (64-96 kbps typically sufficient).
+- **Vorbis** (in Ogg container): Mature, widely-supported codec with good quality-to-size ratio.
+- **FLAC**: Lossless compression for archival quality. No generation loss, larger files.
+
+These formats are patent-free, royalty-free, and benefit the common good of the internet audio community. Xiph.org also maintains Speex (speech), Theora (video), and other important open media technologies.
 
 ## Testing Your Stream
 

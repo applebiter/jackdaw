@@ -35,11 +35,12 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
         self.password = plugin_config.get("password", "hackme")
         self.mount = plugin_config.get("mount", "/jackdaw.ogg")
         self.bitrate = plugin_config.get("bitrate", 128)
-        self.format = plugin_config.get("format", "ogg")  # ogg or mp3
+        self.format = plugin_config.get("format", "ogg")  # ogg (vorbis), opus, flac, mp3
         
-        # Validate format
-        if self.format not in ["ogg", "mp3"]:
-            logger.warning(f"Invalid format '{self.format}', defaulting to 'ogg'")
+        # Validate format - supporting Xiph.org formats plus MP3
+        valid_formats = ["ogg", "opus", "flac", "mp3"]
+        if self.format not in valid_formats:
+            logger.warning(f"Invalid format '{self.format}', defaulting to 'ogg'. Valid formats: {', '.join(valid_formats)}")
             self.format = "ogg"
     
     def get_name(self):
@@ -65,26 +66,44 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             return "Already streaming"
         
         try:
-            # Determine codec based on format
+            # Determine codec and content type based on format
+            # Supporting Xiph.org formats: Ogg Vorbis, Opus, FLAC
             if self.format == "mp3":
                 codec = "libmp3lame"
                 content_type = "audio/mpeg"
-            else:  # ogg
+                ffmpeg_format = "mp3"
+            elif self.format == "opus":
+                codec = "libopus"
+                content_type = "audio/ogg"  # Opus in Ogg container
+                ffmpeg_format = "ogg"
+            elif self.format == "flac":
+                codec = "flac"
+                content_type = "audio/flac"
+                ffmpeg_format = "flac"
+            else:  # ogg (vorbis)
                 codec = "libvorbis"
                 content_type = "application/ogg"
+                ffmpeg_format = "ogg"
             
-            # FFmpeg command to capture from JACK and stream to Icecast
+            # Build FFmpeg command
             cmd = [
                 'ffmpeg',
                 '-f', 'jack',
                 '-channels', '2',
                 '-i', 'IcecastStreamer',  # JACK client name
                 '-acodec', codec,
-                '-b:a', f'{self.bitrate}k',
-                '-content_type', content_type,
-                '-f', self.format,
-                f'icecast://source:{self.password}@{self.host}:{self.port}{self.mount}'
             ]
+            
+            # FLAC doesn't use bitrate (lossless), others do
+            if self.format != "flac":
+                cmd.extend(['-b:a', f'{self.bitrate}k'])
+            
+            # Add remaining parameters
+            cmd.extend([
+                '-content_type', content_type,
+                '-f', ffmpeg_format,
+                f'icecast://source:{self.password}@{self.host}:{self.port}{self.mount}'
+            ])
             
             logger.info(f"Starting stream with command: {' '.join(cmd[:10])}...")  # Don't log password
             
