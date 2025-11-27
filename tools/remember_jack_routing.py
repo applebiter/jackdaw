@@ -7,6 +7,7 @@ Usage:
 After manually connecting your preferred sources to:
 - `VoiceCommandClient:input` (for voice recognition)
 - `RingBufferRecorder:in_1` and `RingBufferRecorder:in_2` (for retroactive recording)
+- `IcecastStreamer:input_1` and `IcecastStreamer:input_2` (for streaming to Icecast)
 
 Run this script to save the connections. They will be auto-restored on startup.
 """
@@ -75,6 +76,28 @@ def main() -> None:
     if buffer_connections:
         data["timemachine_inputs"] = buffer_connections
     
+    # Check IcecastStreamer inputs (for streaming)
+    icecast_connections = []
+    icecast_found = False
+    for channel in [1, 2]:
+        ice_port_name = f"IcecastStreamer:input_{channel}"
+        ice_ports = [p for p in client.get_ports() if p.name == ice_port_name]
+        if ice_ports:
+            icecast_found = True
+            connections = client.get_all_connections(ice_ports[0])
+            if connections:
+                for conn in connections:
+                    icecast_connections.append([conn.name, ice_port_name])
+                    print(f"✅ IcecastStreamer: {conn.name} -> {ice_port_name}")
+    
+    if not icecast_connections and icecast_found:
+        print(f"⚠️  IcecastStreamer has no connections")
+    elif not icecast_found:
+        print(f"⚠️  IcecastStreamer not found (streaming not started?)")
+    
+    if icecast_connections:
+        data["icecast_inputs"] = icecast_connections
+    
     # Save config
     if data:
         with cfg_path.open("w") as f:
@@ -84,7 +107,7 @@ def main() -> None:
         print("\n❌ No connections found to save.")
         print("\nTo use this tool:")
         print("1. Start the voice assistant")
-        print("2. Say 'indigo start the buffer'")
+        print("2. Say 'indigo start the buffer' and/or 'indigo start streaming'")
         print("3. Manually connect audio sources in qjackctl/Carla")
         print("4. Run this script again to remember the connections")
 

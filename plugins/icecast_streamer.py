@@ -165,6 +165,24 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             logger.error(f"Failed to start stream: {e}")
             return f"Failed to start stream: {e}"
     
+    def _load_saved_connections(self):
+        """Load saved IcecastStreamer connections from jack_routing.json"""
+        try:
+            import json
+            from pathlib import Path
+            
+            config_file = Path("tools/jack_routing.json")
+            if not config_file.exists():
+                return None
+            
+            with open(config_file, 'r') as f:
+                data = json.load(f)
+            
+            return data.get("icecast_inputs", None)
+        except Exception as e:
+            logger.debug(f"Could not load saved connections: {e}")
+            return None
+    
     def _auto_connect_jack(self):
         """Automatically connect audio sources to IcecastStreamer if available"""
         try:
@@ -174,7 +192,27 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
             
             connected = []
             
-            # Try multiple audio sources in order of preference
+            # First, try to restore saved connections from jack_routing.json
+            saved_connections = self._load_saved_connections()
+            if saved_connections:
+                for source, dest in saved_connections:
+                    try:
+                        result = subprocess.run(
+                            ['jack_connect', source, dest],
+                            capture_output=True, timeout=2, text=True
+                        )
+                        if result.returncode == 0:
+                            connected.append(f"{source} -> {dest}")
+                            print(f"[IcecastStreamer] Restored: {source} -> {dest}")
+                            logger.info(f"Restored saved connection: {source} -> {dest}")
+                    except Exception:
+                        continue
+                
+                if connected:
+                    print(f"[IcecastStreamer] Restored {len(connected)} saved connection(s)")
+                    return
+            
+            # If no saved connections, try default audio sources
             source_pairs = [
                 # Live audio input (microphone/line-in)
                 ('system:capture_1', 'system:capture_2'),
