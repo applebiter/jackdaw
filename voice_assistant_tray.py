@@ -117,6 +117,14 @@ class VoiceAssistantTray(QObject):
         if self.plugin_menu_items:
             menu.addSeparator()
         
+        # Tools submenu
+        tools_menu = menu.addMenu("🔧 Tools")
+        
+        # Remember JACK routing action
+        remember_routing_action = QAction("💾 Save JACK Connections", tools_menu)
+        remember_routing_action.triggered.connect(self.remember_jack_routing)
+        tools_menu.addAction(remember_routing_action)
+        
         # View logs action
         view_logs_action = QAction("📋 View Logs", menu)
         view_logs_action.triggered.connect(self.show_logs_viewer)
@@ -413,6 +421,64 @@ class VoiceAssistantTray(QObject):
         
         dialog.setLayout(layout)
         dialog.exec()
+    
+    def remember_jack_routing(self):
+        """Run the remember_jack_routing.py script."""
+        try:
+            script_dir = Path(__file__).parent.resolve()
+            venv_python = script_dir / ".venv" / "bin" / "python"
+            
+            # Prepare environment
+            import os
+            env = os.environ.copy()
+            env['VIRTUAL_ENV'] = str(script_dir / ".venv")
+            env['PATH'] = f"{script_dir / '.venv' / 'bin'}:{env.get('PATH', '')}"
+            
+            # Run the script
+            result = subprocess.run(
+                [str(venv_python), "tools/remember_jack_routing.py"],
+                cwd=str(script_dir),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            # Show result in a dialog
+            dialog = QDialog()
+            dialog.setWindowTitle("JACK Connections Saved")
+            dialog.setMinimumWidth(500)
+            
+            layout = QVBoxLayout()
+            
+            output_text = QTextEdit()
+            output_text.setReadOnly(True)
+            output_text.setPlainText(result.stdout if result.returncode == 0 else result.stderr)
+            layout.addWidget(output_text)
+            
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.close)
+            layout.addWidget(close_btn)
+            
+            dialog.setLayout(layout)
+            dialog.exec()
+            
+        except Exception as e:
+            # Show error dialog
+            dialog = QDialog()
+            dialog.setWindowTitle("Error")
+            layout = QVBoxLayout()
+            
+            error_label = QLabel(f"Failed to save JACK routing:\n{str(e)}")
+            error_label.setWordWrap(True)
+            layout.addWidget(error_label)
+            
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.close)
+            layout.addWidget(close_btn)
+            
+            dialog.setLayout(layout)
+            dialog.exec()
     
     def show_about(self):
         """Show about dialog."""
