@@ -535,8 +535,8 @@ class VoiceAssistantTray(QObject):
                 [str(venv_python), "music_library_browser.py"],
                 cwd=str(script_dir),
                 env=env,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
             )
             
             print("Music library browser launched")
@@ -545,6 +545,14 @@ class VoiceAssistantTray(QObject):
             print(f"Error launching music browser: {e}")
             import traceback
             traceback.print_exc()
+            
+            # Show error dialog
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                None,
+                "Launch Error",
+                f"Failed to launch music browser:\n{e}"
+            )
     
     def remember_jack_routing(self):
         """Run the remember_jack_routing.py script."""
