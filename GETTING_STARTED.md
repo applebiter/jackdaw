@@ -1,4 +1,4 @@
-# Getting Started with Jackdaw 🐦‍⬛
+# Getting Started with Jackdaw
 
 **Welcome!** This guide will help you set up and use Jackdaw, a voice-controlled networked audio system. Whether you're completely new to JACK Audio or an experienced audio engineer, this guide walks you through everything step-by-step.
 
@@ -806,7 +806,7 @@ Now that you're set up, here are some ideas:
 
 ---
 
-**Welcome to Jackdaw!** 🐦‍⬛
+**Welcome to Jackdaw!**
 
 You now have a privacy-respecting, locally-running voice assistant integrated into your professional audio workflow. Experiment, explore, and make it your own!
 

@@ -1,4 +1,4 @@
-# Quick Reference - Jackdaw Voice Assistant 🐦‍⬛
+# Quick Reference - Jackdaw Voice Assistant
 
 **New user?** Start with [GETTING_STARTED.md](../GETTING_STARTED.md) first!
 

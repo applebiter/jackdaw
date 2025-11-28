@@ -2,7 +2,7 @@
 
 <img src="icons/hicolor/256x256/apps/jackdaw.png" alt="Jackdaw" width="128" />
 
-# Jackdaw Voice Assistant 🐦‍⬛
+# Jackdaw Voice Assistant
 
 **A privacy-first, voice-controlled audio system that lives in your professional audio workflow.**
 
@@ -380,4 +380,4 @@ Ready to try Jackdaw? Head over to **[GETTING_STARTED.md](GETTING_STARTED.md)** 
 
 **Questions?** Open an issue on [GitHub](https://github.com/applebiter/jackdaw/issues).
 
-**Enjoy your voice-controlled audio system!** 🎵🎤🐦‍⬛
+**Enjoy your voice-controlled audio system!** 🎵🎤
