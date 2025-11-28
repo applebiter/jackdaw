@@ -472,7 +472,6 @@ Add your Icecast2 server details:
 **Voice commands:**
 ```
 "[wake word], start streaming"
-"[wake word], stream status"
 "[wake word], stop streaming"
 ```
 

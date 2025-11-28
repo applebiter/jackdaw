@@ -57,7 +57,6 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
         return {
             "start streaming": self._start_stream,
             "stop streaming": self._stop_stream,
-            "stream status": self._stream_status,
         }
     
     def _start_stream(self):
@@ -315,13 +314,6 @@ class IcecastStreamerPlugin(VoiceAssistantPlugin):
         except Exception as e:
             logger.error(f"Error stopping stream: {e}")
             return f"Error stopping stream: {e}"
-    
-    def _stream_status(self):
-        """Report streaming status"""
-        if self.is_streaming:
-            return f"Streaming to {self.host}:{self.port}{self.mount} at {self.bitrate} kilobits per second"
-        else:
-            return "Not currently streaming"
     
     def cleanup(self):
         """Cleanup when plugin is unloaded"""

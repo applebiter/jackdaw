@@ -25,9 +25,9 @@ for logfile in logs/voice_command.log logs/llm_processor.log logs/tts_client.log
 done
 
 # Start components in background
-# Voice command client can be very verbose, so limit its logging
+# Use -u flag for unbuffered output to logs
 echo "Starting Voice Command Client..."
-python voice_command_client.py >> logs/voice_command.log 2>&1 &
+python -u voice_command_client.py >> logs/voice_command.log 2>&1 &
 VOICE_PID=$!
 
 echo "Starting LLM Query Processor..."

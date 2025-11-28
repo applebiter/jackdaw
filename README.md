@@ -218,7 +218,7 @@ Ask questions and get spoken responses using Ollama LLM. Jackdaw remembers your 
 ### Icecast2 Streaming
 Broadcast your audio to the internet with simple voice commands. Perfect for internet radio or podcasting.
 
-**Commands:** "start streaming", "stop streaming", "stream status"
+**Commands:** "start streaming", "stop streaming"
 
 See **[docs/STREAMING.md](docs/STREAMING.md)** for server setup.
 

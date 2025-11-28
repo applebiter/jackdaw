@@ -17,7 +17,8 @@ from typing import Optional, Dict, Any, List
 
 from PySide6.QtWidgets import (
     QApplication, QSystemTrayIcon, QMenu, QDialog,
-    QVBoxLayout, QLabel, QPushButton, QTextEdit, QWidget
+    QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QWidget,
+    QComboBox, QMessageBox
 )
 from PySide6.QtCore import QTimer, Signal, QObject, Qt
 from PySide6.QtGui import QIcon, QAction, QPixmap
@@ -349,29 +350,32 @@ class VoiceAssistantTray(QObject):
             env['VIRTUAL_ENV'] = str(script_dir / ".venv")
             env['PATH'] = f"{script_dir / '.venv' / 'bin'}:{env.get('PATH', '')}"
             
-            # Start voice command client
+            # Start voice command client with log redirection
+            self.voice_log = open(script_dir / "logs" / "voice_command.log", "a", buffering=1)
             self.voice_process = subprocess.Popen(
-                [str(venv_python), "voice_command_client.py"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                [str(venv_python), "-u", "voice_command_client.py"],
+                stdout=self.voice_log,
+                stderr=self.voice_log,
                 cwd=str(script_dir),
                 env=env
             )
             
-            # Start LLM processor
+            # Start LLM processor with log redirection
+            self.llm_log = open(script_dir / "logs" / "llm_processor.log", "a", buffering=1)
             self.llm_process = subprocess.Popen(
                 [str(venv_python), "-u", "llm_query_processor.py"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=self.llm_log,
+                stderr=self.llm_log,
                 cwd=str(script_dir),
                 env=env
             )
             
-            # Start TTS client
+            # Start TTS client with log redirection
+            self.tts_log = open(script_dir / "logs" / "tts_client.log", "a", buffering=1)
             self.tts_process = subprocess.Popen(
                 [str(venv_python), "-u", "tts_jack_client.py"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=self.tts_log,
+                stderr=self.tts_log,
                 cwd=str(script_dir),
                 env=env
             )
@@ -413,6 +417,23 @@ class VoiceAssistantTray(QObject):
         self.llm_process = None
         self.tts_process = None
         self.processes_running = False
+        
+        # Close log file handles
+        for log_attr in ['voice_log', 'llm_log', 'tts_log']:
+            if hasattr(self, log_attr):
+                try:
+                    getattr(self, log_attr).close()
+                except Exception:
+                    pass
+        
+        # Stop any FFmpeg processes (jd_stream for Icecast)
+        try:
+            import subprocess
+            subprocess.run(['pkill', '-f', 'ffmpeg.*jd_stream'], 
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print("✓ Stopped jd_stream (Icecast streaming)")
+        except Exception as e:
+            print(f"Note: Could not kill FFmpeg: {e}")
         
         self.start_action.setEnabled(True)
         self.stop_action.setEnabled(False)
@@ -534,27 +555,105 @@ class VoiceAssistantTray(QObject):
         
         layout = QVBoxLayout()
         
-        # Create tabs or combo for different logs
+        # Top controls: log selector and buttons
+        controls_layout = QHBoxLayout()
+        
+        # Log file selector
+        log_selector = QComboBox()
+        
+        # Find all log files
+        log_dir = Path("logs")
+        log_files = []
+        if log_dir.exists():
+            log_files = sorted([f.name for f in log_dir.glob("*.log")])
+        
+        if log_files:
+            log_selector.addItems(log_files)
+        else:
+            log_selector.addItem("No logs found")
+        
+        controls_layout.addWidget(QLabel("Log file:"))
+        controls_layout.addWidget(log_selector, 1)  # Stretch factor 1
+        
+        # Refresh button
+        refresh_btn = QPushButton("🔄 Refresh")
+        controls_layout.addWidget(refresh_btn)
+        
+        # Clear button
+        clear_btn = QPushButton("🗑 Clear Log")
+        controls_layout.addWidget(clear_btn)
+        
+        layout.addLayout(controls_layout)
+        
+        # Log viewer text area
         log_viewer = QTextEdit()
         log_viewer.setReadOnly(True)
-        
-        # Load and display voice command log
-        try:
-            log_file = Path("logs/voice_command.log")
-            if log_file.exists():
-                with open(log_file, 'r') as f:
-                    lines = f.readlines()
-                    # Show last 500 lines
-                    log_viewer.setPlainText(''.join(lines[-500:]))
-        except Exception as e:
-            log_viewer.setPlainText(f"Error loading logs: {e}")
-        
+        log_viewer.setLineWrapMode(QTextEdit.NoWrap)
         layout.addWidget(log_viewer)
         
-        # Close button
+        # Function to load selected log
+        def load_log():
+            try:
+                selected = log_selector.currentText()
+                if selected and selected != "No logs found":
+                    log_file = Path("logs") / selected
+                    if log_file.exists():
+                        with open(log_file, 'r') as f:
+                            content = f.read()
+                            if content:
+                                log_viewer.setPlainText(content)
+                                # Scroll to bottom
+                                scrollbar = log_viewer.verticalScrollBar()
+                                scrollbar.setValue(scrollbar.maximum())
+                            else:
+                                log_viewer.setPlainText(f"[{selected} is empty]")
+                    else:
+                        log_viewer.setPlainText(f"Log file not found: {selected}")
+            except Exception as e:
+                log_viewer.setPlainText(f"Error loading log: {e}")
+        
+        # Function to clear selected log
+        def clear_log():
+            try:
+                selected = log_selector.currentText()
+                if selected and selected != "No logs found":
+                    reply = QMessageBox.question(
+                        dialog,
+                        "Clear Log",
+                        f"Are you sure you want to clear {selected}?",
+                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.No
+                    )
+                    
+                    if reply == QMessageBox.Yes:
+                        log_file = Path("logs") / selected
+                        if log_file.exists():
+                            # Clear the file by writing empty string
+                            with open(log_file, 'w') as f:
+                                f.write("")
+                            log_viewer.setPlainText(f"[{selected} cleared]")
+                        else:
+                            log_viewer.setPlainText(f"Log file not found: {selected}")
+            except Exception as e:
+                log_viewer.setPlainText(f"Error clearing log: {e}")
+        
+        # Connect signals
+        log_selector.currentTextChanged.connect(lambda: load_log())
+        refresh_btn.clicked.connect(load_log)
+        clear_btn.clicked.connect(clear_log)
+        
+        # Load initial log
+        load_log()
+        
+        # Bottom buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(dialog.close)
-        layout.addWidget(close_btn)
+        button_layout.addWidget(close_btn)
+        
+        layout.addLayout(button_layout)
         
         dialog.setLayout(layout)
         dialog.exec()

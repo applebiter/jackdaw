@@ -108,11 +108,9 @@ Say your wake word followed by:
 
 - **"start streaming"** - Begin broadcasting to Icecast2
 - **"stop streaming"** - End the broadcast
-- **"stream status"** - Check current streaming status and bitrate
 
 Examples:
 - "indigo, start streaming"
-- "indigo, stream status"
 - "indigo, stop streaming"
 
 ## Implementation Details
@@ -164,7 +162,7 @@ These formats are patent-free, royalty-free, and benefit the common good of the 
    jack_connect jd_tts:output_L jd_stream:input_1
    jack_connect jd_tts:output_R jd_stream:input_2
    
-   # Or use qjackctl for visual routing
+   # Or use qjackctl or Carla for visual routing
    ```
 
 6. **Listen to your stream** at: `http://your-icecast-server:8000/jackdaw.ogg`

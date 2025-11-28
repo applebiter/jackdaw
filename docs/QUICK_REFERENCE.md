@@ -134,7 +134,6 @@ python tools/scan_music_library.py
 "[wake], set volume low"                  Set to 30%
 "[wake], set volume medium"               Set to 60%
 "[wake], set volume high"                 Set to 90%
-"[wake], what's the volume"               Report current level
 ```
 
 **Library Info:**
@@ -171,9 +170,6 @@ See [TIMEMACHINE.md](TIMEMACHINE.md) for details.
 ```
 "[wake], start streaming"                 Begin broadcast to Icecast2
 "[wake], stop streaming"                  End broadcast
-"[wake], stream status"                   Check current status
-"[wake], begin broadcast"                 Alternative to "start streaming"
-"[wake], end broadcast"                   Alternative to "stop streaming"
 ```
 
 **Prerequisites:** Icecast2 server configured in `voice_assistant_config.json`

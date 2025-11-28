@@ -13,6 +13,7 @@ from audio_jack_player import (
     play_random_audio_in_directory,
     play_playlist,
     skip_to_next_track,
+    skip_to_previous_track,
     stop_playback,
     pause_playback,
     resume_playback,
@@ -74,7 +75,8 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             "play some": self._cmd_play_some,
             
             # Playback control
-            "next track": self._cmd_next_track,
+            "play next track": self._cmd_next_track,
+            "play previous track": self._cmd_previous_track,
             "stop playing music": self._cmd_stop_music,
             "pause music": self._cmd_pause_music,
             "resume music": self._cmd_resume_music,
@@ -87,7 +89,6 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             "set volume high": self._cmd_set_volume_high,
             "set volume hi": self._cmd_set_volume_high,  # Alternative recognition
             "set volume loud": self._cmd_set_volume_loud,
-            "what's the volume": self._cmd_get_volume,
             
             # Library info
             "music library stats": self._cmd_library_stats,
@@ -107,8 +108,12 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             print(f"[{self.get_name()}] No music library path configured")
     
     def _cmd_next_track(self):
-        """Skip to the next random track."""
+        """Skip to the next track."""
         skip_to_next_track()
+    
+    def _cmd_previous_track(self):
+        """Skip to the previous track."""
+        skip_to_previous_track()
     
     def _cmd_stop_music(self):
         """Stop music playback."""
@@ -137,12 +142,6 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     def _cmd_set_volume_loud(self):
         """Set volume to 95%."""
         set_volume(0.95)
-    
-    def _cmd_get_volume(self):
-        """Report current volume level."""
-        vol = get_volume()
-        print(f"Current volume: {int(vol * 100)}%")
-        return f"Current volume is {int(vol * 100)} percent"
     
     def _cmd_pause_music(self):
         """Pause current music playback."""

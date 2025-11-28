@@ -297,11 +297,6 @@ class VoiceCommandClient:
                         if self.log_level == 'DEBUG':
                             print(f"Partial: {partial}", end='\r')
                         
-                        # Check if "stop chat" is in partial results
-                        if self.capturing and 'stop chat' in partial.lower():
-                            # Trigger stop chat immediately
-                            self.check_commands('stop chat')
-                        
             except queue.Empty:
                 continue
             except Exception as e:
@@ -318,42 +313,49 @@ class VoiceCommandClient:
         """
         text_lower = text.lower()
         
+        # Handle text based on wake word and capture state
+        has_wake_word = False
+        command_text = text_lower
+        
         # If wake word is configured, check if text starts with it
         if self.wake_word:
-            if not text_lower.startswith(self.wake_word):
-                # No wake word detected - ignore this text
-                # But still capture it if we're already capturing
-                with self.capture_lock:
-                    if self.capturing and text.strip():
-                        self.captured_text.append(text)
-                        print(f"[Captured: {text}]")
+            if text_lower.startswith(self.wake_word):
+                has_wake_word = True
+                # Remove wake word from text for command matching
+                command_text = text_lower[len(self.wake_word):].strip()
+            elif not self.capturing:
+                # No wake word and not capturing - ignore completely
                 return
-            
-            # Remove wake word from text for command matching
-            text_lower = text_lower[len(self.wake_word):].strip()
+            # else: No wake word but we ARE capturing - process it for capture
         
-        # Check for command matches - sort by length descending to match longer phrases first
-        sorted_commands = sorted(self.commands.items(), key=lambda x: len(x[0]), reverse=True)
-        for phrase, callback in sorted_commands:
-            if phrase in text_lower:
-                print(f"\n>>> Command detected: '{phrase}'")
-                try:
-                    # Pass the full text (after wake word) to callback
-                    callback(text_lower)
-                except TypeError:
-                    # Fallback for callbacks that don't accept parameters
-                    callback()
-                except Exception as e:
-                    print(f"Error executing command callback: {e}")
+        # Check for command matches only if we have the wake word
+        if has_wake_word or not self.wake_word:
+            # Sort by length descending to match longer phrases first
+            sorted_commands = sorted(self.commands.items(), key=lambda x: len(x[0]), reverse=True)
+            for phrase, callback in sorted_commands:
+                if phrase in command_text:
+                    print(f"\n>>> Command detected: '{phrase}'")
+                    try:
+                        # Pass the full text (after wake word) to callback
+                        callback(command_text)
+                    except TypeError:
+                        # Fallback for callbacks that don't accept parameters
+                        callback()
+                    except Exception as e:
+                        print(f"Error executing command callback: {e}")
+                    # Don't return here - we might still want to capture
         
         # If capturing, add text to buffer (unless it's a command)
         with self.capture_lock:
-            if self.capturing and text.strip():
-                # Don't capture the command phrases themselves
-                is_command = any(phrase in text_lower for phrase in self.commands.keys())
-                if not is_command:
-                    self.captured_text.append(text)
-                    print(f"[Captured: {text}]")
+            if self.capturing:
+                # When capturing, use original text if no wake word, or command_text if wake word present
+                capture_text = command_text if has_wake_word else text_lower
+                if capture_text.strip():
+                    # Don't capture the command phrases themselves
+                    is_command = any(phrase in capture_text for phrase in self.commands.keys())
+                    if not is_command:
+                        self.captured_text.append(capture_text)
+                        print(f"[Captured: {capture_text}]")
                     
     def start(self):
         """Start the JACK client and recognition"""

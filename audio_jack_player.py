@@ -349,6 +349,40 @@ def skip_to_next_track():
     print("[AudioJackPlayer] Skip requested; will play next track.")
 
 
+def skip_to_previous_track():
+    """
+    Signal the current audio playback to skip to the previous track.
+    In shuffle mode, selects a new random track.
+    In sequential mode, moves backwards in the playlist.
+
+    Call this from a voice command handler, e.g.:
+
+        from audio_jack_player import skip_to_previous_track
+
+        def cmd_previous_track():
+            skip_to_previous_track()
+
+        client.register_command("previous track", cmd_previous_track)
+    """
+    global _skip_requested, _playlist_position, _shuffle_mode
+    
+    # In sequential mode, move back 2 positions (current track +1 already happened, so -2 to go back)
+    if not _shuffle_mode and _current_playlist:
+        _playlist_position = (_playlist_position - 2) % len(_current_playlist)
+        print(f"[AudioJackPlayer] Moving to previous track (position {_playlist_position})")
+    else:
+        print("[AudioJackPlayer] Previous track requested (will select new random track in shuffle mode)")
+    
+    _skip_requested.set()
+    
+    # Create signal file for cross-process communication
+    try:
+        skip_signal = Path(".skip_track")
+        skip_signal.touch()
+    except Exception:
+        pass
+
+
 def stop_playback():
     """
     Signal the current OGG playback to stop completely without playing

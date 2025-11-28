@@ -15,3 +15,8 @@ else
     pkill -f "llm_query_processor.py"
     pkill -f "tts_jack_client.py"
 fi
+
+# Stop any FFmpeg processes (Icecast streaming)
+echo "Stopping Icecast streaming (jd_stream)..."
+pkill -f "ffmpeg.*jd_stream" 2>/dev/null
+echo "✅ Cleanup complete."

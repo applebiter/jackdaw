@@ -257,7 +257,8 @@ class MusicLibraryBrowser(QMainWindow):
         main_splitter.addWidget(playlist_widget)
         main_splitter.setSizes([900, 400])
         
-        layout.addWidget(main_splitter)
+        # Add main splitter with stretch factor so it expands
+        layout.addWidget(main_splitter, stretch=1)
         
         # Pagination controls
         page_layout = QHBoxLayout()
@@ -326,19 +327,10 @@ class MusicLibraryBrowser(QMainWindow):
         
         playback_layout.addLayout(stream_layout)
         
-        # Dual mode
-        dual_layout = QHBoxLayout()
-        self.dual_play_btn = QPushButton("🔊 Play Local + Stream")
-        self.dual_play_btn.setToolTip("Play locally AND stream to Icecast simultaneously\nRequires JACK routing: connect ogg_player to both system:playback and IcecastStreamer")
-        self.dual_play_btn.clicked.connect(self.on_dual_play)
-        dual_layout.addWidget(self.dual_play_btn)
-        
+        # Help text
         help_label = QLabel("💡 Tip: Use Ctrl+Click to select multiple tracks, Shift+Click for ranges, Click column headers to sort")
         help_label.setWordWrap(True)
-        dual_layout.addWidget(help_label)
-        dual_layout.addStretch()
-        
-        playback_layout.addLayout(dual_layout)
+        playback_layout.addWidget(help_label)
         
         playback_group.setLayout(playback_layout)
         layout.addWidget(playback_group)
@@ -570,11 +562,9 @@ Size: {row['size'] or 'N/A'}
         if self.playlist:
             self.play_local_btn.setText(f"▶ Play Playlist on JACK ({len(self.playlist)} tracks)")
             self.stream_selected_btn.setText(f"📡 Stream Playlist to Icecast ({len(self.playlist)} tracks)")
-            self.dual_play_btn.setText(f"🔊 Play + Stream Playlist ({len(self.playlist)} tracks)")
         else:
             self.play_local_btn.setText("▶ Play Selected on JACK")
             self.stream_selected_btn.setText("📡 Stream Selected to Icecast")
-            self.dual_play_btn.setText("🔊 Play Local + Stream")
     
     def on_add_to_playlist(self):
         """Add selected tracks to playlist"""
@@ -662,8 +652,8 @@ Size: {row['size'] or 'N/A'}
         
         from PySide6.QtWidgets import QFileDialog
         
-        # Create playlists directory if it doesn't exist
-        playlists_dir = Path.cwd() / "playlists"
+        # Create playlists directory in app folder if it doesn't exist
+        playlists_dir = Path(__file__).parent / "playlists"
         playlists_dir.mkdir(exist_ok=True)
         
         filename, _ = QFileDialog.getSaveFileName(
@@ -686,10 +676,15 @@ Size: {row['size'] or 'N/A'}
         """Load playlist from JSON file"""
         from PySide6.QtWidgets import QFileDialog
         
+        # Use playlists directory in app folder as default location
+        playlists_dir = Path(__file__).parent / "playlists"
+        if not playlists_dir.exists():
+            playlists_dir.mkdir(exist_ok=True)
+        
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Load Playlist",
-            str(Path.home()),
+            str(playlists_dir),
             "JSON Files (*.json);;All Files (*)"
         )
         
@@ -782,13 +777,47 @@ Size: {row['size'] or 'N/A'}
         
         # Initialize streamer if needed
         if not self.streamer:
-            self.streamer = IcecastStreamerPlugin(self.config_manager)
+            # Get the icecast_streamer plugin config
+            icecast_config = self.config_manager.get("plugins", "icecast_streamer")
+            if not icecast_config or icecast_config == {}:
+                QMessageBox.critical(
+                    self,
+                    "Configuration Error",
+                    "Icecast streaming not configured in voice_assistant_config.json"
+                )
+                return
+            self.streamer = IcecastStreamerPlugin(icecast_config)
         
-        # Start streaming
+        # Start streaming and play music (stream-only, no local playback)
         if not self.streamer.is_streaming:
             result = self.streamer._start_stream()
             if "started" in result.lower():
-                # Now play the tracks (they'll be routed to the stream)
+                # Disconnect jd_music from system playback to prevent local audio
+                try:
+                    import jack
+                    jack_client = jack.Client("temp_disconnect", no_start_server=True)
+                    jack_client.activate()
+                    
+                    # Disconnect jd_music from system:playback
+                    try:
+                        jack_client.disconnect("jd_music:out_L", "system:playback_1")
+                        jack_client.disconnect("jd_music:out_R", "system:playback_2")
+                    except:
+                        pass  # Already disconnected or doesn't exist
+                    
+                    # Connect jd_music to jd_stream
+                    try:
+                        jack_client.connect("jd_music:out_L", "jd_stream:input_1")
+                        jack_client.connect("jd_music:out_R", "jd_stream:input_2")
+                    except:
+                        pass  # Already connected
+                    
+                    jack_client.deactivate()
+                    jack_client.close()
+                except Exception as e:
+                    print(f"Error managing JACK connections: {e}")
+                
+                # Now play the tracks (will be heard locally and streamed)
                 playlist = [Path(p) for p in file_paths]
                 audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
                 audio_jack_player.play_playlist(playlist)
@@ -800,6 +829,7 @@ Size: {row['size'] or 'N/A'}
         else:
             # Already streaming, just update playlist
             playlist = [Path(p) for p in file_paths]
+            audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
             audio_jack_player.play_playlist(playlist)
             self.status_label.setText(f"Updated stream playlist with {len(file_paths)} tracks")
     
@@ -809,42 +839,7 @@ Size: {row['size'] or 'N/A'}
             self.streamer._stop_stream()
             self.status_label.setText("Streaming stopped")
     
-    def on_dual_play(self):
-        """Play locally and stream simultaneously"""
-        file_paths = self.get_selected_file_paths()
-        
-        if not file_paths:
-            QMessageBox.warning(self, "No Selection", "Please select one or more tracks to play")
-            return
-        
-        # Stop any existing local playback first
-        audio_jack_player.stop_playback()
-        
-        # Start streaming
-        if not self.streamer:
-            self.streamer = IcecastStreamerPlugin(self.config_manager)
-        
-        if not self.streamer.is_streaming:
-            result = self.streamer._start_stream()
-            if "started" not in result.lower():
-                QMessageBox.critical(self, "Stream Error", f"Failed to start stream: {result}")
-                return
-        
-        # Play tracks (will output to JACK, which can be routed to both speakers and stream)
-        playlist = [Path(p) for p in file_paths]
-        audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
-        audio_jack_player.play_playlist(playlist)
-        
-        self.status_label.setText(f"Playing {len(file_paths)} tracks locally and streaming")
-        QMessageBox.information(
-            self,
-            "Dual Playback Active",
-            "Music is now playing on JACK and streaming to Icecast.\n\n"
-            "Use qjackctl to route the audio:\n"
-            "• Connect ogg_player outputs to system playback for local audio\n"
-            "• Connect ogg_player outputs to IcecastStreamer for streaming\n"
-            "• Or connect to both for simultaneous local + stream"
-        )
+
     
     def update_streaming_status(self):
         """Update streaming status label"""

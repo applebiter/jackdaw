@@ -109,10 +109,9 @@ By default, playlists play **sequentially** (in order). When you play an album, 
 ### Volume Control
 
 | Command | What It Does |
-|---------|--------------|
+|---------|--------------||
 | `volume up` / `volume down` | Adjust volume ±10% |
 | `set volume low/medium/high` | Set volume to 30%/60%/90% |
-| `what's the volume` | Report current volume level |
 
 ## How It Works
 

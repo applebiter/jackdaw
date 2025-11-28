@@ -92,6 +92,8 @@ class LLMRecorderPlugin(VoiceAssistantPlugin):
             self.history_display = QTextEdit()
             self.history_display.setReadOnly(True)
             self.history_display.setMinimumHeight(300)
+            # Set dark text color for readability
+            self.history_display.setStyleSheet("QTextEdit { color: #000000; background-color: #ffffff; }")
             main_layout.addWidget(self.history_display)
             
             # Manual prompt entry section
@@ -206,8 +208,8 @@ class LLMRecorderPlugin(VoiceAssistantPlugin):
                 self.history_display.setHtml("<i>No messages in this session yet.</i>")
                 return
             
-            # Format conversation as HTML
-            html = "<div style='font-family: monospace;'>"
+            # Format conversation as HTML with explicit dark text color
+            html = "<div style='font-family: monospace; color: #000000;'>"
             for msg in messages:
                 role = msg['role']
                 content = msg['content'].replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
@@ -260,7 +262,13 @@ class LLMRecorderPlugin(VoiceAssistantPlugin):
                 return
             
             # Write to query file (same mechanism as voice recording)
-            query_file = Path(".llm_query")
+            # Get the query file path from voice_client config
+            if self.voice_client and hasattr(self.voice_client, 'query_file'):
+                query_file = self.voice_client.query_file
+            else:
+                # Fallback to default if voice_client not available
+                query_file = Path("llm_query.txt")
+            
             query_file.write_text(prompt_text, encoding='utf-8')
             
             self.manual_prompt.clear()
