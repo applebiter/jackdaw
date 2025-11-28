@@ -12,7 +12,7 @@ The Icecast2 streaming plugin enables Jackdaw to broadcast audio to an Icecast2 
 
 ## How It Works
 
-The plugin uses FFmpeg to create a JACK client named `IcecastStreamer` with stereo input ports. You can connect any audio sources in your JACK graph to these inputs - the plugin will mix them and stream to your Icecast2 server. The implementation is in `plugins/icecast_streamer.py`.
+The plugin uses FFmpeg to create a JACK client named `jd_stream` with stereo input ports. You can connect any audio sources in your JACK graph to these inputs - the plugin will mix them and stream to your Icecast2 server. The implementation is in `plugins/icecast_streamer.py`.
 
 ## Quick Start
 
@@ -109,8 +109,6 @@ Say your wake word followed by:
 - **"start streaming"** - Begin broadcasting to Icecast2
 - **"stop streaming"** - End the broadcast
 - **"stream status"** - Check current streaming status and bitrate
-- **"begin broadcast"** - Alternative for start streaming
-- **"end broadcast"** - Alternative for stop streaming
 
 Examples:
 - "indigo, start streaming"
@@ -120,7 +118,7 @@ Examples:
 ## Implementation Details
 
 The plugin is implemented in `plugins/icecast_streamer.py` and uses FFmpeg to:
-1. Create a JACK client named `IcecastStreamer` with stereo input
+1. Create a JACK client named `jd_stream` with stereo input
 2. Encode audio in real-time using Xiph.org or other codecs
 3. Stream to Icecast2 using the `icecast://` protocol
 
@@ -159,12 +157,12 @@ These formats are patent-free, royalty-free, and benefit the common good of the 
 5. **Connect audio sources** to the stream:
    ```bash
    # Connect music player
-   jack_connect ogg_player:output_1 IcecastStreamer:input_L
-   jack_connect ogg_player:output_2 IcecastStreamer:input_R
+   jack_connect jd_music:out_L jd_stream:input_1
+   jack_connect jd_music:out_R jd_stream:input_2
    
-   # Connect voice assistant
-   jack_connect tts_client:output_1 IcecastStreamer:input_L
-   jack_connect tts_client:output_2 IcecastStreamer:input_R
+   # Connect TTS
+   jack_connect jd_tts:output_L jd_stream:input_1
+   jack_connect jd_tts:output_R jd_stream:input_2
    
    # Or use qjackctl for visual routing
    ```
