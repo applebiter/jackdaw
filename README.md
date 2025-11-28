@@ -1,6 +1,12 @@
+<div align="center">
+
+<img src="icons/hicolor/256x256/apps/jackdaw.png" alt="Jackdaw" width="128" />
+
 # Jackdaw Voice Assistant 🐦‍⬛
 
 **A privacy-first, voice-controlled audio system that lives in your professional audio workflow.**
+
+</div>
 
 Jackdaw is a modular voice assistant built on JACK Audio, featuring speech recognition (Vosk), local AI chat (Ollama), and text-to-speech (Piper). Control your music library, stream to the internet, record retroactively, and collaborate over networks—all with your voice, all running locally on your machine.
 
