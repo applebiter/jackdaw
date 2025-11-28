@@ -272,7 +272,25 @@ class VoiceAssistantTray(QObject):
             print(f"Error checking for existing processes: {e}")
     
     def create_icon(self, is_active: bool = False) -> QIcon:
-        """Create a microphone icon for the tray."""
+        """Create the jackdaw icon for the tray."""
+        # Try to use the installed icon first
+        icon = QIcon.fromTheme("jackdaw")
+        if not icon.isNull():
+            return icon
+        
+        # Fallback: try to load from local files
+        icon_paths = [
+            Path.home() / ".local/share/icons/hicolor/48x48/apps/jackdaw.png",
+            Path(__file__).parent / "icons/hicolor/48x48/apps/jackdaw.png",
+            Path(__file__).parent / "icons/jackdaw.png",
+            Path(__file__).parent / "jackdaw-icon.png"
+        ]
+        
+        for icon_path in icon_paths:
+            if icon_path.exists():
+                return QIcon(str(icon_path))
+        
+        # Last resort: create a simple programmatic icon
         from PySide6.QtGui import QPainter, QColor, QPen, QBrush
         from PySide6.QtCore import QRect, QRectF
         
