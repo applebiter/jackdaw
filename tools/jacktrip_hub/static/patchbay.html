@@ -252,6 +252,7 @@
             <button onclick="refreshGraph()">🔄 Refresh</button>
             <button onclick="clearAllConnections()" class="danger">❌ Clear All</button>
             <button onclick="autoRoute()">🔗 Auto Route</button>
+            <button onclick="resetLayout()">⟲ Reset Layout</button>
             <button onclick="logout()" class="danger">🚪 Logout</button>
         </div>
     </div>
@@ -290,6 +291,30 @@
         let draggedClient = null;
         let clientDragStart = {x: 0, y: 0};
         
+        // Load saved positions on startup
+        function loadSavedPositions() {
+            const saved = localStorage.getItem('patchbay_positions');
+            if (saved) {
+                try {
+                    clientPositions = JSON.parse(saved);
+                    console.log('Loaded saved box positions');
+                } catch (e) {
+                    console.error('Failed to load saved positions:', e);
+                    clientPositions = {};
+                }
+            }
+        }
+        
+        // Save positions to localStorage
+        function savePositions() {
+            try {
+                localStorage.setItem('patchbay_positions', JSON.stringify(clientPositions));
+                console.log('Saved box positions to localStorage');
+            } catch (e) {
+                console.error('Failed to save positions:', e);
+            }
+        }
+        
         // Debouncing for graph updates
         let renderTimeout = null;
         let pendingGraph = null;
@@ -321,6 +346,7 @@
                 window.location.href = '/';
                 return;
             }
+            loadSavedPositions();
             connectWebSocket();
         });
         
@@ -749,6 +775,14 @@
             });
         }
         
+        function resetLayout() {
+            if (!confirm('Reset all box positions to default layout?')) return;
+            clientPositions = {};
+            localStorage.removeItem('patchbay_positions');
+            renderGraph();
+            updateStatus('Layout reset to default', '#2196F3');
+        }
+        
         function autoRoute() {
             // Simple auto-routing: connect system:capture to JackTrip sends
             // and JackTrip receives to system:playback
@@ -933,6 +967,7 @@
             if (isDraggingClient) {
                 isDraggingClient = false;
                 draggedClient = null;
+                savePositions();  // Save when done dragging client
             }
             if (isDraggingMinimap) {
                 isDraggingMinimap = false;
