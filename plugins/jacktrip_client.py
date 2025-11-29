@@ -93,11 +93,17 @@ class JackTripClient(VoiceAssistantPlugin):
             with open(config_file, 'r') as f:
                 full_config = json.load(f)
                 return full_config.get('jacktrip_hub', {
-                    'hub_url': 'http://localhost:8000',
+                    'hub_url': 'https://localhost:8000',
                     'username': 'demo',
-                    'password': 'demo'
+                    'password': 'demo',
+                    'verify_ssl': False  # For self-signed certificates
                 })
         return {
+            'hub_url': 'https://localhost:8000',
+            'username': 'demo',
+            'password': 'demo',
+            'verify_ssl': False
+        }
             'hub_url': 'http://localhost:8000',
             'username': 'demo',
             'password': 'demo'
@@ -132,16 +138,38 @@ class JackTripClient(VoiceAssistantPlugin):
             raise RuntimeError("Unable to authenticate with JackTrip hub")
         return {"Authorization": f"Bearer {self.auth_token}"}
     
+    def _make_request(self, method: str, endpoint: str, **kwargs) -> requests.Response:
+        """Make an HTTP request with proper SSL verification settings"""
+        url = f"{self.hub_config['hub_url']}{endpoint}"
+        verify_ssl = self.hub_config.get('verify_ssl', False)
+        
+        # Add verify parameter if not already in kwargs
+        if 'verify' not in kwargs:
+            kwargs['verify'] = verify_ssl
+        
+        if method.lower() == 'get':
+            return requests.get(url, **kwargs)
+        elif method.lower() == 'post':
+            return requests.post(url, **kwargs)
+        elif method.lower() == 'put':
+            return requests.put(url, **kwargs)
+        elif method.lower() == 'delete':
+            return requests.delete(url, **kwargs)
+        else:
+            raise ValueError(f"Unsupported HTTP method: {method}")
+    
     def _authenticate(self) -> bool:
         """Authenticate with the hub server"""
         try:
+            verify_ssl = self.hub_config.get('verify_ssl', False)
             response = requests.post(
                 f"{self.hub_config['hub_url']}/auth/login",
                 json={
                     "username": self.hub_config['username'],
                     "password": self.hub_config['password']
                 },
-                timeout=5
+                timeout=5,
+                verify=verify_ssl
             )
             response.raise_for_status()
             data = response.json()
@@ -312,8 +340,9 @@ class JackTripClient(VoiceAssistantPlugin):
     def _create_room(self, room_name: str) -> str:
         """Create a new jam room"""
         try:
-            response = requests.post(
-                f"{self.hub_config['hub_url']}/rooms",
+            response = self._make_request(
+                'post',
+                '/rooms',
                 json={
                     "name": room_name,
                     "max_participants": 8,
@@ -326,8 +355,9 @@ class JackTripClient(VoiceAssistantPlugin):
             room = response.json()
             
             # Automatically join the room we just created
-            join_response = requests.post(
-                f"{self.hub_config['hub_url']}/rooms/{room['id']}/join",
+            join_response = self._make_request(
+                'post',
+                f'/rooms/{room["id"]}/join',
                 headers=self._get_headers(),
                 timeout=10
             )
@@ -354,8 +384,9 @@ class JackTripClient(VoiceAssistantPlugin):
     def _list_rooms(self) -> str:
         """List all available jam rooms"""
         try:
-            response = requests.get(
-                f"{self.hub_config['hub_url']}/rooms",
+            response = self._make_request(
+                'get',
+                '/rooms',
                 headers=self._get_headers(),
                 timeout=5
             )
@@ -390,8 +421,9 @@ class JackTripClient(VoiceAssistantPlugin):
         """Join a room by name"""
         try:
             # First get list of rooms to find matching name
-            response = requests.get(
-                f"{self.hub_config['hub_url']}/rooms",
+            response = self._make_request(
+                'get',
+                '/rooms',
                 headers=self._get_headers(),
                 timeout=5
             )
@@ -411,8 +443,9 @@ class JackTripClient(VoiceAssistantPlugin):
                 return result
             
             # Join the room
-            join_response = requests.post(
-                f"{self.hub_config['hub_url']}/rooms/{matching_room['id']}/join",
+            join_response = self._make_request(
+                'post',
+                f'/rooms/{matching_room["id"]}/join',
                 headers=self._get_headers(),
                 timeout=10
             )
@@ -448,8 +481,9 @@ class JackTripClient(VoiceAssistantPlugin):
             self._stop_jacktrip_client()
             
             # Tell server we're leaving
-            response = requests.post(
-                f"{self.hub_config['hub_url']}/rooms/{self.current_room['id']}/leave",
+            response = self._make_request(
+                'post',
+                f'/rooms/{self.current_room["id"]}/leave',
                 headers=self._get_headers(),
                 timeout=5
             )
@@ -478,8 +512,9 @@ class JackTripClient(VoiceAssistantPlugin):
             return result
         
         try:
-            response = requests.get(
-                f"{self.hub_config['hub_url']}/rooms/{self.current_room['id']}",
+            response = self._make_request(
+                'get',
+                f'/rooms/{self.current_room["id"]}',
                 headers=self._get_headers(),
                 timeout=5
             )
@@ -589,8 +624,9 @@ class JackTripClient(VoiceAssistantPlugin):
                 
                 # Get room info to update participant count
                 try:
-                    response = requests.get(
-                        f"{self.hub_config['hub_url']}/rooms/{self.current_room['id']}",
+                    response = self._make_request(
+                        'get',
+                        f'/rooms/{self.current_room["id"]}',
                         headers=self._get_headers(),
                         timeout=5
                     )
