@@ -74,6 +74,18 @@
       "bitrate": 128,
       "format": "ogg",
       "comment": "Supported formats: ogg (Vorbis), opus, flac, mp3. Xiph.org formats recommended: ogg, opus, flac"
+    },
+    "jacktrip_client": {
+      "enabled": true,
+      "send_channels": 2,
+      "receive_channels": 2,
+      "jack_client_name": "jacktrip_client",
+      "auto_connect": true
     }
+  },
+  "jacktrip_hub": {
+    "hub_url": "http://localhost:8000",
+    "username": "demo",
+    "password": "demo"
   }
 }

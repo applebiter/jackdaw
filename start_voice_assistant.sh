@@ -13,6 +13,13 @@ echo "Starting Voice Assistant System..."
 echo "=================================="
 echo ""
 
+# Kill any existing processes first
+echo "Stopping any existing voice assistant processes..."
+pkill -f "voice_command_client.py" 2>/dev/null
+pkill -f "llm_query_processor.py" 2>/dev/null
+pkill -f "tts_jack_client.py" 2>/dev/null
+sleep 1
+
 # Create logs directory if it doesn't exist
 mkdir -p logs
 

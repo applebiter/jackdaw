@@ -67,6 +67,15 @@ class VoiceAssistantPlugin(ABC):
         """
         pass
     
+    def get_command_examples(self) -> list:
+        """
+        Return a list of user-friendly command examples for the cheat sheet.
+        
+        Returns:
+            List of example command strings (without wake word)
+        """
+        return []
+    
     def get_description(self) -> str:
         """
         Return a brief description of what this plugin does.

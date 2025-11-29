@@ -58,3 +58,6 @@ voices/*
 music_library.sqlite3
 music_export.csv
 music_data.sql
+
+# Training data and models
+jackdaw-train/

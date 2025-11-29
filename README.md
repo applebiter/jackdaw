@@ -20,9 +20,11 @@ Jackdaw is a modular voice assistant built on JACK Audio, featuring speech recog
 - 🎙️ **Stream to Icecast2** - Broadcast audio to the internet with voice commands
 - ⏮️ **Retroactive recording** - Save audio that already happened with buffer
 - 💬 **Chat with local AI** - Ask questions, get spoken responses (via Ollama)
-- 🌐 **Network collaboration** - Real-time audio with JackTrip
+- 🌐 **Network collaboration** - Real-time audio with JackTrip *(main branch only, not in releases yet)*
 - 🎛️ **Professional audio routing** - Integrates seamlessly with JACK ecosystem
 - 🔌 **Extensible plugins** - Add your own voice commands easily
+
+> **Note**: The JackTrip collaboration features are currently in active development on the `main` branch and are not included in stable releases yet. If you want to test network collaboration, clone the repository directly instead of using the installer.
 
 ---
 

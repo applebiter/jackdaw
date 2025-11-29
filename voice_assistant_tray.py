@@ -87,6 +87,9 @@ class VoiceAssistantTray(QObject):
         # Connect signals
         self.status_changed.connect(self.on_status_changed)
         self.track_changed.connect(self.on_track_changed)
+        
+        # Check if processes are already running
+        self.detect_running_processes()
     
     def _signal_handler(self, signum, frame):
         """Handle system signals for clean shutdown"""
@@ -204,7 +207,9 @@ class VoiceAssistantTray(QObject):
                 
             if hasattr(plugin, 'create_gui_widget') and callable(getattr(plugin, 'create_gui_widget')):
                 plugin_name = plugin.get_name()
-                action = QAction(f"🔧 {plugin.get_description()}", menu)
+                # Use special icon for JackTrip, wrench for others
+                icon = "🎵" if plugin_name == "jacktrip_client" else "🔧"
+                action = QAction(f"{icon} {plugin.get_description()}", menu)
                 action.triggered.connect(lambda checked=False, p=plugin: self.show_plugin_gui(p))
                 menu.addAction(action)
                 self.plugin_menu_items[plugin_name] = action
@@ -341,6 +346,31 @@ class VoiceAssistantTray(QObject):
         painter.end()
         
         return QIcon(pixmap)
+    
+    def detect_running_processes(self):
+        """Detect if voice assistant processes are already running"""
+        import subprocess as sp
+        try:
+            # Check for running processes
+            voice_running = sp.run(["pgrep", "-f", "voice_command_client.py"], 
+                                  capture_output=True, text=True).returncode == 0
+            llm_running = sp.run(["pgrep", "-f", "llm_query_processor.py"], 
+                                capture_output=True, text=True).returncode == 0
+            tts_running = sp.run(["pgrep", "-f", "tts_jack_client.py"], 
+                                capture_output=True, text=True).returncode == 0
+            
+            if voice_running and llm_running and tts_running:
+                print("Detected voice assistant already running")
+                self.processes_running = True
+                self.start_action.setEnabled(False)
+                self.stop_action.setEnabled(True)
+                self.status_changed.emit("Running (external)")
+                # Update icon to active state
+                icon = self.create_icon(is_active=True)
+                self.tray_icon.setIcon(icon)
+                self.tray_icon.setToolTip("Jackdaw (Running)")
+        except Exception as e:
+            print(f"Error detecting processes: {e}")
     
     def start_voice_assistant(self):
         """Start all voice assistant components."""
@@ -823,17 +853,28 @@ class VoiceAssistantTray(QObject):
         
         # Group commands by plugin
         for plugin in sorted(self.plugins, key=lambda p: p.get_name()):
-            commands = plugin.get_commands()
-            if not commands:
+            # Try to get friendly command examples first
+            examples = []
+            if hasattr(plugin, 'get_command_examples'):
+                examples = plugin.get_command_examples()
+            
+            # Fall back to raw regex patterns if no examples provided
+            if not examples:
+                commands = plugin.get_commands()
+                if commands:
+                    examples = sorted(commands.keys())
+            
+            if not examples:
                 continue
             
             plugin_name = plugin.get_name().replace('_', ' ').title()
             plugin_desc = plugin.get_description()
             
             html += f"<h3>{plugin_name}</h3>"
-            html += f"<p><i>{plugin_desc}</i></p>"
+            if plugin_desc:
+                html += f"<p><i>{plugin_desc}</i></p>"
             
-            for command in sorted(commands.keys()):
+            for command in examples:
                 html += f'<p><span class="wake">{wake_word}</span> <span class="command">{command}</span></p>'
         
         scroll.setHtml(html)

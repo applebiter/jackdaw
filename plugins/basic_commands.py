@@ -37,7 +37,6 @@ class BasicCommandsPlugin(VoiceAssistantPlugin):
     def get_commands(self) -> Dict[str, Callable]:
         """Register basic system commands."""
         return {
-            "hello": self._cmd_hello,
             "stop listening": self._cmd_stop_listening,
         }
     

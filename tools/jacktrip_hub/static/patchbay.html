@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JACK Patchbay - Room {ROOM_ID}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        #header {
+            background: #2d2d2d;
+            padding: 15px 20px;
+            border-bottom: 2px solid #3d3d3d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #header h1 {
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        
+        #controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button.danger {
+            background: #f44336;
+        }
+        
+        button.danger:hover {
+            background: #da190b;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 62px);
+            overflow: hidden;
+            background: #1a1a1a;
+            cursor: grab;
+        }
+        
+        #canvas-container.panning {
+            cursor: grabbing;
+        }
+        
+        #patchbay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+            transform-origin: 0 0;
+        }
+        
+        #clients-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 10000px;
+            height: 10000px;
+            z-index: 2;
+            transform-origin: 0 0;
+        }
+        
+        #zoom-controls {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+        }
+        
+        #zoom-controls button {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            font-size: 20px;
+        }
+        
+        #zoom-level {
+            background: #2d2d2d;
+            color: #e0e0e0;
+            padding: 5px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #3d3d3d;
+        }
+        
+        #minimap {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 200px;
+            background: #2d2d2d;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        #minimap-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        #minimap-viewport {
+            position: absolute;
+            border: 2px solid #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+            cursor: move;
+        }
+        
+        .client-box {
+            position: absolute;
+            background: #2d2d2d;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            min-width: 200px;
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            cursor: default;
+        }
+        
+        .client-header {
+            font-weight: bold;
+            font-size: 14px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #3d3d3d;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .port {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            margin: 3px 0;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        
+        .port:hover {
+            background: #3d3d3d;
+        }
+        
+        .port.output {
+            justify-content: flex-end;
+            padding-right: 0;
+        }
+        
+        .port.input {
+            justify-content: flex-start;
+            padding-left: 0;
+        }
+        
+        .port-connector {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+            position: absolute;
+            z-index: 10;
+        }
+        
+        .port.output .port-connector {
+            right: -6px;
+        }
+        
+        .port.input .port-connector {
+            left: -6px;
+        }
+        
+        .port span {
+            padding: 0 12px;
+        }
+        
+        .port.active .port-connector {
+            background: #ff9800;
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.8);
+        }
+        
+        #status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #2d2d2d;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid #3d3d3d;
+        }
+        
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: #4CAF50;
+            transform-origin: left center;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .connection-line.dragging {
+            background: #ff9800;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🎵 JACK Patchbay - Room {ROOM_ID}</h1>
+        <div id="controls">
+            <button onclick="refreshGraph()">🔄 Refresh</button>
+            <button onclick="clearAllConnections()" class="danger">❌ Clear All</button>
+            <button onclick="autoRoute()">🔗 Auto Route</button>
+        </div>
+    </div>
+    
+    <div id="canvas-container">
+        <canvas id="patchbay-canvas"></canvas>
+        <div id="clients-container"></div>
+    </div>
+    
+    <div id="zoom-controls">
+        <button onclick="zoomIn()">+</button>
+        <div id="zoom-level">100%</div>
+        <button onclick="zoomOut()">−</button>
+        <button onclick="resetZoom()">⟲</button>
+    </div>
+    
+    <div id="minimap">
+        <canvas id="minimap-canvas"></canvas>
+        <div id="minimap-viewport"></div>
+    </div>
+    
+    <div id="status">Connecting...</div>
+
+    <script>
+        let ws = null;
+        let graph = {clients: {}, connections: []};
+        let dragState = null;
+        let clientPositions = {};
+        let zoomLevel = 0.6;  // Start zoomed out a bit
+        const CANVAS_WIDTH = 10000;  // Much larger canvas to accommodate zoom/pan
+        const CANVAS_HEIGHT = 10000;
+        let isPanning = false;
+        let panStart = {x: 0, y: 0};
+        let panOffset = {x: 0, y: 0};
+        let isDraggingClient = false;
+        let draggedClient = null;
+        let clientDragStart = {x: 0, y: 0};
+        
+        // WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/patchbay`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                updateStatus('Connected', '#4CAF50');
+            };
+            
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                
+                if (msg.type === 'graph') {
+                    graph = msg.data;
+                    renderGraph();
+                } else if (msg.type === 'error') {
+                    updateStatus('Error: ' + msg.message, '#f44336');
+                }
+            };
+            
+            ws.onclose = () => {
+                updateStatus('Disconnected - Reconnecting...', '#ff9800');
+                setTimeout(connectWebSocket, 2000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus('Connection error', '#f44336');
+            };
+        }
+        
+        function updateStatus(message, color = '#4CAF50') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.borderColor = color;
+        }
+        
+        function renderGraph() {
+            const container = document.getElementById('clients-container');
+            container.innerHTML = '';
+            
+            const canvas = document.getElementById('patchbay-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size - much larger for scrolling
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+            
+            // Apply zoom and pan transform - keep canvas and container in sync
+            const transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`;
+            canvas.style.transform = transform;
+            canvas.style.width = CANVAS_WIDTH + 'px';
+            canvas.style.height = CANVAS_HEIGHT + 'px';
+            container.style.transform = transform;
+            container.style.width = CANVAS_WIDTH + 'px';
+            container.style.height = CANVAS_HEIGHT + 'px';
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Layout clients in columns
+            // Filter out invalid/metadata clients
+            const allClients = Object.keys(graph.clients);
+            const clients = allClients.filter(name => {
+                // Filter out type descriptions that aren't real clients
+                if (name.includes('bit') && (name.includes('float') || name.includes('raw'))) {
+                    return false;
+                }
+                return true;
+            });
+            const numClients = clients.length;
+            const columnWidth = 250;
+            const startX = CANVAS_WIDTH / 2 - 300;  // Start near center
+            const startY = CANVAS_HEIGHT / 2 - 300;
+            let currentY = startY;
+            let currentColumn = 0;
+            
+            clients.forEach((clientName, idx) => {
+                const ports = graph.clients[clientName];
+                
+                // Separate ports by direction
+                const inputPorts = ports.filter(p => p.direction === 'input');
+                const outputPorts = ports.filter(p => p.direction === 'output');
+                
+                // Determine if we need to split this client
+                const hasBoth = inputPorts.length > 0 && outputPorts.length > 0;
+                
+                // Create array of client boxes to render
+                const clientsToRender = [];
+                if (hasBoth) {
+                    // Split into two boxes
+                    clientsToRender.push({
+                        name: clientName + ' (In)',
+                        baseName: clientName,
+                        ports: inputPorts
+                    });
+                    clientsToRender.push({
+                        name: clientName + ' (Out)',
+                        baseName: clientName,
+                        ports: outputPorts
+                    });
+                } else {
+                    // Keep as single box
+                    clientsToRender.push({
+                        name: clientName,
+                        baseName: clientName,
+                        ports: ports
+                    });
+                }
+                
+                // Render each box
+                clientsToRender.forEach(clientBox => {
+                    const boxName = clientBox.name;
+                    const boxPorts = clientBox.ports;
+                    
+                    // Calculate position
+                    if (!clientPositions[boxName]) {
+                        const x = startX + (currentColumn * columnWidth);
+                        const y = currentY;
+                        clientPositions[boxName] = {x, y};
+                        
+                        currentY += (boxPorts.length * 30) + 80;
+                        // Wrap to next column after reasonable height
+                        if (currentY > startY + 1000) {
+                            currentY = startY;
+                            currentColumn++;
+                        }
+                    }
+                    
+                        const pos = clientPositions[boxName];
+                    
+                    // Create client box
+                    const box = document.createElement('div');
+                    box.className = 'client-box';
+                    box.style.left = pos.x + 'px';
+                    box.style.top = pos.y + 'px';
+                    box.id = `client-${boxName}`;
+                    
+                    const header = document.createElement('div');
+                    header.className = 'client-header';
+                    header.textContent = boxName;
+                    header.dataset.clientName = boxName;
+                    
+                    // Make header draggable
+                    header.addEventListener('mousedown', (e) => {
+                        isDraggingClient = true;
+                        draggedClient = boxName;
+                        const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                        clientDragStart.x = (e.clientX - containerRect.left - panOffset.x) / zoomLevel - pos.x;
+                        clientDragStart.y = (e.clientY - containerRect.top - panOffset.y) / zoomLevel - pos.y;
+                        e.stopPropagation();
+                        e.preventDefault();
+                    });
+                    
+                    box.appendChild(header);
+                    
+                    boxPorts.forEach(port => {
+                        const portDiv = document.createElement('div');
+                        portDiv.className = `port ${port.direction}`;
+                        portDiv.dataset.portName = port.name;
+                        
+                        const connector = document.createElement('div');
+                        connector.className = 'port-connector';
+                        
+                        const name = document.createElement('span');
+                        name.textContent = port.name.split(':')[1] || port.name;
+                        
+                        portDiv.appendChild(connector);
+                        portDiv.appendChild(name);
+                        
+                        if (port.direction === 'output') {
+                            // Make draggable for creating connections
+                            connector.addEventListener('mousedown', (e) => startDrag(e, port.name, 'output'));
+                        } else {
+                            // Make drop target
+                            connector.addEventListener('mouseup', (e) => endDrag(e, port.name));
+                        }
+                        
+                        box.appendChild(portDiv);
+                    });
+                    
+                    container.appendChild(box);
+                });
+            });
+            
+            // Draw connections
+            drawConnections();
+            
+            updateStatus(`${clients.length} clients, ${graph.connections.length} connections`);
+            updateMinimap();
+        }
+        
+        function updateMinimap() {
+            const miniCanvas = document.getElementById('minimap-canvas');
+            const miniCtx = miniCanvas.getContext('2d');
+            const minimap = document.getElementById('minimap');
+            
+            // Set canvas size
+            miniCanvas.width = 200;
+            miniCanvas.height = 200;
+            
+            // Clear
+            miniCtx.fillStyle = '#1a1a1a';
+            miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
+            
+            // Scale factor to fit 10000x10000 canvas into 200x200 minimap
+            const scale = 200 / CANVAS_WIDTH;
+            
+            // Draw client boxes as larger, more visible rectangles
+            Object.keys(clientPositions).forEach(clientName => {
+                const pos = clientPositions[clientName];
+                miniCtx.fillStyle = '#4CAF50';
+                miniCtx.strokeStyle = '#66BB6A';
+                miniCtx.lineWidth = 1;
+                const boxX = pos.x * scale;
+                const boxY = pos.y * scale;
+                const boxW = 200 * scale;
+                const boxH = 100 * scale;
+                miniCtx.fillRect(boxX, boxY, boxW, boxH);
+                miniCtx.strokeRect(boxX, boxY, boxW, boxH);
+            });
+            
+            // Draw viewport rectangle
+            const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+            const viewportDiv = document.getElementById('minimap-viewport');
+            
+            // The viewport shows what part of the canvas is visible
+            // When panOffset is positive, we've moved the canvas right, so we see canvas coordinates to the left
+            const viewportWidth = containerRect.width / zoomLevel;
+            const viewportHeight = containerRect.height / zoomLevel;
+            
+            // The canvas is at translate(panOffset.x, panOffset.y) scale(zoomLevel)
+            // So the top-left visible point is at canvas coordinates (-panOffset.x/zoomLevel, -panOffset.y/zoomLevel)
+            const canvasVisibleX = -panOffset.x / zoomLevel;
+            const canvasVisibleY = -panOffset.y / zoomLevel;
+            
+            // Convert to minimap coordinates
+            const minimapViewportLeft = canvasVisibleX * scale;
+            const minimapViewportTop = canvasVisibleY * scale;
+            const minimapViewportW = viewportWidth * scale;
+            const minimapViewportH = viewportHeight * scale;
+            
+            // Don't clamp - let the viewport move around the minimap
+            const viewportLeft = minimapViewportLeft;
+            const viewportTop = minimapViewportTop;
+            const viewportW = minimapViewportW;
+            const viewportH = minimapViewportH;
+            
+            viewportDiv.style.left = viewportLeft + 'px';
+            viewportDiv.style.top = viewportTop + 'px';
+            viewportDiv.style.width = viewportW + 'px';
+            viewportDiv.style.height = viewportH + 'px';
+        }
+        
+        function drawConnections() {
+            const canvas = document.getElementById('patchbay-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 2;
+            
+            const drawnConnections = new Set();
+            
+            graph.connections.forEach(([source, dest]) => {
+                // Create unique key for this connection
+                const connectionKey = `${source}->${dest}`;
+                if (drawnConnections.has(connectionKey)) {
+                    return;
+                }
+                drawnConnections.add(connectionKey);
+                
+                const sourcePort = document.querySelector(`[data-port-name="${source}"]`);
+                const destPort = document.querySelector(`[data-port-name="${dest}"]`);
+                
+                if (!sourcePort) {
+                    return;
+                }
+                if (!destPort) {
+                    return;
+                }
+                
+                if (sourcePort && destPort) {
+                    const sourceBox = sourcePort.closest('.client-box');
+                    const destBox = destPort.closest('.client-box');
+                    
+                    if (sourceBox && destBox) {
+                        // Get box names from the element IDs (which include (In)/(Out) suffixes)
+                        const sourceBoxName = sourceBox.id.replace('client-', '');
+                        const destBoxName = destBox.id.replace('client-', '');
+                        
+                        const sourcePos = clientPositions[sourceBoxName];
+                        const destPos = clientPositions[destBoxName];
+                        
+                        if (sourcePos && destPos) {
+                            // Calculate port offset within the box
+                            const sourcePorts = sourceBox.querySelectorAll('.port');
+                            const destPorts = destBox.querySelectorAll('.port');
+                            
+                            let sourcePortIndex = 0;
+                            let destPortIndex = 0;
+                            
+                            sourcePorts.forEach((p, idx) => {
+                                if (p === sourcePort) sourcePortIndex = idx;
+                            });
+                            
+                            destPorts.forEach((p, idx) => {
+                                if (p === destPort) destPortIndex = idx;
+                            });
+                            
+                            // Calculate connection points based on actual port direction
+                            const sourceBoxWidth = parseFloat(getComputedStyle(sourceBox).width);
+                            const destBoxWidth = parseFloat(getComputedStyle(destBox).width);
+                            const portHeight = 30; // Approximate port height
+                            const headerHeight = 40; // Approximate header height
+                            
+                            // Determine which side the connectors are on based on port class
+                            const isSourceOutput = sourcePort.classList.contains('output');
+                            const isDestInput = destPort.classList.contains('input');
+                            
+                            // Draw line from right side of source to left side of dest
+                            // If directions are swapped, draw accordingly
+                            const x1 = isSourceOutput ? (sourcePos.x + sourceBoxWidth) : sourcePos.x;
+                            const y1 = sourcePos.y + headerHeight + (sourcePortIndex * portHeight) + portHeight / 2;
+                            const x2 = isDestInput ? destPos.x : (destPos.x + destBoxWidth);
+                            const y2 = destPos.y + headerHeight + (destPortIndex * portHeight) + portHeight / 2;
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            
+                            // Bezier curve for nice cable look
+                            const cp1x = x1 + Math.abs(x2 - x1) / 3;
+                            const cp1y = y1;
+                            const cp2x = x2 - Math.abs(x2 - x1) / 3;
+                            const cp2y = y2;
+                            
+                            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            });
+        }
+        
+        function startDrag(e, portName, direction) {
+            e.preventDefault();
+            dragState = {
+                source: portName,
+                direction: direction,
+                startX: e.clientX,
+                startY: e.clientY
+            };
+            
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+        }
+        
+        function onDragMove(e) {
+            if (!dragState) return;
+            
+            const canvas = document.getElementById('patchbay-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Redraw everything
+            drawConnections();
+            
+            // Draw drag line
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(dragState.startX, dragState.startY - 62);
+            ctx.lineTo(e.clientX, e.clientY - 62);
+            ctx.stroke();
+        }
+        
+        function onDragEnd(e) {
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            dragState = null;
+            drawConnections();
+        }
+        
+        function endDrag(e, destPort) {
+            if (!dragState) return;
+            
+            const source = dragState.source;
+            const dest = destPort;
+            
+            // Send connection request
+            ws.send(JSON.stringify({
+                type: 'connect',
+                source: source,
+                dest: dest
+            }));
+            
+            onDragEnd(e);
+        }
+        
+        function refreshGraph() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({type: 'refresh'}));
+            }
+        }
+        
+        function clearAllConnections() {
+            if (!confirm('Clear all connections?')) return;
+            
+            graph.connections.forEach(([source, dest]) => {
+                ws.send(JSON.stringify({
+                    type: 'disconnect',
+                    source: source,
+                    dest: dest
+                }));
+            });
+        }
+        
+        function autoRoute() {
+            // Simple auto-routing: connect system:capture to JackTrip sends
+            // and JackTrip receives to system:playback
+            const captureClients = Object.keys(graph.clients).filter(c => c.includes('system'));
+            const jackclients = Object.keys(graph.clients).filter(c => c.includes('jd_'));
+            
+            captureClients.forEach(sysClient => {
+                const outputs = graph.clients[sysClient].filter(p => p.direction === 'output');
+                
+                jackclients.forEach(jackClient => {
+                    const inputs = graph.clients[jackClient].filter(p => 
+                        p.direction === 'input' && p.name.includes('send')
+                    );
+                    
+                    outputs.forEach((out, idx) => {
+                        if (inputs[idx]) {
+                            ws.send(JSON.stringify({
+                                type: 'connect',
+                                source: out.name,
+                                dest: inputs[idx].name
+                            }));
+                        }
+                    });
+                });
+            });
+            
+            // Connect receives to playback
+            jackclients.forEach(jackClient => {
+                const outputs = graph.clients[jackClient].filter(p => 
+                    p.direction === 'output' && p.name.includes('receive')
+                );
+                
+                captureClients.forEach(sysClient => {
+                    const inputs = graph.clients[sysClient].filter(p => p.direction === 'input');
+                    
+                    outputs.forEach((out, idx) => {
+                        if (inputs[idx]) {
+                            ws.send(JSON.stringify({
+                                type: 'connect',
+                                source: out.name,
+                                dest: inputs[idx].name
+                            }));
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Zoom functions
+        function zoomIn() {
+            zoomLevel = Math.min(zoomLevel + 0.1, 2.0);
+            updateZoom();
+        }
+        
+        function zoomOut() {
+            zoomLevel = Math.max(zoomLevel - 0.1, 0.3);
+            updateZoom();
+        }
+        
+        function resetZoom() {
+            zoomLevel = 1.0;
+            updateZoom();
+        }
+        
+        function updateZoom() {
+            const canvas = document.getElementById('patchbay-canvas');
+            const container = document.getElementById('clients-container');
+            
+            // Apply both zoom and pan - but keep canvas and container in sync
+            const transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`;
+            canvas.style.transform = transform;
+            container.style.transform = transform;
+            
+            document.getElementById('zoom-level').textContent = Math.round(zoomLevel * 100) + '%';
+            
+            drawConnections();
+            updateMinimap();
+        }
+        
+        // Canvas panning - always allow panning except when interacting with ports or client headers
+        const canvasContainer = document.getElementById('canvas-container');
+        
+        canvasContainer.addEventListener('mousedown', (e) => {
+            // Don't pan if clicking on a port connector (for drag connections)
+            if (e.target.classList.contains('port-connector')) {
+                return;
+            }
+            
+            // Don't pan if clicking on a client header (for dragging clients)
+            if (e.target.classList.contains('client-header')) {
+                return;
+            }
+            
+            // Don't pan if clicking inside a client box
+            if (e.target.closest('.client-box')) {
+                return;
+            }
+            
+            isPanning = true;
+            panStart.x = e.clientX - panOffset.x;
+            panStart.y = e.clientY - panOffset.y;
+            canvasContainer.classList.add('panning');
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingMinimap) {
+                const minimap = document.getElementById('minimap');
+                const minimapRect = minimap.getBoundingClientRect();
+                
+                // Clamp position within minimap bounds
+                const minimapX = Math.max(0, Math.min(200, e.clientX - minimapRect.left));
+                const minimapY = Math.max(0, Math.min(200, e.clientY - minimapRect.top));
+                
+                // Scale factor
+                const scale = 200 / CANVAS_WIDTH;
+                
+                // Convert to canvas coordinates - this is where we want the top-left corner of the view
+                const targetCanvasX = minimapX / scale;
+                const targetCanvasY = minimapY / scale;
+                
+                // Calculate pan offset using the correct formula for translate-then-scale
+                // Point at canvas (cx, cy) appears at screen (cx * zoom + pan)
+                // We want top-left (targetCanvas) to appear at screen (0, 0)
+                // So: targetCanvas * zoom + pan = 0
+                // Therefore: pan = -targetCanvas * zoom
+                panOffset.x = -targetCanvasX * zoomLevel;
+                panOffset.y = -targetCanvasY * zoomLevel;
+                
+                const canvas = document.getElementById('patchbay-canvas');
+                const clientsContainer = document.getElementById('clients-container');
+                const transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`;
+                canvas.style.transform = transform;
+                clientsContainer.style.transform = transform;
+                
+                updateMinimap();
+                e.preventDefault();
+            } else if (isPanning) {
+                panOffset.x = e.clientX - panStart.x;
+                panOffset.y = e.clientY - panStart.y;
+                
+                const canvas = document.getElementById('patchbay-canvas');
+                const clientsContainer = document.getElementById('clients-container');
+                
+                const transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`;
+                canvas.style.transform = transform;
+                clientsContainer.style.transform = transform;
+                updateMinimap();
+                
+                e.preventDefault();
+            } else if (isDraggingClient && draggedClient) {
+                // Move the individual client box
+                const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                const newX = (e.clientX - containerRect.left - panOffset.x) / zoomLevel - clientDragStart.x;
+                const newY = (e.clientY - containerRect.top - panOffset.y) / zoomLevel - clientDragStart.y;
+                
+                clientPositions[draggedClient] = {
+                    x: newX,
+                    y: newY
+                };
+                
+                // Update the box position
+                const box = document.getElementById(`client-${draggedClient}`);
+                if (box) {
+                    box.style.left = newX + 'px';
+                    box.style.top = newY + 'px';
+                }
+                
+                // Redraw connections and minimap
+                drawConnections();
+                updateMinimap();
+                
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isPanning) {
+                isPanning = false;
+                canvasContainer.classList.remove('panning');
+            }
+            if (isDraggingClient) {
+                isDraggingClient = false;
+                draggedClient = null;
+            }
+            if (isDraggingMinimap) {
+                isDraggingMinimap = false;
+            }
+        });
+        
+        // Mouse wheel zoom
+        canvasContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const delta = e.deltaY;
+            const zoomSpeed = 0.0003;  // Smaller increments for smoother zoom
+            const zoomChange = -delta * zoomSpeed;
+            
+            const newZoom = Math.max(0.3, Math.min(2.0, zoomLevel + zoomChange));
+            
+            if (newZoom !== zoomLevel) {
+                // Get mouse position relative to container
+                const containerRect = canvasContainer.getBoundingClientRect();
+                const mouseX = e.clientX - containerRect.left;
+                const mouseY = e.clientY - containerRect.top;
+                
+                // Find canvas point under mouse before zoom
+                // With transform translate(pan) scale(zoom): screen = canvas * zoom + pan
+                // So: canvas = (screen - pan) / zoom
+                const canvasX = (mouseX - panOffset.x) / zoomLevel;
+                const canvasY = (mouseY - panOffset.y) / zoomLevel;
+                
+                // Update zoom
+                zoomLevel = newZoom;
+                
+                // Adjust pan so same canvas point stays under mouse
+                // New: mouseX = canvasX * newZoom + newPan
+                // So: newPan = mouseX - canvasX * newZoom
+                panOffset.x = mouseX - canvasX * zoomLevel;
+                panOffset.y = mouseY - canvasY * zoomLevel;
+                
+                updateZoom();
+            }
+        }, { passive: false });
+        
+        // Zoom functions
+        window.addEventListener('resize', () => {
+            renderGraph();
+        });
+        
+        // Minimap viewport dragging
+        let isDraggingMinimap = false;
+        const minimapViewport = document.getElementById('minimap-viewport');
+        
+        minimapViewport.addEventListener('mousedown', (e) => {
+            isDraggingMinimap = true;
+            e.stopPropagation();
+            e.preventDefault();
+        });
+        
+        // Initialize view - center on content
+        function initializeView() {
+            // Wait for client boxes to be positioned
+            if (Object.keys(clientPositions).length === 0) {
+                setTimeout(initializeView, 100);
+                return;
+            }
+            
+            // Wait for DOM elements to be created
+            const container = document.getElementById('clients-container');
+            if (!container || container.children.length === 0) {
+                setTimeout(initializeView, 100);
+                return;
+            }
+            
+            const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+            
+            // Find the center of all client boxes
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            Object.values(clientPositions).forEach(pos => {
+                minX = Math.min(minX, pos.x);
+                minY = Math.min(minY, pos.y);
+                maxX = Math.max(maxX, pos.x + 200);
+                maxY = Math.max(maxY, pos.y + 100);
+            });
+            
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            
+            // Center the viewport on the client boxes
+            panOffset.x = containerRect.width / 2 - centerX * zoomLevel;
+            panOffset.y = containerRect.height / 2 - centerY * zoomLevel;
+            
+            const canvas = document.getElementById('patchbay-canvas');
+            const transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`;
+            canvas.style.transform = transform;
+            container.style.transform = transform;
+            
+            console.log('Client positions:', clientPositions);
+            console.log('Container children:', container.children.length);
+            console.log('Transform:', transform);
+            console.log('Container dimensions:', container.offsetWidth, container.offsetHeight);
+            console.log('Container display:', window.getComputedStyle(container).display);
+            console.log('Container visibility:', window.getComputedStyle(container).visibility);
+            
+            // Check first client box
+            if (container.children.length > 0) {
+                const firstBox = container.children[0];
+                console.log('First box:', firstBox);
+                console.log('First box dimensions:', firstBox.offsetWidth, firstBox.offsetHeight);
+                console.log('First box display:', window.getComputedStyle(firstBox).display);
+                console.log('First box visibility:', window.getComputedStyle(firstBox).visibility);
+                console.log('First box background:', window.getComputedStyle(firstBox).backgroundColor);
+            }
+            
+            document.getElementById('zoom-level').textContent = Math.round(zoomLevel * 100) + '%';
+            drawConnections();
+            updateMinimap();
+        }
+        
+        // Initialize
+        connectWebSocket();
+        setTimeout(initializeView, 100);
+    </script>
+</body>
+</html>
