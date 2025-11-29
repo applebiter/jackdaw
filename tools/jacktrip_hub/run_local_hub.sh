@@ -38,4 +38,16 @@ fi
 
 # Run with uvicorn using SSL
 cd "$DIR"
-uvicorn hub_server:app --host 0.0.0.0 --port 8000 --reload --ssl-certfile="$SSL_CERTFILE" --ssl-keyfile="$SSL_KEYFILE"
+
+# Create a trap to clean up child processes on SIGINT (Ctrl-C)
+cleanup() {
+    echo "Shutting down hub..."
+    exit 0
+}
+
+trap cleanup SIGINT
+
+# Run uvicorn in foreground without --reload to avoid reloader issues with Ctrl-C
+# This ensures clean shutdown and proper port release when pressing Ctrl-C
+echo "Hub running (production mode, no auto-reload)"
+exec uvicorn hub_server:app --host 0.0.0.0 --port 8000 --ssl-certfile="$SSL_CERTFILE" --ssl-keyfile="$SSL_KEYFILE"
