@@ -289,6 +289,30 @@
         let draggedClient = null;
         let clientDragStart = {x: 0, y: 0};
         
+        // Debouncing for graph updates
+        let renderTimeout = null;
+        let pendingGraph = null;
+        const RENDER_DEBOUNCE_MS = 100;  // Wait 100ms after last update before rendering
+        
+        function scheduleRender(newGraph) {
+            pendingGraph = newGraph;
+            
+            // Clear existing timeout
+            if (renderTimeout) {
+                clearTimeout(renderTimeout);
+            }
+            
+            // Schedule new render
+            renderTimeout = setTimeout(() => {
+                if (pendingGraph) {
+                    graph = pendingGraph;
+                    renderGraph();
+                    pendingGraph = null;
+                }
+                renderTimeout = null;
+            }, RENDER_DEBOUNCE_MS);
+        }
+        
         // Check authentication on page load
         window.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('jacktrip_token');
@@ -321,8 +345,8 @@
                 const msg = JSON.parse(event.data);
                 
                 if (msg.type === 'graph') {
-                    graph = msg.data;
-                    renderGraph();
+                    // Use debounced render to avoid excessive redraws
+                    scheduleRender(msg.data);
                 } else if (msg.type === 'error') {
                     updateStatus('Error: ' + msg.message, '#f44336');
                 }
