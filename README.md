@@ -2,13 +2,13 @@
 
 <img src="icons/hicolor/256x256/apps/jackdaw.png" alt="Jackdaw" width="128" />
 
-# Jackdaw Voice Assistant
+# Jackdaw
 
 **A privacy-first, voice-controlled audio system that lives in your professional audio workflow.**
 
 </div>
 
-Jackdaw is a modular voice assistant built on JACK Audio, featuring speech recognition (Vosk), local AI chat (Ollama), and text-to-speech (Piper). Control your music library, stream to the internet, record retroactively, and collaborate over networks—all with your voice, all running locally on your machine.
+Jackdaw is a modular audio system built on JACK Audio, featuring speech recognition (Vosk), local AI chat (Ollama), and text-to-speech (Piper). Control your music library, stream to the internet, record retroactively, and collaborate over networks—all with your voice, all running locally on your machine.
 
 **No cloud. No subscriptions. No privacy concerns.** Everything runs on your computer.
 
@@ -20,11 +20,12 @@ Jackdaw is a modular voice assistant built on JACK Audio, featuring speech recog
 - 🎙️ **Stream to Icecast2** - Broadcast audio to the internet with voice commands
 - ⏮️ **Retroactive recording** - Save audio that already happened with buffer
 - 💬 **Chat with local AI** - Ask questions, get spoken responses (via Ollama)
-- 🌐 **Network collaboration** - Real-time audio with JackTrip *(main branch only, not in releases yet)*
+- 🌐 **Network collaboration** - Real-time audio with JackTrip hub and client *(main branch only, not in releases yet)*
+- 🕹️ **Web patchbay** - Visual JACK audio routing in your browser
 - 🎛️ **Professional audio routing** - Integrates seamlessly with JACK ecosystem
 - 🔌 **Extensible plugins** - Add your own voice commands easily
 
-> **Note**: The JackTrip collaboration features are currently in active development on the `main` branch and are not included in stable releases yet. If you want to test network collaboration, clone the repository directly instead of using the installer.
+> **Note**: The JackTrip collaboration features (hub server with authentication, web patchbay, and client plugin) are currently in active development on the `main` branch and are not included in stable releases yet. If you want to test network collaboration, clone the repository directly instead of using the installer.
 
 ---
 
@@ -77,6 +78,10 @@ cd jackdaw
 - **[docs/STREAMING.md](docs/STREAMING.md)** - Icecast2 streaming and JackTrip setup
 - **[docs/TIMEMACHINE.md](docs/TIMEMACHINE.md)** - Retroactive recording explained
 - **[docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md)** - Create custom voice commands
+- **[docs/JACKTRIP_CLIENT.md](docs/JACKTRIP_CLIENT.md)** - JackTrip client setup and LAN deployment
+- **[JACKTRIP_PATCHBAY.md](JACKTRIP_PATCHBAY.md)** - Web-based JACK patchbay guide
+- **[tools/jacktrip_hub/README.md](tools/jacktrip_hub/README.md)** - JackTrip hub server documentation
+- **[tools/jacktrip_hub/SECURITY.md](tools/jacktrip_hub/SECURITY.md)** - Security and authentication
 
 ---
 
@@ -115,84 +120,6 @@ See **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** for complete command 
 - Ollama (optional, for AI chat)
 
 All included in the installation script!
-
-## Directory Structure
-
-```
-voiceassistant/
-├── docs/                       # Documentation
-│   ├── README.md              # Detailed setup guide
-│   ├── PLUGIN_GUIDE.md        # How to create plugins
-│   ├── QUICK_REFERENCE.md     # Command reference
-│   ├── MUSIC_DATABASE.md      # Music library system guide
-│   ├── TIMEMACHINE.md         # Retroactive recording plugin
-│   ├── STREAMING.md           # Icecast2 streaming guide
-│   ├── IMPLEMENTATION_SUMMARY.md
-│   └── brainstorm.md
-│
-├── plugins/                    # Voice command plugins
-│   ├── __init__.py
-│   ├── basic_commands.py      # Hello, stop listening, etc.
-│   ├── llm_recorder.py        # Start/stop recording for LLM
-│   ├── music_player.py        # Music playback & volume control
-│   ├── buffer.py              # Retroactive audio recording
-│   └── icecast_streamer.py    # Icecast2 streaming plugin
-│
-├── tools/                      # Utility scripts
-│   ├── inspect_conversations.py    # View SQLite conversations
-│   ├── remember_jack_routing.py    # Save JACK routing config
-│   └── scan_music_library.py       # Scan music directory to database
-│
-├── music_library_browser.py   # GUI music library browser & player
-├── launch_music_browser.sh    # Launch the music browser
-│
-├── tests/                      # Test files
-│   ├── test_database.py
-│   ├── test_local_conversation_store.py
-│   └── conversations_test.sqlite3
-│
-├── logs/                       # Runtime logs (auto-created)
-│   ├── voice_command.log
-│   ├── llm_processor.log
-│   └── tts_client.log
-│
-├── model/                      # Vosk speech recognition model
-│   └── README                 # Download instructions
-│
-├── voices/                     # Piper TTS voice models
-│   ├── README.md              # Download instructions & voice guide
-│   ├── en_US-amy-medium.onnx
-│   ├── en_US-amy-medium.onnx.json
-│   ├── en_US-arctic-medium.onnx
-│   ├── en_US-arctic-medium.onnx.json
-│   ├── en_US-joe-medium.onnx
-│   ├── en_US-joe-medium.onnx.json
-│   ├── en_US-lessac-medium.onnx
-│   └── en_US-lessac-medium.onnx.json
-│
-├── voice_assistant_tray.py    # System tray GUI application
-├── voice_command_client.py    # Main voice recognition & command dispatcher
-├── llm_query_processor.py     # LLM query handler with conversation history
-├── tts_jack_client.py         # Text-to-speech JACK client
-├── audio_jack_player.py       # Multi-format music player with skip/volume control
-├── music_query.py             # Music database query handler
-├── ring_buffer_recorder.py    # Python-based retroactive audio recorder
-├── plugin_base.py             # Plugin base class
-├── plugin_loader.py           # Dynamic plugin loader
-│
-├── voice_assistant_config.json     # Main configuration
-├── voice_assistant_config.json.example
-├── requirements.txt           # Python dependencies
-├── conversations.sqlite3      # Local conversation storage
-├── music_library.sqlite3      # Music metadata database
-├── music_library_schema.sql   # Database schema
-├── jack_routing.json          # Saved JACK connections
-│
-├── start_voice_assistant.sh   # Launch all components
-├── stop_voice_assistant.sh    # Shutdown script
-├── LICENSE
-└── README.md                  # This file
-```
 
 ## Core Components
 
@@ -251,10 +178,15 @@ Browse and control your music library with a graphical interface featuring:
 
 **Launch:** `./launch_music_browser.sh` or from the tray menu
 
-### Network Audio Collaboration
-Use JackTrip for real-time, low-latency audio collaboration over the internet. Jam with friends across the globe!
+### Network Audio Collaboration (JackTrip)
+Real-time, low-latency audio collaboration over the internet. Includes:
+- **Hub Server** - Authenticated server with room management (in `tools/jacktrip_hub/`)
+- **Web Patchbay** - Visual JACK audio routing in your browser with zoom/pan/minimap
+- **Client Plugin** - Voice-controlled connection to JackTrip hubs (in `plugins/jacktrip_client.py`)
 
-See **[docs/STREAMING.md](docs/STREAMING.md)** for JackTrip setup and usage.
+**Voice commands:** "connect to jacktrip hub", "disconnect from jacktrip hub"
+
+See **[docs/JACKTRIP_CLIENT.md](docs/JACKTRIP_CLIENT.md)** for LAN setup and **[tools/jacktrip_hub/README.md](tools/jacktrip_hub/README.md)** for hub server documentation.
 
 ## 🔌 Extensible Plugin System
 
@@ -309,19 +241,23 @@ jackdaw/
 │   ├── MUSIC_BROWSER.md            GUI browser guide
 │   ├── STREAMING.md                Icecast2 & JackTrip
 │   ├── TIMEMACHINE.md              Retroactive recording
-│   └── PLUGIN_GUIDE.md             Plugin development
+│   ├── PLUGIN_GUIDE.md             Plugin development
+│   └── JACKTRIP_CLIENT.md          JackTrip client & LAN setup
 │
 ├── 📁 plugins/                     🔌 Voice command plugins
 │   ├── basic_commands.py           Hello, stop listening
 │   ├── music_player.py             Music control
 │   ├── llm_recorder.py             AI chat capture
 │   ├── buffer.py                   Retroactive recording
-│   └── icecast_streamer.py         Icecast2 streaming
+│   ├── icecast_streamer.py         Icecast2 streaming
+│   └── jacktrip_client.py          JackTrip network audio
 │
 ├── 📁 tools/                       🔧 Utility scripts
 │   ├── scan_music_library.py       Index your music
 │   ├── inspect_conversations.py    View chat history
-│   └── remember_jack_routing.py    Save JACK connections
+│   ├── remember_jack_routing.py    Save JACK connections
+│   ├── jacktrip_tts_watcher.py     TTS integration for JackTrip
+│   └── jacktrip_hub/               JackTrip hub server + web patchbay
 │
 ├── 🎵 music_library_browser.py     GUI music browser
 ├── 🎙️ voice_command_client.py      Speech recognition
