@@ -326,8 +326,8 @@ async def root():
         return "<h1>Login page not found</h1>"
 
 @app.get("/patchbay", response_class=HTMLResponse)
-async def patchbay(user_id: str = Depends(get_current_user_id)):
-    """Serve patchbay interface (requires authentication)"""
+async def patchbay():
+    """Serve patchbay interface (client will check authentication via token)"""
     try:
         with open(Path(__file__).parent / "static" / "patchbay.html", "r") as f:
             return f.read()
