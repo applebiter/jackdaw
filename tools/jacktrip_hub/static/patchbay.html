@@ -308,7 +308,8 @@
         // WebSocket connection
         function connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/patchbay`;
+            const token = localStorage.getItem('jacktrip_token');
+            const wsUrl = `${protocol}//${window.location.host}/ws/patchbay?token=${encodeURIComponent(token)}`;
             
             ws = new WebSocket(wsUrl);
             
