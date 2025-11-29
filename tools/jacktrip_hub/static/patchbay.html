@@ -246,11 +246,12 @@
 </head>
 <body>
     <div id="header">
-        <h1>🎵 JACK Patchbay - Room {ROOM_ID}</h1>
+        <h1>🎵 JACK Patchbay</h1>
         <div id="controls">
             <button onclick="refreshGraph()">🔄 Refresh</button>
             <button onclick="clearAllConnections()" class="danger">❌ Clear All</button>
             <button onclick="autoRoute()">🔗 Auto Route</button>
+            <button onclick="logout()" class="danger">🚪 Logout</button>
         </div>
     </div>
     
@@ -287,6 +288,22 @@
         let isDraggingClient = false;
         let draggedClient = null;
         let clientDragStart = {x: 0, y: 0};
+        
+        // Check authentication on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('jacktrip_token');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            connectWebSocket();
+        });
+        
+        function logout() {
+            localStorage.removeItem('jacktrip_token');
+            localStorage.removeItem('jacktrip_user_id');
+            window.location.href = '/';
+        }
         
         // WebSocket connection
         function connectWebSocket() {
@@ -1006,8 +1023,7 @@
             updateMinimap();
         }
         
-        // Initialize
-        connectWebSocket();
+        // Initialize on DOMContentLoaded (see above)
         setTimeout(initializeView, 100);
     </script>
 </body>

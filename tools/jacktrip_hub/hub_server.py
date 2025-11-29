@@ -316,10 +316,23 @@ async def shutdown_event():
     for room_id in list(JACKTRIP_PROCS.keys()):
         stop_jacktrip_server(room_id)
 
-@app.get("/", response_model=HealthResponse)
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    """Health check endpoint"""
-    return await health_check()
+    """Serve login page"""
+    try:
+        with open(Path(__file__).parent / "static" / "index.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Login page not found</h1>"
+
+@app.get("/patchbay", response_class=HTMLResponse)
+async def patchbay(user_id: str = Depends(get_current_user_id)):
+    """Serve patchbay interface (requires authentication)"""
+    try:
+        with open(Path(__file__).parent / "static" / "patchbay.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Patchbay interface not found</h1>"
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -742,19 +755,6 @@ async def websocket_patchbay(websocket: WebSocket):
         print(f"WebSocket error: {e}")
         if websocket in active_connections:
             active_connections.remove(websocket)
-
-# Serve patchbay HTML page
-@app.get("/patchbay/{room_id}", response_class=HTMLResponse)
-async def patchbay_page(room_id: str):
-    """Serve the patchbay interface for a room"""
-    # We'll create this HTML file next
-    try:
-        with open("static/patchbay.html", "r") as f:
-            html = f.read()
-        return html.replace("{ROOM_ID}", room_id)
-    except FileNotFoundError:
-        return "<h1>Patchbay interface coming soon...</h1>"
-
 def generate_self_signed_cert():
     """Generate self-signed certificate for development"""
     CERTS_PATH.mkdir(exist_ok=True)
