@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>JACK Patchbay - Room {ROOM_ID}</title>
+    <title>Jackdaw Hub - Patchbay</title>
     <style>
         * {
             margin: 0;
@@ -11,15 +11,15 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
+            background: #0d1b2a;
             color: #e0e0e0;
             overflow: hidden;
         }
         
         #header {
-            background: #2d2d2d;
+            background: #1a2332;
             padding: 15px 20px;
-            border-bottom: 2px solid #3d3d3d;
+            border-bottom: 2px solid #2196F3;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -27,7 +27,7 @@
         
         #header h1 {
             font-size: 18px;
-            color: #4CAF50;
+            color: #2196F3;
         }
         
         #controls {
@@ -36,7 +36,7 @@
         }
         
         button {
-            background: #4CAF50;
+            background: #2196F3;
             color: white;
             border: none;
             padding: 8px 16px;
@@ -47,7 +47,7 @@
         }
         
         button:hover {
-            background: #45a049;
+            background: #1E88E5;
         }
         
         button.danger {
@@ -63,7 +63,7 @@
             width: 100vw;
             height: calc(100vh - 62px);
             overflow: hidden;
-            background: #1a1a1a;
+            background: #0d1b2a;
             cursor: grab;
         }
         
@@ -108,13 +108,13 @@
         }
         
         #zoom-level {
-            background: #2d2d2d;
+            background: #1a2332;
             color: #e0e0e0;
             padding: 5px;
             text-align: center;
             border-radius: 4px;
             font-size: 12px;
-            border: 1px solid #3d3d3d;
+            border: 1px solid #2196F3;
         }
         
         #minimap {
@@ -123,8 +123,8 @@
             left: 20px;
             width: 200px;
             height: 200px;
-            background: #2d2d2d;
-            border: 2px solid #4CAF50;
+            background: #1a2332;
+            border: 2px solid #2196F3;
             border-radius: 8px;
             z-index: 1000;
             overflow: hidden;
@@ -144,10 +144,11 @@
         
         .client-box {
             position: absolute;
-            background: #2d2d2d;
-            border: 2px solid #4CAF50;
+            background: #1a2f45;
+            border: 2px solid #2196F3;
             border-radius: 8px;
             min-width: 200px;
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
             padding: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             pointer-events: auto;
@@ -157,10 +158,10 @@
         .client-header {
             font-weight: bold;
             font-size: 14px;
-            color: #4CAF50;
+            color: #2196F3;
             margin-bottom: 10px;
             padding-bottom: 5px;
-            border-bottom: 1px solid #3d3d3d;
+            border-bottom: 1px solid #2196F3;
             cursor: move;
             user-select: none;
         }
@@ -195,8 +196,8 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+            background: #2196F3;
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
             position: absolute;
             z-index: 10;
         }
@@ -222,17 +223,17 @@
             position: fixed;
             bottom: 10px;
             right: 10px;
-            background: #2d2d2d;
+            background: #1a2332;
             padding: 10px 15px;
             border-radius: 6px;
             font-size: 12px;
-            border: 1px solid #3d3d3d;
+            border: 1px solid #2196F3;
         }
         
         .connection-line {
             position: absolute;
             height: 2px;
-            background: #4CAF50;
+            background: #2196F3;
             transform-origin: left center;
             pointer-events: none;
             opacity: 0.7;
@@ -338,7 +339,7 @@
             ws = new WebSocket(wsUrl);
             
             ws.onopen = () => {
-                updateStatus('Connected', '#4CAF50');
+                updateStatus('Connected', '#2196F3');
             };
             
             ws.onmessage = (event) => {
@@ -363,7 +364,7 @@
             };
         }
         
-        function updateStatus(message, color = '#4CAF50') {
+        function updateStatus(message, color = '#2196F3') {
             const status = document.getElementById('status');
             status.textContent = message;
             status.style.borderColor = color;
@@ -543,8 +544,8 @@
             // Draw client boxes as larger, more visible rectangles
             Object.keys(clientPositions).forEach(clientName => {
                 const pos = clientPositions[clientName];
-                miniCtx.fillStyle = '#4CAF50';
-                miniCtx.strokeStyle = '#66BB6A';
+                miniCtx.fillStyle = '#2196F3';
+                miniCtx.strokeStyle = '#64B5F6';
                 miniCtx.lineWidth = 1;
                 const boxX = pos.x * scale;
                 const boxY = pos.y * scale;
@@ -591,7 +592,7 @@
             const ctx = canvas.getContext('2d');
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#4CAF50';
+            ctx.strokeStyle = '#2196F3';
             ctx.lineWidth = 2;
             
             const drawnConnections = new Set();
