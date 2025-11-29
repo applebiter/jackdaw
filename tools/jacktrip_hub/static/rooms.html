@@ -239,10 +239,12 @@
         }
         
         .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 40px;
+        }
+        
+        .header-top h1 {
+            color: #2196F3;
+            text-align: center;
         }
         
         .logout-btn {
@@ -278,7 +280,6 @@
     <div class="container">
         <div class="header-top">
             <h1>🎵 Jackdaw Hub</h1>
-            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
         </div>
         
         <div class="header">
@@ -305,6 +306,7 @@
         <div class="section">
             <div class="button-group">
                 <button onclick="openCreateModal()">➕ Create Room</button>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
     </div>
