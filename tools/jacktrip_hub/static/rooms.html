@@ -239,12 +239,22 @@
         }
         
         .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
             margin-bottom: 40px;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            filter: drop-shadow(0 0 8px rgba(33, 150, 243, 0.6));
         }
         
         .header-top h1 {
             color: #2196F3;
-            text-align: center;
+            margin: 0;
         }
         
         .logout-btn {
@@ -279,7 +289,8 @@
 <body>
     <div class="container">
         <div class="header-top">
-            <h1>🎵 Jackdaw Hub</h1>
+            <img src="/jackdaw.svg" alt="Jackdaw" class="logo-icon">
+            <h1>Jackdaw Hub</h1>
         </div>
         
         <div class="header">
@@ -292,13 +303,6 @@
         <div class="section">
             <div class="section-title">📋 Your Rooms</div>
             <div id="roomsList" class="room-list">
-                <div class="empty-state">Loading rooms...</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-title">🌐 Public Rooms</div>
-            <div id="publicRoomsList" class="room-list">
                 <div class="empty-state">Loading rooms...</div>
             </div>
         </div>
@@ -396,7 +400,6 @@
         
         function renderRooms() {
             const userRooms = allRooms.filter(r => userRoomIds.has(r.id));
-            const publicRooms = allRooms.filter(r => !userRoomIds.has(r.id));
             
             // Render user's rooms
             const userList = document.getElementById('roomsList');
@@ -411,38 +414,11 @@
                     </div>
                 `).join('');
             }
-            
-            // Render public rooms
-            const publicList = document.getElementById('publicRoomsList');
-            if (publicRooms.length === 0) {
-                publicList.innerHTML = '<div class="empty-state">No other public rooms available</div>';
-            } else {
-                publicList.innerHTML = publicRooms.map(room => `
-                    <div class="room-item" onclick="prepareJoin('${room.id}')">
-                        <div class="room-name">${room.name}</div>
-                        <div class="room-info">${room.participant_count}/${room.max_participants} participants</div>
-                        ${room.description ? `<div class="room-description">${room.description}</div>` : ''}
-                    </div>
-                `).join('');
-            }
         }
         
         function enterRoom(roomId) {
             // User is already in this room, go to patchbay
             window.location.href = `/patchbay?room_id=${roomId}`;
-        }
-        
-        function prepareJoin(roomId) {
-            selectedRoomId = roomId;
-            const room = allRooms.find(r => r.id === roomId);
-            const roomNameDiv = document.getElementById('joinRoomName');
-            roomNameDiv.innerHTML = `<p style="margin-bottom: 20px; color: #b0b0b0;">Joining: <strong style="color: #2196F3;">${room.name}</strong></p>`;
-            
-            // Check if room requires passphrase (this would need to be returned from server)
-            // For now, always show the passphrase field
-            document.getElementById('passphraseGroup').style.display = 'block';
-            
-            openJoinModal();
         }
         
         async function joinRoom(event) {
