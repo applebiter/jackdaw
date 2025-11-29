@@ -525,11 +525,11 @@ class JACKGraph(BaseModel):
     connections: List[tuple]  # [(source, dest), ...]
 
 def get_jack_graph() -> JACKGraph:
-    """Get current JACK audio graph"""
+    """Get current JACK audio graph (audio ports only, no MIDI)"""
     try:
         # Get all ports and their connections
         result = subprocess.run(
-            ['jack_lsp', '-c'],
+            ['jack_lsp', '-c', '-t'],
             capture_output=True,
             text=True,
             timeout=5
@@ -538,6 +538,7 @@ def get_jack_graph() -> JACKGraph:
         clients = {}
         ports_dict = {}  # Track all ports by full name to avoid duplicates
         current_port = None
+        current_port_type = None
         current_connections = []
         
         for line in result.stdout.split('\n'):
@@ -545,14 +546,23 @@ def get_jack_graph() -> JACKGraph:
                 continue
             
             # Lines without leading spaces are port names
-            # Lines with leading spaces are connections
-            if line.startswith('   '):
-                # This is a connection (indented)
+            # Lines with leading spaces are either type info or connections
+            if line.startswith('        '):
+                # This is a connection (double indented)
                 current_connections.append(line.strip())
+            elif line.startswith('    '):
+                # This is type info (single indented) - e.g., "32 bit float mono audio" or "8 bit raw midi"
+                type_info = line.strip()
+                if current_port:
+                    # Skip MIDI ports
+                    if 'midi' in type_info.lower():
+                        current_port_type = "midi"
+                    else:
+                        current_port_type = "audio"
             else:
                 # This is a port name (not indented)
-                if current_port:
-                    # Save previous port (only if we haven't seen it before)
+                if current_port and current_port_type != "midi":
+                    # Save previous port (only if we haven't seen it before and it's not MIDI)
                     if current_port not in ports_dict:
                         client_name = current_port.split(':')[0]
                         port_name = current_port.split(':')[1] if ':' in current_port else current_port
@@ -579,10 +589,11 @@ def get_jack_graph() -> JACKGraph:
                         ports_dict[current_port] = port_info
                 
                 current_port = line.strip()
+                current_port_type = None
                 current_connections = []
         
         # Don't forget the last port
-        if current_port and current_port not in ports_dict:
+        if current_port and current_port_type != "midi" and current_port not in ports_dict:
             client_name = current_port.split(':')[0]
             port_name = current_port.split(':')[1] if ':' in current_port else current_port
             
@@ -607,10 +618,15 @@ def get_jack_graph() -> JACKGraph:
         # Filter out metadata/type description "clients" that aren't real JACK clients
         filtered_clients = {}
         for client_name, ports in clients.items():
-            # Skip clients that are just type descriptions
+            # Skip clients that are just type descriptions or MIDI-only
             if 'bit' in client_name.lower() and ('float' in client_name.lower() or 'raw' in client_name.lower()):
                 continue
-            filtered_clients[client_name] = ports
+            # Skip a2j and other MIDI bridges
+            if client_name.lower() in ['a2j', 'a2jmidid']:
+                continue
+            # Only include if client has audio ports
+            if ports:
+                filtered_clients[client_name] = ports
         
         # Build connection list - only from output ports to avoid duplicates
         # JACK only lists connections under output ports
