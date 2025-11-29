@@ -290,6 +290,7 @@
         let isDraggingClient = false;
         let draggedClient = null;
         let clientDragStart = {x: 0, y: 0};
+        let currentRoomId = null;  // Track current room
         
         // Load saved positions on startup
         function loadSavedPositions() {
@@ -346,8 +347,19 @@
                 window.location.href = '/';
                 return;
             }
-            loadSavedPositions();
-            connectWebSocket();
+            
+            // Check if user has a room from URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdParam = urlParams.get('room_id');
+            
+            if (roomIdParam) {
+                currentRoomId = roomIdParam;
+                loadSavedPositions();
+                connectWebSocket();
+            } else {
+                // Check user's rooms
+                checkUserRooms(token);
+            }
         });
         
         function logout() {
@@ -356,11 +368,45 @@
             window.location.href = '/';
         }
         
+        // Check user's rooms and redirect to room selection if needed
+        async function checkUserRooms(token) {
+            try {
+                const response = await fetch('/user/rooms', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const rooms = await response.json();
+                    
+                    if (rooms.length === 0) {
+                        // No rooms, redirect to room management page
+                        window.location.href = '/rooms';
+                        return;
+                    } else if (rooms.length === 1) {
+                        // Only one room, use it
+                        currentRoomId = rooms[0].id;
+                        loadSavedPositions();
+                        connectWebSocket();
+                    } else {
+                        // Multiple rooms, redirect to selection
+                        window.location.href = '/rooms';
+                    }
+                } else {
+                    window.location.href = '/';
+                }
+            } catch (e) {
+                console.error('Failed to check rooms:', e);
+                window.location.href = '/';
+            }
+        }
+        
         // WebSocket connection
         function connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const token = localStorage.getItem('jacktrip_token');
-            const wsUrl = `${protocol}//${window.location.host}/ws/patchbay?token=${encodeURIComponent(token)}`;
+            const wsUrl = `${protocol}//${window.location.host}/ws/patchbay?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(currentRoomId)}`;
             
             ws = new WebSocket(wsUrl);
             

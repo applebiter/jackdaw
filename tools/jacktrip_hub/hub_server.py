@@ -334,6 +334,15 @@ async def patchbay():
     except FileNotFoundError:
         return "<h1>Patchbay interface not found</h1>"
 
+@app.get("/rooms", response_class=HTMLResponse)
+async def rooms_page():
+    """Serve room manager interface"""
+    try:
+        with open(Path(__file__).parent / "static" / "rooms.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Room manager interface not found</h1>"
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Check server health and status"""
@@ -381,6 +390,23 @@ async def list_rooms(user_id: str = Depends(get_current_user_id)):
         )
         for room in ROOMS.values()
     ]
+
+@app.get("/user/rooms", response_model=List[RoomListItem])
+async def get_user_rooms(user_id: str = Depends(get_current_user_id)):
+    """Get rooms the current user is participating in"""
+    user_rooms = [
+        RoomListItem(
+            id=room.id,
+            name=room.name,
+            description=room.description,
+            participant_count=len(room.participants),
+            max_participants=room.max_participants,
+            created_at=room.created_at
+        )
+        for room in ROOMS.values()
+        if user_id in room.participants
+    ]
+    return user_rooms
 
 @app.post("/rooms", response_model=Room)
 async def create_room(
@@ -711,8 +737,9 @@ active_connections: List[WebSocket] = []
 @app.websocket("/ws/patchbay")
 async def websocket_patchbay(websocket: WebSocket):
     """WebSocket endpoint for real-time JACK graph updates"""
-    # Get token from query parameters
+    # Get token and room_id from query parameters
     token = websocket.query_params.get("token")
+    room_id = websocket.query_params.get("room_id")
     
     # Validate token before accepting connection
     user_id = None
@@ -722,6 +749,20 @@ async def websocket_patchbay(websocket: WebSocket):
     if not user_id:
         # Reject unauthorized connection
         await websocket.close(code=1008, reason="Unauthorized")
+        return
+    
+    # Validate room_id and check user is in the room
+    if not room_id:
+        await websocket.close(code=1008, reason="Room ID required")
+        return
+    
+    room = ROOMS.get(room_id)
+    if not room:
+        await websocket.close(code=1008, reason="Room not found")
+        return
+    
+    if user_id not in room.participants:
+        await websocket.close(code=1008, reason="Not a participant in this room")
         return
     
     # Accept the connection

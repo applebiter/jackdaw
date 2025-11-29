@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jackdaw Hub - Room Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1a2332 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(26, 35, 50, 0.95);
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        
+        h1 {
+            color: #2196F3;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #64B5F6;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            color: #2196F3;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2196F3;
+        }
+        
+        .room-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .room-item {
+            background: #0d1b2a;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .room-item:hover {
+            background: #162333;
+            box-shadow: 0 0 12px rgba(33, 150, 243, 0.3);
+        }
+        
+        .room-name {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .room-info {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .room-description {
+            color: #b0b0b0;
+            font-size: 13px;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 30px 20px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: 120px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #1E88E5;
+        }
+        
+        button.secondary {
+            background: #1a2332;
+            border: 1px solid #2196F3;
+            color: #2196F3;
+        }
+        
+        button.secondary:hover {
+            background: #162333;
+        }
+        
+        button.danger {
+            background: #f44336;
+        }
+        
+        button.danger:hover {
+            background: #da190b;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: rgba(26, 35, 50, 0.98);
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            color: #2196F3;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        input, textarea {
+            width: 100%;
+            background: #0d1b2a;
+            border: 1px solid #2196F3;
+            border-radius: 4px;
+            padding: 10px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.5);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+        }
+        
+        .modal-buttons .cancel {
+            background: #1a2332;
+            border: 1px solid #2196F3;
+            color: #2196F3;
+        }
+        
+        .modal-buttons .cancel:hover {
+            background: #162333;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .logout-btn {
+            background: #f44336;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        .logout-btn:hover {
+            background: #da190b;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        
+        .status.loading {
+            background: rgba(33, 150, 243, 0.1);
+            color: #64B5F6;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #ef5350;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-top">
+            <h1>🎵 Jackdaw Hub</h1>
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+        </div>
+        
+        <div class="header">
+            <h1>Room Manager</h1>
+            <p class="subtitle">Create or join a room to get started</p>
+        </div>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div class="section">
+            <div class="section-title">📋 Your Rooms</div>
+            <div id="roomsList" class="room-list">
+                <div class="empty-state">Loading rooms...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">🌐 Public Rooms</div>
+            <div id="publicRoomsList" class="room-list">
+                <div class="empty-state">Loading rooms...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="button-group">
+                <button onclick="openCreateModal()">➕ Create Room</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Create a New Room</div>
+            <form onsubmit="createRoom(event)">
+                <div class="form-group">
+                    <label>Room Name *</label>
+                    <input type="text" id="roomName" required placeholder="e.g., Jazz Session">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="roomDesc" placeholder="Optional description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Max Participants</label>
+                    <input type="number" id="maxParticipants" value="4" min="2" max="8">
+                </div>
+                <div class="form-group">
+                    <label>Passphrase (optional)</label>
+                    <input type="password" id="passphrase" placeholder="Leave blank for public room">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit">Create Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="joinModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Join Room</div>
+            <div id="joinRoomName"></div>
+            <form onsubmit="joinRoom(event)">
+                <div class="form-group" id="passphraseGroup" style="display: none;">
+                    <label>Passphrase</label>
+                    <input type="password" id="joinPassphrase" placeholder="Enter passphrase">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel" onclick="closeJoinModal()">Cancel</button>
+                    <button type="submit">Join Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allRooms = [];
+        let userRoomIds = new Set();
+        let selectedRoomId = null;
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('jacktrip_token');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            loadRooms();
+        });
+        
+        async function loadRooms() {
+            try {
+                const token = localStorage.getItem('jacktrip_token');
+                
+                // Load all rooms
+                const allRes = await fetch('/rooms', {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                allRooms = await allRes.json();
+                
+                // Load user's rooms
+                const userRes = await fetch('/user/rooms', {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                const userRooms = await userRes.json();
+                userRoomIds = new Set(userRooms.map(r => r.id));
+                
+                renderRooms();
+            } catch (e) {
+                showStatus('Failed to load rooms: ' + e.message, 'error');
+            }
+        }
+        
+        function renderRooms() {
+            const userRooms = allRooms.filter(r => userRoomIds.has(r.id));
+            const publicRooms = allRooms.filter(r => !userRoomIds.has(r.id));
+            
+            // Render user's rooms
+            const userList = document.getElementById('roomsList');
+            if (userRooms.length === 0) {
+                userList.innerHTML = '<div class="empty-state">No rooms yet. Create one to get started!</div>';
+            } else {
+                userList.innerHTML = userRooms.map(room => `
+                    <div class="room-item" onclick="enterRoom('${room.id}')">
+                        <div class="room-name">${room.name}</div>
+                        <div class="room-info">${room.participant_count}/${room.max_participants} participants</div>
+                        ${room.description ? `<div class="room-description">${room.description}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            // Render public rooms
+            const publicList = document.getElementById('publicRoomsList');
+            if (publicRooms.length === 0) {
+                publicList.innerHTML = '<div class="empty-state">No other public rooms available</div>';
+            } else {
+                publicList.innerHTML = publicRooms.map(room => `
+                    <div class="room-item" onclick="prepareJoin('${room.id}')">
+                        <div class="room-name">${room.name}</div>
+                        <div class="room-info">${room.participant_count}/${room.max_participants} participants</div>
+                        ${room.description ? `<div class="room-description">${room.description}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function enterRoom(roomId) {
+            // User is already in this room, go to patchbay
+            window.location.href = `/patchbay?room_id=${roomId}`;
+        }
+        
+        function prepareJoin(roomId) {
+            selectedRoomId = roomId;
+            const room = allRooms.find(r => r.id === roomId);
+            const roomNameDiv = document.getElementById('joinRoomName');
+            roomNameDiv.innerHTML = `<p style="margin-bottom: 20px; color: #b0b0b0;">Joining: <strong style="color: #2196F3;">${room.name}</strong></p>`;
+            
+            // Check if room requires passphrase (this would need to be returned from server)
+            // For now, always show the passphrase field
+            document.getElementById('passphraseGroup').style.display = 'block';
+            
+            openJoinModal();
+        }
+        
+        async function joinRoom(event) {
+            event.preventDefault();
+            
+            try {
+                const token = localStorage.getItem('jacktrip_token');
+                const passphrase = document.getElementById('joinPassphrase').value;
+                
+                const response = await fetch(`/rooms/${selectedRoomId}/join`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        passphrase: passphrase || null
+                    })
+                });
+                
+                if (response.ok) {
+                    closeJoinModal();
+                    window.location.href = `/patchbay?room_id=${selectedRoomId}`;
+                } else {
+                    const error = await response.json();
+                    showStatus('Failed to join room: ' + error.detail, 'error');
+                }
+            } catch (e) {
+                showStatus('Failed to join room: ' + e.message, 'error');
+            }
+        }
+        
+        async function createRoom(event) {
+            event.preventDefault();
+            
+            try {
+                const token = localStorage.getItem('jacktrip_token');
+                const name = document.getElementById('roomName').value;
+                const desc = document.getElementById('roomDesc').value;
+                const max = parseInt(document.getElementById('maxParticipants').value);
+                const pass = document.getElementById('passphrase').value;
+                
+                const response = await fetch('/rooms', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: desc || null,
+                        max_participants: max,
+                        passphrase: pass || null
+                    })
+                });
+                
+                if (response.ok) {
+                    const room = await response.json();
+                    closeCreateModal();
+                    window.location.href = `/patchbay?room_id=${room.id}`;
+                } else {
+                    const error = await response.json();
+                    showStatus('Failed to create room: ' + error.detail, 'error');
+                }
+            } catch (e) {
+                showStatus('Failed to create room: ' + e.message, 'error');
+            }
+        }
+        
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('active');
+            document.getElementById('roomName').value = '';
+            document.getElementById('roomDesc').value = '';
+            document.getElementById('maxParticipants').value = '4';
+            document.getElementById('passphrase').value = '';
+        }
+        
+        function openJoinModal() {
+            document.getElementById('joinModal').classList.add('active');
+            document.getElementById('joinPassphrase').value = '';
+        }
+        
+        function closeJoinModal() {
+            document.getElementById('joinModal').classList.remove('active');
+            document.getElementById('joinPassphrase').value = '';
+            selectedRoomId = null;
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            if (type !== 'error') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('jacktrip_token');
+            localStorage.removeItem('jacktrip_user_id');
+            window.location.href = '/';
+        }
+        
+        // Close modals on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCreateModal();
+                closeJoinModal();
+            }
+        });
+    </script>
+</body>
+</html>
