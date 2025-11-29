@@ -297,6 +297,13 @@ class JackTripClient(VoiceAssistantPlugin):
             result = "Please specify a room name"
             self._speak_response(result)
             return result
+        
+        # Validate room name contains only letters and spaces
+        if not re.match(r'^[a-zA-Z\s]+$', room_name):
+            result = "Room names can only contain letters and spaces. Please try again."
+            self._speak_response(result)
+            return result
+        
         self.logger.info(f"[JackTrip] CREATE ROOM command called with name: {room_name}")
         print(f"[JackTrip] Creating room: {room_name}")
         return self._create_room(room_name)
@@ -430,12 +437,22 @@ class JackTripClient(VoiceAssistantPlugin):
             response.raise_for_status()
             rooms = response.json()
             
-            # Find room by name (case-insensitive partial match)
+            # Find room by name: prefer exact match (case-insensitive), then partial match
             matching_room = None
+            room_name_lower = room_name.lower()
+            
+            # First try exact match (case-insensitive)
             for room in rooms:
-                if room_name.lower() in room['name'].lower():
+                if room['name'].lower() == room_name_lower:
                     matching_room = room
                     break
+            
+            # If no exact match, try partial match
+            if not matching_room:
+                for room in rooms:
+                    if room_name_lower in room['name'].lower():
+                        matching_room = room
+                        break
             
             if not matching_room:
                 result = f"No jam room found matching '{room_name}'."
