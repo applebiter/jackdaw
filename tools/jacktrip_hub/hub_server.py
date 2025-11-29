@@ -334,7 +334,7 @@ async def patchbay():
     except FileNotFoundError:
         return "<h1>Patchbay interface not found</h1>"
 
-@app.get("/rooms", response_class=HTMLResponse)
+@app.get("/rooms-ui", response_class=HTMLResponse)
 async def rooms_page():
     """Serve room manager interface"""
     try:

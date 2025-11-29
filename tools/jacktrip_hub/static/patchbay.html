@@ -382,7 +382,7 @@
                     
                     if (rooms.length === 0) {
                         // No rooms, redirect to room management page
-                        window.location.href = '/rooms';
+                        window.location.href = '/rooms-ui';
                         return;
                     } else if (rooms.length === 1) {
                         // Only one room, use it
@@ -391,7 +391,7 @@
                         connectWebSocket();
                     } else {
                         // Multiple rooms, redirect to selection
-                        window.location.href = '/rooms';
+                        window.location.href = '/rooms-ui';
                     }
                 } else {
                     window.location.href = '/';
