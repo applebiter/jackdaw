@@ -694,16 +694,18 @@ async def websocket_patchbay(websocket: WebSocket):
     """WebSocket endpoint for real-time JACK graph updates"""
     # Get token from query parameters
     token = websocket.query_params.get("token")
-    if not token:
-        await websocket.close(code=1008, reason="Missing authentication token")
-        return
     
-    # Verify token
-    user_id = get_user_from_token(token)
+    # Validate token before accepting connection
+    user_id = None
+    if token:
+        user_id = get_user_from_token(token)
+    
     if not user_id:
-        await websocket.close(code=1008, reason="Invalid authentication token")
+        # Reject unauthorized connection
+        await websocket.close(code=1008, reason="Unauthorized")
         return
     
+    # Accept the connection
     await websocket.accept()
     active_connections.append(websocket)
     
