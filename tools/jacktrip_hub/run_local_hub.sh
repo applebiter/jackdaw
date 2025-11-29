@@ -5,8 +5,8 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "Starting JackTrip Hub Server..."
-echo "Hub will be accessible at: http://localhost:8000"
-echo "API docs at: http://localhost:8000/docs"
+echo "Hub will be accessible at: https://localhost:8000"
+echo "API docs at: https://localhost:8000/docs"
 echo ""
 echo "Press Ctrl+C to stop"
 echo ""
@@ -16,6 +16,19 @@ export HUB_HOST="${HUB_HOST:-localhost}"
 export JACKTRIP_BASE_PORT="${JACKTRIP_BASE_PORT:-4464}"
 export JACKTRIP_PORT_RANGE="${JACKTRIP_PORT_RANGE:-100}"
 
+# Set SSL certificates for HTTPS
+export SSL_CERTFILE="${SSL_CERTFILE:-$DIR/certs/cert.pem}"
+export SSL_KEYFILE="${SSL_KEYFILE:-$DIR/certs/key.pem}"
+
+# Check if SSL certificates exist, if not generate them
+if [ ! -f "$SSL_CERTFILE" ] || [ ! -f "$SSL_KEYFILE" ]; then
+    echo "Generating self-signed SSL certificates..."
+    mkdir -p "$DIR/certs"
+    openssl req -x509 -newkey rsa:4096 -nodes -out "$SSL_CERTFILE" -keyout "$SSL_KEYFILE" -days 365 -subj "/CN=localhost"
+    echo "Certificates generated at: $SSL_CERTFILE and $SSL_KEYFILE"
+    echo ""
+fi
+
 # Check if jacktrip is installed
 if ! command -v jacktrip &> /dev/null; then
     echo "WARNING: jacktrip not found in PATH"
@@ -23,6 +36,6 @@ if ! command -v jacktrip &> /dev/null; then
     echo ""
 fi
 
-# Run with uvicorn
+# Run with uvicorn using SSL
 cd "$DIR"
-uvicorn hub_server:app --host 0.0.0.0 --port 8000 --reload
+uvicorn hub_server:app --host 0.0.0.0 --port 8000 --reload --ssl-certfile="$SSL_CERTFILE" --ssl-keyfile="$SSL_KEYFILE"

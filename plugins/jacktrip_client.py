@@ -89,15 +89,32 @@ class JackTripClient(VoiceAssistantPlugin):
     def _load_hub_config(self) -> Dict[str, Any]:
         """Load JackTrip hub configuration"""
         config_file = "voice_assistant_config.json"
+        
+        # Try to find config file in current directory or parent directories
+        import os.path
+        if not os.path.exists(config_file):
+            # Try parent directory (in case running from subdirectory)
+            if os.path.exists(os.path.join("..", config_file)):
+                config_file = os.path.join("..", config_file)
+        
         if os.path.exists(config_file):
-            with open(config_file, 'r') as f:
-                full_config = json.load(f)
-                return full_config.get('jacktrip_hub', {
-                    'hub_url': 'https://localhost:8000',
-                    'username': 'demo',
-                    'password': 'demo',
-                    'verify_ssl': False  # For self-signed certificates
-                })
+            try:
+                with open(config_file, 'r') as f:
+                    full_config = json.load(f)
+                    hub_config = full_config.get('jacktrip_hub', {
+                        'hub_url': 'https://localhost:8000',
+                        'username': 'demo',
+                        'password': 'demo',
+                        'verify_ssl': False
+                    })
+                    self.logger.info(f"Loaded JackTrip hub config from {config_file}: {hub_config['hub_url']}")
+                    return hub_config
+            except Exception as e:
+                self.logger.error(f"Failed to load config file {config_file}: {e}")
+        else:
+            self.logger.warning(f"Config file {config_file} not found, using defaults")
+        
+        # Return default config if file not found
         return {
             'hub_url': 'https://localhost:8000',
             'username': 'demo',
