@@ -378,6 +378,7 @@ class JackTripClient(VoiceAssistantPlugin):
             join_response = self._make_request(
                 'post',
                 f'/rooms/{room["id"]}/join',
+                json={},  # Empty body satisfies RoomJoinRequest
                 headers=self._get_headers(),
                 timeout=10
             )
@@ -476,6 +477,7 @@ class JackTripClient(VoiceAssistantPlugin):
             join_response = self._make_request(
                 'post',
                 f'/rooms/{matching_room["id"]}/join',
+                json={},  # Empty body satisfies RoomJoinRequest
                 headers=self._get_headers(),
                 timeout=10
             )
