@@ -545,13 +545,13 @@ def get_jack_graph() -> JACKGraph:
             if not line:
                 continue
             
-            # Lines without leading spaces are port names
-            # Lines with leading spaces are either type info or connections
+            # Format with -c -t is:
+            # port_name (no indent)
+            # connection (3 spaces)
+            # type (8 spaces)
+            
             if line.startswith('        '):
-                # This is a connection (double indented)
-                current_connections.append(line.strip())
-            elif line.startswith('    '):
-                # This is type info (single indented) - e.g., "32 bit float mono audio" or "8 bit raw midi"
+                # This is type info (8 spaces) - e.g., "32 bit float mono audio" or "8 bit raw midi"
                 type_info = line.strip()
                 if current_port:
                     # Skip MIDI ports
@@ -559,10 +559,13 @@ def get_jack_graph() -> JACKGraph:
                         current_port_type = "midi"
                     else:
                         current_port_type = "audio"
+            elif line.startswith('   '):
+                # This is a connection (3 spaces)
+                current_connections.append(line.strip())
             else:
-                # This is a port name (not indented)
+                # This is a port name (no indent)
+                # Save previous port if it's not MIDI
                 if current_port and current_port_type != "midi":
-                    # Save previous port (only if we haven't seen it before and it's not MIDI)
                     if current_port not in ports_dict:
                         client_name = current_port.split(':')[0]
                         port_name = current_port.split(':')[1] if ':' in current_port else current_port
