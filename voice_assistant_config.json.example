@@ -84,8 +84,9 @@
     }
   },
   "jacktrip_hub": {
-    "hub_url": "http://localhost:8000",
+    "hub_url": "https://localhost:8000",
     "username": "demo",
-    "password": "demo"
+    "password": "demo",
+    "verify_ssl": false
   }
 }

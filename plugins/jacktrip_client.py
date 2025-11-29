@@ -104,10 +104,6 @@ class JackTripClient(VoiceAssistantPlugin):
             'password': 'demo',
             'verify_ssl': False
         }
-            'hub_url': 'http://localhost:8000',
-            'username': 'demo',
-            'password': 'demo'
-        }
     
     def _speak_response(self, text: str):
         """Write response to file for TTS system to pick up and also print it"""
