@@ -331,10 +331,6 @@
                     <label>Max Participants</label>
                     <input type="number" id="maxParticipants" value="4" min="2" max="8">
                 </div>
-                <div class="form-group">
-                    <label>Passphrase (optional)</label>
-                    <input type="password" id="passphrase" placeholder="Leave blank for public room">
-                </div>
                 <div class="modal-buttons">
                     <button type="button" class="cancel" onclick="closeCreateModal()">Cancel</button>
                     <button type="submit">Create Room</button>
@@ -348,10 +344,6 @@
             <div class="modal-title">Join Room</div>
             <div id="joinRoomName"></div>
             <form onsubmit="joinRoom(event)">
-                <div class="form-group" id="passphraseGroup" style="display: none;">
-                    <label>Passphrase</label>
-                    <input type="password" id="joinPassphrase" placeholder="Enter passphrase">
-                </div>
                 <div class="modal-buttons">
                     <button type="button" class="cancel" onclick="closeJoinModal()">Cancel</button>
                     <button type="submit">Join Room</button>
@@ -426,7 +418,6 @@
             
             try {
                 const token = localStorage.getItem('jacktrip_token');
-                const passphrase = document.getElementById('joinPassphrase').value;
                 
                 const response = await fetch(`/rooms/${selectedRoomId}/join`, {
                     method: 'POST',
@@ -434,9 +425,7 @@
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        passphrase: passphrase || null
-                    })
+                    body: JSON.stringify({})
                 });
                 
                 if (response.ok) {
@@ -459,7 +448,6 @@
                 const name = document.getElementById('roomName').value;
                 const desc = document.getElementById('roomDesc').value;
                 const max = parseInt(document.getElementById('maxParticipants').value);
-                const pass = document.getElementById('passphrase').value;
                 
                 const response = await fetch('/rooms', {
                     method: 'POST',
@@ -470,8 +458,7 @@
                     body: JSON.stringify({
                         name: name,
                         description: desc || null,
-                        max_participants: max,
-                        passphrase: pass || null
+                        max_participants: max
                     })
                 });
                 
@@ -497,17 +484,14 @@
             document.getElementById('roomName').value = '';
             document.getElementById('roomDesc').value = '';
             document.getElementById('maxParticipants').value = '4';
-            document.getElementById('passphrase').value = '';
         }
         
         function openJoinModal() {
             document.getElementById('joinModal').classList.add('active');
-            document.getElementById('joinPassphrase').value = '';
         }
         
         function closeJoinModal() {
             document.getElementById('joinModal').classList.remove('active');
-            document.getElementById('joinPassphrase').value = '';
             selectedRoomId = null;
         }
         

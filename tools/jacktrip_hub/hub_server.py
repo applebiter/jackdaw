@@ -63,10 +63,9 @@ class RoomCreateRequest(BaseModel):
     name: str
     max_participants: int = 4
     description: Optional[str] = None
-    passphrase: Optional[str] = None  # Optional room passphrase
 
 class RoomJoinRequest(BaseModel):
-    passphrase: Optional[str] = None  # Required if room is private
+    pass  # No passphrase needed - any authenticated band member can join
 
 class RoomJoinResponse(BaseModel):
     room_id: str
@@ -82,8 +81,7 @@ class Room(BaseModel):
     max_participants: int
     participants: List[str]  # user_ids
     created_at: str
-    creator_id: str
-    passphrase_hash: Optional[str] = None  # Hashed passphrase if room is private
+    creator_id: str  # Only creator can access patchbay
 
 class RoomListItem(BaseModel):
     id: str
@@ -422,12 +420,7 @@ async def create_room(
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-    # Hash passphrase if provided
-    passphrase_hash = None
-    if req.passphrase:
-        passphrase_hash = hash_password(req.passphrase)
-    
-    # Create room object
+    # Create room object (no passphrase - all authenticated users can join)
     room = Room(
         id=room_id,
         name=req.name,
@@ -435,13 +428,11 @@ async def create_room(
         max_participants=req.max_participants,
         participants=[user_id],
         created_at=datetime.utcnow().isoformat(),
-        creator_id=user_id,
-        passphrase_hash=passphrase_hash
+        creator_id=user_id
     )
     ROOMS[room_id] = room
     
-    privacy = "private" if passphrase_hash else "public"
-    print(f"Created {privacy} room '{req.name}' (id={room_id[:8]}) with JackTrip on port {port}")
+    print(f"Created room '{req.name}' (id={room_id[:8]}) by user {user_id[:8]} with JackTrip on port {port}")
     return room
 
 @app.get("/rooms/{room_id}", response_model=Room)
@@ -463,13 +454,7 @@ async def join_room(
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
     
-    # Check passphrase if room is private
-    if room.passphrase_hash:
-        if not req.passphrase:
-            raise HTTPException(status_code=403, detail="Passphrase required for private room")
-        if not verify_password(req.passphrase, room.passphrase_hash):
-            raise HTTPException(status_code=403, detail="Invalid passphrase")
-    
+    # Any authenticated band member can join any room
     if user_id in room.participants:
         # Already in room, just return connection info
         pass
@@ -759,8 +744,9 @@ async def websocket_patchbay(websocket: WebSocket):
         await websocket.close(code=1008, reason="Room not found")
         return
     
-    if user_id not in room.participants:
-        await websocket.close(code=1008, reason="Not a participant in this room")
+    # Only the room creator can access the patchbay
+    if user_id != room.creator_id:
+        await websocket.close(code=1008, reason="Only room creator can access patchbay")
         return
     
     # Accept the connection

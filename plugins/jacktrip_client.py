@@ -378,7 +378,7 @@ class JackTripClient(VoiceAssistantPlugin):
             join_response = self._make_request(
                 'post',
                 f'/rooms/{room["id"]}/join',
-                json={"passphrase": self.hub_config.get('password')},  # Use user's password as passphrase
+                json={},  # No passphrase needed - authenticated band members can join
                 headers=self._get_headers(),
                 timeout=10
             )
@@ -477,7 +477,7 @@ class JackTripClient(VoiceAssistantPlugin):
             join_response = self._make_request(
                 'post',
                 f'/rooms/{matching_room["id"]}/join',
-                json={"passphrase": self.hub_config.get('password')},  # Use user's password as passphrase
+                json={},  # No passphrase needed - authenticated band members can join
                 headers=self._get_headers(),
                 timeout=10
             )
