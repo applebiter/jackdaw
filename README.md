@@ -31,11 +31,6 @@ Jackdaw is a modular audio system built on JACK Audio, featuring speech recognit
 
 ## 🚀 Quick Start
 
-**One-line install:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/applebiter/jackdaw/main/install.sh | bash
-```
-
 **New to Jackdaw?** Read **[GETTING_STARTED.md](GETTING_STARTED.md)** for a complete beginner-friendly guide!
 
 **Already familiar with JACK?** Here's the express setup:

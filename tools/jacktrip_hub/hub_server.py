@@ -553,9 +553,9 @@ class JACKGraph(BaseModel):
 def get_jack_graph() -> JACKGraph:
     """Get current JACK audio graph (audio ports only, no MIDI)"""
     try:
-        # Get all ports and their connections
+        # Get all ports with properties and connections
         result = subprocess.run(
-            ['jack_lsp', '-c', '-t'],
+            ['jack_lsp', '-c', '-p'],
             capture_output=True,
             text=True,
             timeout=5
@@ -564,46 +564,42 @@ def get_jack_graph() -> JACKGraph:
         clients = {}
         ports_dict = {}  # Track all ports by full name to avoid duplicates
         current_port = None
-        current_port_type = None
+        current_properties = None
         current_connections = []
         
         for line in result.stdout.split('\n'):
             if not line:
                 continue
             
-            # Format with -c -t is:
+            # Format with -c -p is:
             # port_name (no indent)
+            # properties: output,physical,terminal, (tab indented)
             # connection (3 spaces)
-            # type (8 spaces)
             
-            if line.startswith('        '):
-                # This is type info (8 spaces) - e.g., "32 bit float mono audio" or "8 bit raw midi"
-                type_info = line.strip()
+            if line.startswith('\tproperties:'):
+                # This is properties info
                 if current_port:
-                    # Skip MIDI ports
-                    if 'midi' in type_info.lower():
-                        current_port_type = "midi"
-                    else:
-                        current_port_type = "audio"
+                    current_properties = line.strip().replace('properties:', '').strip()
             elif line.startswith('   '):
                 # This is a connection (3 spaces)
                 current_connections.append(line.strip())
             else:
                 # This is a port name (no indent)
-                # Save previous port if it's not MIDI
-                if current_port and current_port_type != "midi":
-                    if current_port not in ports_dict:
+                # Save previous port
+                if current_port and current_properties:
+                    # Skip MIDI ports based on properties
+                    if 'midi' not in current_properties.lower():
                         client_name = current_port.split(':')[0]
-                        port_name = current_port.split(':')[1] if ':' in current_port else current_port
                         
-                        # Determine direction: outputs have connections going TO other ports
-                        # In JACK: capture ports OUTPUT audio from hardware, playback ports INPUT audio to hardware
-                        direction = "output" if len(current_connections) > 0 else "input"
-                        # Check port name keywords (corrected for JACK semantics)
-                        if any(kw in port_name.lower() for kw in ['send', 'capture', 'output', 'out']):
+                        # Determine direction from JACK properties (the correct way)
+                        # JACK semantics: "output" property = port outputs audio, "input" property = port accepts audio
+                        if 'output' in current_properties.lower():
                             direction = "output"
-                        elif any(kw in port_name.lower() for kw in ['receive', 'playback', 'input', 'in']):
+                        elif 'input' in current_properties.lower():
                             direction = "input"
+                        else:
+                            # Fallback (should rarely happen)
+                            direction = "output"
                         
                         if client_name not in clients:
                             clients[client_name] = []
@@ -618,19 +614,21 @@ def get_jack_graph() -> JACKGraph:
                         ports_dict[current_port] = port_info
                 
                 current_port = line.strip()
-                current_port_type = None
+                current_properties = None
                 current_connections = []
         
         # Don't forget the last port
-        if current_port and current_port_type != "midi" and current_port not in ports_dict:
-            client_name = current_port.split(':')[0]
-            port_name = current_port.split(':')[1] if ':' in current_port else current_port
-            
-            direction = "output" if len(current_connections) > 0 else "input"
-            if any(kw in port_name.lower() for kw in ['send', 'capture', 'output', 'out']):
-                direction = "output"
-            elif any(kw in port_name.lower() for kw in ['receive', 'playback', 'input', 'in']):
-                direction = "input"
+        if current_port and current_properties and 'midi' not in current_properties.lower():
+            if current_port not in ports_dict:
+                client_name = current_port.split(':')[0]
+                
+                # Determine direction from JACK properties
+                if 'output' in current_properties.lower():
+                    direction = "output"
+                elif 'input' in current_properties.lower():
+                    direction = "input"
+                else:
+                    direction = "output"
             
             if client_name not in clients:
                 clients[client_name] = []
