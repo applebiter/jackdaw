@@ -5,14 +5,15 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "Starting JackTrip Hub Server..."
-echo "Hub will be accessible at: https://localhost:8000"
-echo "API docs at: https://localhost:8000/docs"
+echo "Hub will be accessible at: https://\$(hostname):8000"
+echo "API docs at: https://\$(hostname):8000/docs"
 echo ""
 echo "Press Ctrl+C to stop"
 echo ""
 
 # Set environment for local development
-export HUB_HOST="${HUB_HOST:-localhost}"
+# HUB_HOST will be the actual hostname of the machine (karate for remote, indigo for local testing)
+export HUB_HOST="${HUB_HOST:-\$(hostname)}"
 export JACKTRIP_BASE_PORT="${JACKTRIP_BASE_PORT:-4464}"
 export JACKTRIP_PORT_RANGE="${JACKTRIP_PORT_RANGE:-100}"
 
@@ -38,6 +39,15 @@ if ! command -v jacktrip &> /dev/null; then
     echo "WARNING: jacktrip not found in PATH"
     echo "Install with: sudo apt install jacktrip"
     echo ""
+fi
+
+# Activate virtual environment
+VENV_PATH="$DIR/../../.venv"
+if [[ -d "$VENV_PATH" ]]; then
+    source "$VENV_PATH/bin/activate"
+    echo "Using virtual environment: $VENV_PATH"
+else
+    echo "Warning: Virtual environment not found at $VENV_PATH"
 fi
 
 # Run with uvicorn using SSL

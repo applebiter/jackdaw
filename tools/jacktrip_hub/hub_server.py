@@ -441,12 +441,23 @@ async def patchbay():
 
 @app.get("/rooms-ui", response_class=HTMLResponse)
 async def rooms_page():
-    """Serve room manager interface"""
+    """Serve room manager interface (legacy - redirects to patchbay in single room mode)"""
+    if SINGLE_ROOM_MODE:
+        return "<script>window.location.href = '/patchbay';</script>"
     try:
         with open(Path(__file__).parent / "static" / "rooms.html", "r") as f:
             return f.read()
     except FileNotFoundError:
         return "<h1>Room manager interface not found</h1>"
+
+@app.get("/access-denied", response_class=HTMLResponse)
+async def access_denied_page():
+    """Serve access denied page for users without patchbay access"""
+    try:
+        with open(Path(__file__).parent / "static" / "access_denied.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Access denied - Patchbay access required</h1>"
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Access Denied - Jackdaw Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1a2332 100%);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .logo-section {
+            margin-bottom: 40px;
+        }
+        
+        .logo-section img {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 10px rgba(239, 83, 80, 0.3));
+        }
+        
+        .logo-section h1 {
+            font-size: 32px;
+            color: #EF5350;
+            margin-bottom: 10px;
+        }
+        
+        .message-card {
+            background: #1a2332;
+            border: 1px solid #EF5350;
+            border-radius: 8px;
+            padding: 40px 30px;
+            box-shadow: 0 8px 32px rgba(239, 83, 80, 0.1);
+        }
+        
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: #EF5350;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            color: #999;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background: rgba(239, 83, 80, 0.1);
+            border: 1px solid rgba(239, 83, 80, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #FFCDD2;
+        }
+        
+        .logout-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #EF5350;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .logout-btn:hover {
+            background: #E53935;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-section">
+            <img src="/static/jackdaw.svg" alt="Jackdaw" />
+            <h1>Access Denied</h1>
+        </div>
+        
+        <div class="message-card">
+            <div class="icon">🔒</div>
+            <h2>Patchbay Access Required</h2>
+            <p>You do not have permission to access the patchbay.</p>
+            
+            <div class="info-box">
+                <strong>What this means:</strong><br>
+                Only band members with patchbay access can use the web interface.
+                Contact the band owner to request access.
+            </div>
+            
+            <p style="font-size: 14px; color: #777;">
+                You can still join jam sessions using voice commands or the command-line client.
+            </p>
+            
+            <button class="logout-btn" onclick="logout()">Back to Login</button>
+        </div>
+        
+        <div class="footer">
+            &copy; 2025 Jackdaw Hub
+        </div>
+    </div>
+    
+    <script>
+        function logout() {
+            localStorage.removeItem('jacktrip_token');
+            localStorage.removeItem('jacktrip_user_id');
+            localStorage.removeItem('jacktrip_username');
+            localStorage.removeItem('jacktrip_is_owner');
+            localStorage.removeItem('jacktrip_has_patchbay_access');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

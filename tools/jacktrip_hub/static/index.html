@@ -329,12 +329,28 @@
                 localStorage.setItem('jacktrip_username', data.username);
                 localStorage.setItem('jacktrip_is_owner', data.is_owner);
                 localStorage.setItem('jacktrip_has_patchbay_access', data.has_patchbay_access);
-                showMessage(messageDiv, 'Registration successful! Redirecting...', 'success');
-                localStorage.setItem('jacktrip_is_owner', data.is_owner);
-                localStorage.setItem('jacktrip_has_patchbay_access', data.has_patchbay_access);
                 showMessage(messageDiv, 'Login successful! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = '/rooms-ui';
+                
+                // Auto-join the jam session and redirect based on permissions
+                setTimeout(async () => {
+                    try {
+                        // Auto-join the default room
+                        await fetch('/join', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + data.token
+                            }
+                        });
+                    } catch (err) {
+                        console.log('Auto-join failed:', err);
+                    }
+                    
+                    // Redirect based on patchbay access
+                    if (data.has_patchbay_access) {
+                        window.location.href = '/patchbay';
+                    } else {
+                        window.location.href = '/access-denied';
+                    }
                 }, 1500);
             } catch (err) {
                 showMessage(messageDiv, 'Connection error: ' + err.message, 'error');
@@ -385,9 +401,31 @@
                 const data = await response.json();
                 localStorage.setItem('jacktrip_token', data.token);
                 localStorage.setItem('jacktrip_user_id', data.user_id);
+                localStorage.setItem('jacktrip_username', data.username);
+                localStorage.setItem('jacktrip_is_owner', data.is_owner);
+                localStorage.setItem('jacktrip_has_patchbay_access', data.has_patchbay_access);
                 showMessage(messageDiv, 'Account created! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = '/patchbay';
+                
+                // Auto-join the jam session and redirect based on permissions
+                setTimeout(async () => {
+                    try {
+                        // Auto-join the default room
+                        await fetch('/join', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + data.token
+                            }
+                        });
+                    } catch (err) {
+                        console.log('Auto-join failed:', err);
+                    }
+                    
+                    // Redirect based on patchbay access
+                    if (data.has_patchbay_access) {
+                        window.location.href = '/patchbay';
+                    } else {
+                        window.location.href = '/access-denied';
+                    }
                 }, 1500);
             } catch (err) {
                 showMessage(messageDiv, 'Connection error: ' + err.message, 'error');
