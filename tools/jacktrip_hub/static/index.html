@@ -273,11 +273,37 @@
     
     <script>
         // Check if user is already logged in
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', async function() {
             const token = localStorage.getItem('jacktrip_token');
             if (token) {
-                // User is already logged in, redirect to patchbay
-                window.location.href = '/patchbay';
+                // Verify token is still valid before redirecting
+                try {
+                    const response = await fetch('/rooms', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (response.ok) {
+                        // Token valid, redirect to patchbay
+                        window.location.href = '/patchbay';
+                    } else {
+                        // Token invalid, clear it
+                        console.log('Token invalid, clearing');
+                        localStorage.removeItem('jacktrip_token');
+                        localStorage.removeItem('jacktrip_user_id');
+                        localStorage.removeItem('jacktrip_username');
+                        localStorage.removeItem('jacktrip_is_owner');
+                        localStorage.removeItem('jacktrip_has_patchbay_access');
+                    }
+                } catch (e) {
+                    // Network error, clear token
+                    console.error('Failed to verify token:', e);
+                    localStorage.removeItem('jacktrip_token');
+                    localStorage.removeItem('jacktrip_user_id');
+                    localStorage.removeItem('jacktrip_username');
+                    localStorage.removeItem('jacktrip_is_owner');
+                    localStorage.removeItem('jacktrip_has_patchbay_access');
+                }
             }
         });
         

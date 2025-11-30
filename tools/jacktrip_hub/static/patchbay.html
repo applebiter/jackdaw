@@ -396,11 +396,23 @@
                     // No patchbay access
                     window.location.href = '/access-denied';
                 } else {
-                    // Auth error
+                    // Auth error - clear invalid token and redirect
+                    console.log('Auth error, clearing token');
+                    localStorage.removeItem('jacktrip_token');
+                    localStorage.removeItem('jacktrip_user_id');
+                    localStorage.removeItem('jacktrip_username');
+                    localStorage.removeItem('jacktrip_is_owner');
+                    localStorage.removeItem('jacktrip_has_patchbay_access');
                     window.location.href = '/';
                 }
             } catch (e) {
                 console.error('Failed to check rooms:', e);
+                // Clear token on network error
+                localStorage.removeItem('jacktrip_token');
+                localStorage.removeItem('jacktrip_user_id');
+                localStorage.removeItem('jacktrip_username');
+                localStorage.removeItem('jacktrip_is_owner');
+                localStorage.removeItem('jacktrip_has_patchbay_access');
                 window.location.href = '/';
             }
         }
