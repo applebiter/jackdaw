@@ -682,17 +682,6 @@ async def join_default_room(user_id: str = Depends(get_current_user_id)):
     
     return await join_room(DEFAULT_ROOM_ID, RoomJoinRequest(), user_id)
 
-@app.post("/join", response_model=RoomJoinResponse)
-async def join_default_room(user_id: str = Depends(get_current_user_id)):
-    """Join the default room (single room mode only)"""
-    if not SINGLE_ROOM_MODE:
-        raise HTTPException(status_code=404, detail="Endpoint only available in single room mode")
-    
-    if not DEFAULT_ROOM_ID:
-        raise HTTPException(status_code=500, detail="Default room not initialized")
-    
-    return await join_room(DEFAULT_ROOM_ID, RoomJoinRequest(), user_id)
-
 @app.post("/rooms/{room_id}/leave")
 async def leave_room(room_id: str, user_id: str = Depends(get_current_user_id)):
     """Leave a room"""
