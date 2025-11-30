@@ -117,9 +117,11 @@ class Room(BaseModel):
     created_at: str
 
 class RoomJoinResponse(BaseModel):
+    room_id: str
+    room_name: str
     hub_host: str
     jacktrip_port: int
-    participant_count: int
+    jacktrip_flags: List[str]
 
 class RoomJoinRequest(BaseModel):
     pass  # Empty body for now (previously had passphrase)
