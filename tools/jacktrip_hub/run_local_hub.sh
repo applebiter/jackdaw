@@ -13,7 +13,7 @@ echo ""
 
 # Set environment for local development
 # HUB_HOST will be the actual hostname of the machine (karate for remote, indigo for local testing)
-export HUB_HOST="${HUB_HOST:-\$(hostname)}"
+export HUB_HOST="${HUB_HOST:-$(hostname)}"
 export JACKTRIP_BASE_PORT="${JACKTRIP_BASE_PORT:-4464}"
 export JACKTRIP_PORT_RANGE="${JACKTRIP_PORT_RANGE:-100}"
 
