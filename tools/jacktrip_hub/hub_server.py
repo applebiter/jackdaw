@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-JackTrip Hub Server
+JackTrip Hub Server - Single Band Edition
 
-Central hub for anonymous JackTrip collaboration. Manages rooms, spawns JackTrip
-server processes, and provides API for clients to discover and join sessions.
-
-All users connect only to this hub, preserving IP anonymity.
+Central hub for band collaboration via JackTrip. Runs a single persistent room
+where all authenticated band members can connect. The hub owner (first user) 
+controls patchbay routing and can grant patchbay access to other members.
 """
 
 import asyncio
@@ -42,8 +41,11 @@ USE_SSL = SSL_CERTFILE and SSL_KEYFILE
 # Database and in-memory stores
 DB_PATH = Path(__file__).parent / "hub.db"
 CERTS_PATH = Path(__file__).parent / "certs"
-ROOMS = {}          # room_id -> Room (in-memory for now)
-JACKTRIP_PROCS = {} # room_id -> {port, process, created_at}
+
+# Single persistent room for the band
+BAND_ROOM = None  # Will be initialized on startup
+JACKTRIP_PROCESS = None  # Single JackTrip server process
+ACTIVE_PARTICIPANTS = set()  # Set of currently connected user_ids
 
 # ---------- Models ----------
 class RegisterRequest(BaseModel):
@@ -58,43 +60,31 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     user_id: str
+    username: str
+    is_owner: bool
+    has_patchbay_access: bool
 
-class RoomCreateRequest(BaseModel):
-    name: str
-    max_participants: int = 4
-    description: Optional[str] = None
-
-class RoomJoinRequest(BaseModel):
-    pass  # No passphrase needed - any authenticated band member can join
-
-class RoomJoinResponse(BaseModel):
-    room_id: str
-    room_name: str
+class JoinResponse(BaseModel):
     hub_host: str
     jacktrip_port: int
     jacktrip_flags: List[str] = []
-
-class Room(BaseModel):
-    id: str
-    name: str
-    description: Optional[str] = None
-    max_participants: int
-    participants: List[str]  # user_ids
-    created_at: str
-    creator_id: str  # Only creator can access patchbay
-
-class RoomListItem(BaseModel):
-    id: str
-    name: str
-    description: Optional[str] = None
     participant_count: int
-    max_participants: int
-    created_at: str
+
+class UserInfo(BaseModel):
+    id: str
+    username: str
+    is_owner: bool
+    has_patchbay_access: bool
+    is_connected: bool  # Currently in the room
+
+class SetPermissionRequest(BaseModel):
+    user_id: str
+    has_patchbay_access: bool
 
 class HealthResponse(BaseModel):
     status: str
-    active_rooms: int
-    total_participants: int
+    participant_count: int
+    jacktrip_running: bool
 
 # ---------- Database Setup ----------
 def init_database():
@@ -109,6 +99,8 @@ def init_database():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             email TEXT,
+            is_owner BOOLEAN DEFAULT 0,
+            has_patchbay_access BOOLEAN DEFAULT 0,
             created_at TEXT NOT NULL
         )
     """)
@@ -138,7 +130,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
 
 def create_user(username: str, password: str, email: Optional[str] = None) -> str:
-    """Create a new user and return user_id"""
+    """Create a new user and return user_id. First user becomes owner with patchbay access."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -146,12 +138,20 @@ def create_user(username: str, password: str, email: Optional[str] = None) -> st
     password_hash = hash_password(password)
     created_at = datetime.utcnow().isoformat()
     
+    # Check if this is the first user (becomes owner)
+    cursor.execute("SELECT COUNT(*) FROM users")
+    user_count = cursor.fetchone()[0]
+    is_owner = (user_count == 0)
+    has_patchbay_access = is_owner  # Owner always has patchbay access
+    
     try:
         cursor.execute(
-            "INSERT INTO users (id, username, password_hash, email, created_at) VALUES (?, ?, ?, ?, ?)",
-            (user_id, username, password_hash, email, created_at)
+            "INSERT INTO users (id, username, password_hash, email, is_owner, has_patchbay_access, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, username, password_hash, email, is_owner, has_patchbay_access, created_at)
         )
         conn.commit()
+        if is_owner:
+            print(f"Created owner account: {username}")
         return user_id
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -198,6 +198,39 @@ def get_user_from_token(token: str) -> Optional[str]:
     conn.close()
     
     return row[0] if row else None
+
+def get_user_info(user_id: str) -> Optional[Dict]:
+    """Get user information including permissions"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        "SELECT username, is_owner, has_patchbay_access FROM users WHERE id = ?",
+        (user_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        return {
+            "id": user_id,
+            "username": row[0],
+            "is_owner": bool(row[1]),
+            "has_patchbay_access": bool(row[2])
+        }
+    return None
+
+def set_user_patchbay_access(user_id: str, has_access: bool):
+    """Grant or revoke patchbay access for a user"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        "UPDATE users SET has_patchbay_access = ? WHERE id = ?",
+        (has_access, user_id)
+    )
+    conn.commit()
+    conn.close()
 
 def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     """Extract and validate user from Authorization header"""
