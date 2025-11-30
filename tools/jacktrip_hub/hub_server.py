@@ -407,8 +407,19 @@ async def startup_event():
                 participants=[],
                 created_at=datetime.utcnow().isoformat()
             )
-            print(f"✓ Default room created: {BAND_NAME}")
-            print(f"✓ JackTrip server started on port {port}")
+            
+            # Wait for JackTrip to finish initial output, then print status
+            import time
+            time.sleep(2)
+            
+            print("\n" + "="*60)
+            print(f"🎵 JACKDAW HUB READY")
+            print("="*60)
+            print(f"   Band: {BAND_NAME}")
+            print(f"   Web Interface: https://{HUB_HOST}:8000")
+            print(f"   JackTrip Port: {port}")
+            print(f"   Mode: Single Room (No Auto-Patching)")
+            print("="*60 + "\n")
         except Exception as e:
             print(f"✗ Failed to start default room: {e}")
     else:
