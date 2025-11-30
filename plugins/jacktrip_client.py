@@ -194,6 +194,37 @@ class JackTripClient(VoiceAssistantPlugin):
             self.logger.error(f"Failed to authenticate with hub: {e}")
             return False
     
+    def _sync_room_state(self):
+        """Sync current room state with server"""
+        try:
+            response = self._make_request(
+                'get',
+                '/user/rooms',
+                headers=self._get_headers(),
+                timeout=5
+            )
+            response.raise_for_status()
+            user_rooms = response.json()
+            
+            # If we're in exactly one room, set it as current
+            # If in multiple rooms or none, current_room stays as is
+            if len(user_rooms) == 1:
+                # Fetch full room details
+                room_response = self._make_request(
+                    'get',
+                    f'/rooms/{user_rooms[0]["id"]}',
+                    headers=self._get_headers(),
+                    timeout=5
+                )
+                room_response.raise_for_status()
+                self.current_room = room_response.json()
+            elif len(user_rooms) == 0:
+                self.current_room = None
+            # If multiple rooms, don't change current_room
+            
+        except Exception as e:
+            self.logger.error(f"Failed to sync room state: {e}")
+    
     def _stop_jacktrip_client(self):
         """Stop the local JackTrip client process"""
         if self.jacktrip_process:
@@ -405,6 +436,9 @@ class JackTripClient(VoiceAssistantPlugin):
     def _list_rooms(self) -> str:
         """List all available jam rooms"""
         try:
+            # Sync room state with server first
+            self._sync_room_state()
+            
             response = self._make_request(
                 'get',
                 '/rooms',
@@ -567,6 +601,9 @@ class JackTripClient(VoiceAssistantPlugin):
     
     def _get_status(self) -> str:
         """Get current JackTrip status"""
+        # Sync room state with server first
+        self._sync_room_state()
+        
         if not self.current_room:
             result = "Not connected to any jam room."
             self._speak_response(result)
