@@ -73,6 +73,9 @@ The authorized engineer (owner + granted members) must:
 3. Test audio before member goes live
 4. Adjust monitoring mixes as needed
 
+### Implementation
+JackTrip hub server uses the `-p 5` flag (no auto patching mode), which disables all automatic audio routing when clients connect.
+
 ### Example Connection Flow
 ```
 1. Member "vocalist" joins → ports appear:
@@ -109,7 +112,7 @@ ALTER TABLE users ADD COLUMN has_patchbay_access BOOLEAN DEFAULT 0;
   - `GET /users` - List all users (owner only)
   - `POST /users/{user_id}/permissions` - Grant/revoke patchbay access (owner only)
 - Update WebSocket patchbay check: allow if `user.has_patchbay_access == true`
-- **Ensure JackTrip clients connect with no auto-routing** (already default JACK behavior)
+- **No-auto-routing already implemented:** JackTrip hub uses `-p 5` flag for no auto-patching
 
 #### Frontend Changes
 - Add permissions UI to rooms.html (shown only to owner)

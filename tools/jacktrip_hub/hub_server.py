@@ -258,8 +258,8 @@ def allocate_port() -> int:
 def start_jacktrip_server(room_id: str) -> int:
     """Start a JackTrip server process for a room"""
     port = allocate_port()
-    # JackTrip server mode: -S (server), -B (bind port), -q (queue/buffer)
-    cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4"]
+    # JackTrip server mode: -S (server), -B (bind port), -q (queue/buffer), -p 5 (no auto patching)
+    cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4", "-p", "5"]
     
     try:
         proc = Popen(cmd)
