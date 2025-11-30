@@ -1,15 +1,15 @@
 """
 JackTrip Client Plugin
 
-Enables real-time audio collaboration with band members through a central
+Enables real-time audio jamming with band members through a central
 JackTrip hub. In single room mode, all band members join the same persistent
 room for seamless collaboration.
 
 Voice commands:
-- "join session" - Connect to the band's room
-- "leave session" - Disconnect from the room
-- "session status" - Check connection status
-- "who's online" - See connected band members
+- "start jam session" - Connect to the band's jam room
+- "stop jam session" - Disconnect from the jam
+- "jam session status" - Check jam connection status
+- "who's in the jam" - See who's jamming
 - "open patchbay" - Open the audio routing interface
 """
 
@@ -65,20 +65,20 @@ class JackTripClient(VoiceAssistantPlugin):
     def get_command_examples(self) -> list:
         """Return user-friendly command examples"""
         return [
-            "join session",
-            "leave session",
-            "session status",
-            "who's online",
+            "start jam session",
+            "stop jam session",
+            "jam session status",
+            "who's in the jam",
             "open patchbay"
         ]
     
     def get_commands(self) -> Dict[str, Callable]:
         """Register voice commands for JackTrip functionality"""
         return {
-            "join session": self._join_session_command,
-            "leave session": self._leave_room_command,
-            "session status": self._get_status_command,
-            "who's online": self._get_room_info_command,
+            "start jam session": self._join_session_command,
+            "stop jam session": self._leave_room_command,
+            "jam session status": self._get_status_command,
+            "who's in the jam": self._get_room_info_command,
             "open patchbay": self._open_patchbay_command,
         }
         
@@ -330,15 +330,15 @@ class JackTripClient(VoiceAssistantPlugin):
     
     # Command wrapper methods that match the registered patterns
     def _join_session_command(self, command_text: str = "") -> str:
-        """Wrapper for join session command (single room mode)"""
-        self.logger.info("[JackTrip] JOIN SESSION command called")
-        print("[JackTrip] Joining session...")
+        """Wrapper for start jam session command (single room mode)"""
+        self.logger.info("[JackTrip] START JAM SESSION command called")
+        print("[JackTrip] Starting jam session...")
         return self._join_default_room()
     
     def _get_status_command(self, command_text: str = "") -> str:
-        """Wrapper for status command"""
-        self.logger.info("[JackTrip] STATUS command called")
-        print("[JackTrip] Getting status...")
+        """Wrapper for jam session status command"""
+        self.logger.info("[JackTrip] JAM SESSION STATUS command called")
+        print("[JackTrip] Getting jam session status...")
         return self._get_status()
     
     def _join_default_room(self) -> str:
@@ -366,30 +366,30 @@ class JackTripClient(VoiceAssistantPlugin):
             
             if rooms:
                 self.current_room = rooms[0]  # In single room mode, there's only one
-                room_name = self.current_room.get('name', 'the session')
+                room_name = self.current_room.get('name', 'the jam')
             else:
-                room_name = 'the session'
+                room_name = 'the jam'
             
             # Start JackTrip client
             if self._start_jacktrip_client(join_info):
-                result = f"Joined {room_name}. JackTrip is connecting."
+                result = f"Starting jam session. JackTrip is connecting."
                 self._speak_response(result)
                 return result
             else:
-                result = "Joined session but failed to start JackTrip client."
+                result = "Joined jam but failed to start JackTrip client."
                 self._speak_response(result)
                 return result
                 
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Failed to join session: {e}")
-            result = "Unable to join session. Check hub connection."
+            self.logger.error(f"Failed to start jam session: {e}")
+            result = "Unable to start jam session. Check hub connection."
             self._speak_response(result)
             return result
     
     def _leave_room(self) -> str:
-        """Leave the current session"""
+        """Leave the current jam session"""
         if not self.current_room:
-            result = "You're not in the session."
+            result = "You're not in a jam session."
             self._speak_response(result)
             return result
         
@@ -406,25 +406,24 @@ class JackTripClient(VoiceAssistantPlugin):
             )
             response.raise_for_status()
             
-            room_name = self.current_room.get('name', 'the session')
             self.current_room = None
-            result = f"Left {room_name}."
+            result = "Stopped jam session."
             self._speak_response(result)
             return result
             
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Failed to leave session: {e}")
+            self.logger.error(f"Failed to stop jam session: {e}")
             # Still clean up locally
             self._stop_jacktrip_client()
             self.current_room = None
-            result = "Left session (connection error with server)."
+            result = "Stopped jam session (connection error with server)."
             self._speak_response(result)
             return result
     
     def _get_room_info(self) -> str:
-        """Get information about who's online"""
+        """Get information about who's in the jam"""
         if not self.current_room:
-            result = "You're not in the session."
+            result = "You're not in a jam session."
             self._speak_response(result)
             return result
         
@@ -439,27 +438,26 @@ class JackTripClient(VoiceAssistantPlugin):
             room = response.json()
             
             participant_count = len(room['participants'])
-            room_name = room.get('name', 'the session')
             if participant_count == 1:
-                result = f"You're alone in {room_name}."
+                result = "You're jamming solo."
             else:
-                result = f"{participant_count} people online in {room_name}."
+                result = f"{participant_count} people in the jam."
             self._speak_response(result)
             return result
             
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Failed to get session info: {e}")
-            result = "Unable to get session information. Check hub connection."
+            self.logger.error(f"Failed to get jam info: {e}")
+            result = "Unable to get jam information. Check hub connection."
             self._speak_response(result)
             return result
     
     def _get_status(self) -> str:
-        """Get current session status"""
+        """Get current jam session status"""
         # Sync room state with server first
         self._sync_room_state()
         
         if not self.current_room:
-            result = "Not in the session."
+            result = "Not in a jam session."
             self._speak_response(result)
             return result
         
@@ -468,8 +466,7 @@ class JackTripClient(VoiceAssistantPlugin):
             self.jacktrip_process.poll() is None
         ) else "disconnected"
         
-        room_name = self.current_room.get('name', 'the session')
-        result = f"In {room_name}, audio is {jacktrip_status}."
+        result = f"Jam session audio is {jacktrip_status}."
         self._speak_response(result)
         return result
     
@@ -594,7 +591,7 @@ class JackTripClient(VoiceAssistantPlugin):
         """Open JACK patchbay in browser"""
         try:
             if not self.current_room:
-                result = "Not in the session. Join first."
+                result = "Not in a jam. Join first."
                 self._speak_response(result)
                 return result
             
