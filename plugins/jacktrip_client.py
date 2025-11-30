@@ -344,11 +344,27 @@ class JackTripClient(VoiceAssistantPlugin):
     def _join_default_room(self) -> str:
         """Join the default room (single room mode)"""
         try:
-            # Use the simplified /join endpoint for single room mode
+            # Get local JACK audio settings
+            import subprocess as sp
+            try:
+                sample_rate = int(sp.check_output(['jack_samplerate'], text=True).strip())
+                buffer_size = int(sp.check_output(['jack_bufsize'], text=True).strip())
+            except:
+                sample_rate = None
+                buffer_size = None
+            
+            # Send join request with audio settings (owner's settings will update hub)
+            join_data = {}
+            if sample_rate:
+                join_data['sample_rate'] = sample_rate
+            if buffer_size:
+                join_data['buffer_size'] = buffer_size
+            
             join_response = self._make_request(
                 'post',
                 '/join',
                 headers=self._get_headers(),
+                json=join_data if join_data else None,
                 timeout=10
             )
             join_response.raise_for_status()

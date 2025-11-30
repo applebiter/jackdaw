@@ -124,7 +124,16 @@ class RoomJoinResponse(BaseModel):
     jacktrip_flags: List[str]
 
 class RoomJoinRequest(BaseModel):
-    pass  # Empty body for now (previously had passphrase)
+    sample_rate: Optional[int] = None  # Client's sample rate
+    buffer_size: Optional[int] = None  # Client's buffer size
+
+class HubSettings(BaseModel):
+    sample_rate: int
+    buffer_size: int
+
+class UpdateSettingsRequest(BaseModel):
+    sample_rate: int
+    buffer_size: int
 
 # ---------- Database Setup ----------
 def init_database():
@@ -155,6 +164,31 @@ def init_database():
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
+    
+    # Hub settings table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hub_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            updated_by TEXT
+        )
+    """)
+    
+    # Initialize default settings if not present
+    cursor.execute("SELECT COUNT(*) FROM hub_settings WHERE key = 'sample_rate'")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO hub_settings (key, value, updated_at, updated_by)
+            VALUES ('sample_rate', '48000', ?, 'system')
+        """, (datetime.utcnow().isoformat(),))
+    
+    cursor.execute("SELECT COUNT(*) FROM hub_settings WHERE key = 'buffer_size'")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO hub_settings (key, value, updated_at, updated_by)
+            VALUES ('buffer_size', '256', ?, 'system')
+        """, (datetime.utcnow().isoformat(),))
     
     conn.commit()
     conn.close()
@@ -269,6 +303,26 @@ def set_user_patchbay_access(user_id: str, has_access: bool):
         "UPDATE users SET has_patchbay_access = ? WHERE id = ?",
         (has_access, user_id)
     )
+    conn.commit()
+    conn.close()
+
+def get_hub_setting(key: str) -> Optional[str]:
+    """Get a hub setting value"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM hub_settings WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+def set_hub_setting(key: str, value: str, user_id: str):
+    """Set a hub setting value"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO hub_settings (key, value, updated_at, updated_by)
+        VALUES (?, ?, ?, ?)
+    """, (key, value, datetime.utcnow().isoformat(), user_id))
     conn.commit()
     conn.close()
 
@@ -472,6 +526,25 @@ async def access_denied_page():
     except FileNotFoundError:
         return "<h1>Access denied - Patchbay access required</h1>"
 
+@app.get("/settings", response_model=HubSettings)
+async def get_settings(user_id: str = Depends(get_current_user_id)):
+    """Get hub audio settings"""
+    sample_rate = int(get_hub_setting("sample_rate") or "48000")
+    buffer_size = int(get_hub_setting("buffer_size") or "256")
+    return HubSettings(sample_rate=sample_rate, buffer_size=buffer_size)
+
+@app.post("/settings")
+async def update_settings(req: UpdateSettingsRequest, user_id: str = Depends(get_current_user_id)):
+    """Update hub audio settings (owner only)"""
+    user_info = get_user_info(user_id)
+    if not user_info or not user_info["is_owner"]:
+        raise HTTPException(status_code=403, detail="Only owner can update settings")
+    
+    set_hub_setting("sample_rate", str(req.sample_rate), user_id)
+    set_hub_setting("buffer_size", str(req.buffer_size), user_id)
+    
+    return {"status": "ok", "sample_rate": req.sample_rate, "buffer_size": req.buffer_size}
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Check server health and status"""
@@ -674,15 +747,28 @@ async def join_room(
     )
 
 @app.post("/join", response_model=RoomJoinResponse)
-async def join_default_room(user_id: str = Depends(get_current_user_id)):
-    """Join the default room (single room mode only)"""
+async def join_default_room(req: RoomJoinRequest, user_id: str = Depends(get_current_user_id)):
+    """Join the default room (single room mode only)
+    
+    If owner joins with sample_rate/buffer_size, hub settings are updated to match.
+    """
     if not SINGLE_ROOM_MODE:
         raise HTTPException(status_code=404, detail="Endpoint only available in single room mode")
     
     if not DEFAULT_ROOM_ID:
         raise HTTPException(status_code=500, detail="Default room not initialized")
     
-    return await join_room(DEFAULT_ROOM_ID, RoomJoinRequest(), user_id)
+    # If owner is joining with settings, update hub to match
+    user_info = get_user_info(user_id)
+    if user_info and user_info["is_owner"]:
+        if req.sample_rate:
+            set_hub_setting("sample_rate", str(req.sample_rate), user_id)
+            print(f"[Owner] Updated hub sample rate to {req.sample_rate}")
+        if req.buffer_size:
+            set_hub_setting("buffer_size", str(req.buffer_size), user_id)
+            print(f"[Owner] Updated hub buffer size to {req.buffer_size}")
+    
+    return await join_room(DEFAULT_ROOM_ID, req, user_id)
 
 @app.post("/rooms/{room_id}/leave")
 async def leave_room(room_id: str, user_id: str = Depends(get_current_user_id)):
