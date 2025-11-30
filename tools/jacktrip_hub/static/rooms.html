@@ -364,8 +364,8 @@
         </div>
         
         <div class="header">
-            <h1>Room Manager</h1>
-            <p class="subtitle">Create or join a room to get started</p>
+            <h1 id="pageTitle">Room Manager</h1>
+            <p class="subtitle" id="pageSubtitle">Loading...</p>
         </div>
         
         <div id="status" class="status" style="display: none;"></div>
@@ -386,7 +386,7 @@
         
         <div class="section">
             <div class="button-group">
-                <button onclick="openCreateModal()">➕ Create Room</button>
+                <button id="createRoomBtn" onclick="openCreateModal()" style="display: none;">➕ Create Room</button>
                 <button class="logout-btn" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
@@ -434,14 +434,42 @@
         let userRoomIds = new Set();
         let selectedRoomId = null;
         
+        let singleRoomMode = false;
+        
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', async function() {
             const token = localStorage.getItem('jacktrip_token');
             const isOwner = localStorage.getItem('jacktrip_is_owner') === 'true';
             if (!token) {
                 window.location.href = '/';
                 return;
             }
+            
+            // Check if in single room mode by querying health endpoint
+            try {
+                const health = await fetch('/health');
+                const healthData = await health.json();
+                // In single room mode, there will be exactly 1 room always
+                const roomsRes = await fetch('/rooms', {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                const rooms = await roomsRes.json();
+                singleRoomMode = (rooms.length === 1 && rooms[0].name !== undefined);
+                
+                if (singleRoomMode) {
+                    document.getElementById('pageTitle').textContent = rooms[0].name;
+                    document.getElementById('pageSubtitle').textContent = 'Band Collaboration Room';
+                    document.querySelector('.section-title').textContent = '🎵 Active Session';
+                } else {
+                    document.getElementById('pageTitle').textContent = 'Room Manager';
+                    document.getElementById('pageSubtitle').textContent = 'Create or join a room to get started';
+                    document.getElementById('createRoomBtn').style.display = 'block';
+                }
+            } catch (e) {
+                console.error('Failed to detect mode:', e);
+                document.getElementById('pageSubtitle').textContent = 'Create or join a room to get started';
+            }
+            
             if (isOwner) {
                 document.getElementById('userManagementSection').style.display = 'block';
                 loadUsers();
@@ -551,7 +579,21 @@
             
             // Render user's rooms
             const userList = document.getElementById('roomsList');
-            if (userRooms.length === 0) {
+            if (singleRoomMode && allRooms.length > 0) {
+                // In single room mode, always show the default room
+                const room = allRooms[0];
+                const isJoined = userRoomIds.has(room.id);
+                userList.innerHTML = `
+                    <div class="room-item" onclick="${isJoined ? 'viewRoom' : 'promptJoinRoom'}('${room.id}')">
+                        <div class="room-name">${room.name}</div>
+                        <div class="room-description">${room.description || 'Default band collaboration room'}</div>
+                        <div class="room-info">
+                            ${room.participant_count} connected | 
+                            ${isJoined ? '✓ You are in this room' : 'Click to join'}
+                        </div>
+                    </div>
+                `;
+            } else if (userRooms.length === 0) {
                 userList.innerHTML = '<div class="empty-state">No rooms yet. Create one to get started!</div>';
             } else {
                 userList.innerHTML = userRooms.map(room => `

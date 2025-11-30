@@ -16,6 +16,10 @@ export HUB_HOST="${HUB_HOST:-localhost}"
 export JACKTRIP_BASE_PORT="${JACKTRIP_BASE_PORT:-4464}"
 export JACKTRIP_PORT_RANGE="${JACKTRIP_PORT_RANGE:-100}"
 
+# Single room mode configuration
+export SINGLE_ROOM_MODE="${SINGLE_ROOM_MODE:-true}"
+export BAND_NAME="${BAND_NAME:-The Band}"
+
 # Set SSL certificates for HTTPS
 export SSL_CERTFILE="${SSL_CERTFILE:-$DIR/certs/cert.pem}"
 export SSL_KEYFILE="${SSL_KEYFILE:-$DIR/certs/key.pem}"

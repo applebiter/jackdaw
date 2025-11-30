@@ -33,6 +33,10 @@ JACKTRIP_BIN = os.getenv("JACKTRIP_BIN", "jacktrip")
 JACKTRIP_BASE_PORT = int(os.getenv("JACKTRIP_BASE_PORT", 4464))
 JACKTRIP_PORT_RANGE = int(os.getenv("JACKTRIP_PORT_RANGE", 100))
 
+# Single room mode configuration
+SINGLE_ROOM_MODE = os.getenv("SINGLE_ROOM_MODE", "true").lower() in ("true", "1", "yes")
+BAND_NAME = os.getenv("BAND_NAME", "The Band")
+
 # SSL/TLS Configuration
 SSL_CERTFILE = os.getenv("SSL_CERTFILE", None)  # Path to SSL certificate
 SSL_KEYFILE = os.getenv("SSL_KEYFILE", None)    # Path to SSL private key
@@ -43,11 +47,10 @@ DB_PATH = Path(__file__).parent / "hub.db"
 CERTS_PATH = Path(__file__).parent / "certs"
 
 # Single persistent room for the band
-BAND_ROOM = None  # Will be initialized on startup
-JACKTRIP_PROCESS = None  # Single JackTrip server process
+DEFAULT_ROOM_ID = None  # ID of the default room in single room mode
 ACTIVE_PARTICIPANTS = set()  # Set of currently connected user_ids
 
-# Multi-room support (legacy - will be removed in Phase 2)
+# Multi-room support (legacy - used in both single and multi-room mode)
 ROOMS = {}  # room_id -> Room object
 JACKTRIP_PROCS = {}  # room_id -> {"port": int, "process": Popen, "created_at": str}
 
@@ -370,10 +373,46 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize hub on startup"""
+    global DEFAULT_ROOM_ID
     init_database()
     print(f"JackTrip Hub Server started")
     print(f"Hub host: {HUB_HOST}")
     print(f"JackTrip port range: {JACKTRIP_BASE_PORT}-{JACKTRIP_BASE_PORT + JACKTRIP_PORT_RANGE - 1}")
+    
+    if SINGLE_ROOM_MODE:
+        print(f"\n🎵 Single Room Mode: {BAND_NAME}")
+        # Create default room
+        room_id = str(uuid.uuid4())
+        port = allocate_port()
+        DEFAULT_ROOM_ID = room_id
+        
+        # Start JackTrip server
+        cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4", "-p", "5"]
+        try:
+            proc = Popen(cmd)
+            JACKTRIP_PROCS[room_id] = {
+                "port": port,
+                "process": proc,
+                "created_at": datetime.utcnow().isoformat()
+            }
+            
+            # Create room object
+            ROOMS[room_id] = Room(
+                id=room_id,
+                name=BAND_NAME,
+                description="Default band collaboration room",
+                creator_id="system",
+                jacktrip_port=port,
+                max_participants=16,
+                participants=[],
+                created_at=datetime.utcnow().isoformat()
+            )
+            print(f"✓ Default room created: {BAND_NAME}")
+            print(f"✓ JackTrip server started on port {port}")
+        except Exception as e:
+            print(f"✗ Failed to start default room: {e}")
+    else:
+        print("\n📂 Multi-Room Mode enabled")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -572,6 +611,10 @@ async def join_room(
     user_id: str = Depends(get_current_user_id)
 ):
     """Join a room and get JackTrip connection details"""
+    # In single room mode, use default room
+    if SINGLE_ROOM_MODE:
+        room_id = DEFAULT_ROOM_ID
+    
     room = ROOMS.get(room_id)
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
@@ -606,6 +649,28 @@ async def join_room(
         jacktrip_flags=flags,
     )
 
+@app.post("/join", response_model=RoomJoinResponse)
+async def join_default_room(user_id: str = Depends(get_current_user_id)):
+    """Join the default room (single room mode only)"""
+    if not SINGLE_ROOM_MODE:
+        raise HTTPException(status_code=404, detail="Endpoint only available in single room mode")
+    
+    if not DEFAULT_ROOM_ID:
+        raise HTTPException(status_code=500, detail="Default room not initialized")
+    
+    return await join_room(DEFAULT_ROOM_ID, RoomJoinRequest(), user_id)
+
+@app.post("/join", response_model=RoomJoinResponse)
+async def join_default_room(user_id: str = Depends(get_current_user_id)):
+    """Join the default room (single room mode only)"""
+    if not SINGLE_ROOM_MODE:
+        raise HTTPException(status_code=404, detail="Endpoint only available in single room mode")
+    
+    if not DEFAULT_ROOM_ID:
+        raise HTTPException(status_code=500, detail="Default room not initialized")
+    
+    return await join_room(DEFAULT_ROOM_ID, RoomJoinRequest(), user_id)
+
 @app.post("/rooms/{room_id}/leave")
 async def leave_room(room_id: str, user_id: str = Depends(get_current_user_id)):
     """Leave a room"""
@@ -628,6 +693,8 @@ async def leave_room(room_id: str, user_id: str = Depends(get_current_user_id)):
 @app.delete("/rooms/{room_id}")
 async def delete_room(room_id: str, user_id: str = Depends(get_current_user_id)):
     """Delete a room (creator only)"""
+    if SINGLE_ROOM_MODE:
+        raise HTTPException(status_code=403, detail="Cannot delete default room in single room mode")
     room = ROOMS.get(room_id)
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
