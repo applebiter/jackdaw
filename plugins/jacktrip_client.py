@@ -76,7 +76,7 @@ class JackTripClient(VoiceAssistantPlugin):
         """Register voice commands for JackTrip functionality"""
         return {
             "start jam session": self._join_session_command,
-            "stop jam session": self._leave_room_command,
+            "stop jam session": self._leave_room,
             "jam session status": self._get_status_command,
             "who's in the jam": self._get_room_info_command,
             "open patchbay": self._open_patchbay_command,
