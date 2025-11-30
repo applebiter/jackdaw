@@ -10,6 +10,8 @@ Transform the JackTrip hub from a multi-room system into a focused single-band c
 - No room creation/deletion UI - the room just exists
 - All authenticated band members connect to the same room
 - JackTrip server process stays running as long as hub is up
+- **New clients join with no audio connections** - prevents accidental feedback/routing
+- Only authorized users can create initial audio routing
 
 ### 2. User Roles & Permissions
 
@@ -45,7 +47,48 @@ Transform the JackTrip hub from a multi-room system into a focused single-band c
    - "Join Session" button (starts JackTrip client)
    - Patchbay link (if granted access) or "Access Restricted" message
 3. Join session → JackTrip client connects
+   - **Client ports appear disconnected by default**
+   - No automatic routing - engineer must explicitly connect channels
 4. If granted patchbay access → can view/modify routing
+
+## Audio Routing Behavior
+
+### Default Connection Policy
+When a JackTrip client connects to the hub:
+- ❌ **NO automatic connections are made**
+- Client's send ports appear disconnected
+- Client's receive ports appear disconnected
+- Owner/engineer must explicitly route audio
+
+### Rationale
+1. **Prevents Feedback** - New connections won't create feedback loops
+2. **Controlled Routing** - Engineer decides who hears what
+3. **Professional Workflow** - Matches live sound engineering practices
+4. **Security** - Members can't accidentally route themselves to hear everything
+
+### Engineer's Responsibility
+The authorized engineer (owner + granted members) must:
+1. Connect member's send ports to desired destinations
+2. Connect desired sources to member's receive ports
+3. Test audio before member goes live
+4. Adjust monitoring mixes as needed
+
+### Example Connection Flow
+```
+1. Member "vocalist" joins → ports appear:
+   - vocalist:send_1 (disconnected)
+   - vocalist:send_2 (disconnected)
+   - vocalist:receive_1 (disconnected)
+   - vocalist:receive_2 (disconnected)
+
+2. Engineer connects:
+   - vocalist:send_1 → drummer:receive_1 (vocalist to drummer's monitors)
+   - vocalist:send_2 → drummer:receive_2
+   - drummer:send_1 → vocalist:receive_1 (drummer to vocalist's monitors)
+   - drummer:send_2 → vocalist:receive_2
+
+3. Now both can hear each other
+```
 
 ## Implementation Plan (Incremental Approach)
 
@@ -66,6 +109,7 @@ ALTER TABLE users ADD COLUMN has_patchbay_access BOOLEAN DEFAULT 0;
   - `GET /users` - List all users (owner only)
   - `POST /users/{user_id}/permissions` - Grant/revoke patchbay access (owner only)
 - Update WebSocket patchbay check: allow if `user.has_patchbay_access == true`
+- **Ensure JackTrip clients connect with no auto-routing** (already default JACK behavior)
 
 #### Frontend Changes
 - Add permissions UI to rooms.html (shown only to owner)
@@ -217,6 +261,7 @@ SSL_KEYFILE=/path/to/key.pem    # HTTPS private key
 - [ ] Owner can revoke patchbay access
 - [ ] Non-owner cannot manage permissions
 - [ ] Patchbay WebSocket rejects non-permitted users
+- [ ] New JackTrip clients appear with no connections
 
 ### Integration Tests
 - [ ] Owner can access patchbay immediately
@@ -224,6 +269,8 @@ SSL_KEYFILE=/path/to/key.pem    # HTTPS private key
 - [ ] Member can access patchbay after permission granted
 - [ ] Multiple members can join same room
 - [ ] JackTrip server stays up when members leave
+- [ ] New client ports appear disconnected
+- [ ] Engineer can manually route new client audio
 
 ### User Acceptance Tests
 1. **Owner Workflow:**
