@@ -357,8 +357,8 @@
                 loadSavedPositions();
                 connectWebSocket();
             } else {
-                // Check user's rooms
-                checkUserRooms(token);
+                // Check default room
+                checkDefaultRoom(token);
             }
         });
         
@@ -368,10 +368,11 @@
             window.location.href = '/';
         }
         
-        // Check user's rooms and redirect to room selection if needed
-        async function checkUserRooms(token) {
+        // Check for default room (single room mode)
+        async function checkDefaultRoom(token) {
             try {
-                const response = await fetch('/user/rooms', {
+                // In single room mode, get all rooms (should be just the default room)
+                const response = await fetch('/rooms', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -381,19 +382,21 @@
                     const rooms = await response.json();
                     
                     if (rooms.length === 0) {
-                        // No rooms, redirect to room management page
-                        window.location.href = '/rooms-ui';
+                        // No rooms available
+                        alert('No room available. Contact the band owner.');
+                        window.location.href = '/access-denied';
                         return;
-                    } else if (rooms.length === 1) {
-                        // Only one room, use it
+                    } else {
+                        // Use the first (default) room
                         currentRoomId = rooms[0].id;
                         loadSavedPositions();
                         connectWebSocket();
-                    } else {
-                        // Multiple rooms, redirect to selection
-                        window.location.href = '/rooms-ui';
                     }
+                } else if (response.status === 403) {
+                    // No patchbay access
+                    window.location.href = '/access-denied';
                 } else {
+                    // Auth error
                     window.location.href = '/';
                 }
             } catch (e) {
