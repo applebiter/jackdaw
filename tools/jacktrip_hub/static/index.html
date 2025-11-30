@@ -326,9 +326,15 @@
                 const data = await response.json();
                 localStorage.setItem('jacktrip_token', data.token);
                 localStorage.setItem('jacktrip_user_id', data.user_id);
+                localStorage.setItem('jacktrip_username', data.username);
+                localStorage.setItem('jacktrip_is_owner', data.is_owner);
+                localStorage.setItem('jacktrip_has_patchbay_access', data.has_patchbay_access);
+                showMessage(messageDiv, 'Registration successful! Redirecting...', 'success');
+                localStorage.setItem('jacktrip_is_owner', data.is_owner);
+                localStorage.setItem('jacktrip_has_patchbay_access', data.has_patchbay_access);
                 showMessage(messageDiv, 'Login successful! Redirecting...', 'success');
                 setTimeout(() => {
-                    window.location.href = '/patchbay';
+                    window.location.href = '/rooms-ui';
                 }, 1500);
             } catch (err) {
                 showMessage(messageDiv, 'Connection error: ' + err.message, 'error');

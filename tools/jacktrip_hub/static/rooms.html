@@ -284,6 +284,76 @@
             background: rgba(244, 67, 54, 0.1);
             color: #ef5350;
         }
+        
+        .user-item {
+            background: #0d1b2a;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-item.connected {
+            border-color: #4CAF50;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .user-badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background: rgba(33, 150, 243, 0.2);
+            color: #64B5F6;
+        }
+        
+        .badge.owner {
+            background: rgba(255, 193, 7, 0.2);
+            color: #FFC107;
+        }
+        
+        .badge.connected {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        
+        .permission-toggle {
+            background: #0d1b2a;
+            border: 1px solid #2196F3;
+            color: #2196F3;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .permission-toggle:hover {
+            background: #162333;
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+        }
+        
+        .permission-toggle.granted {
+            background: #2196F3;
+            color: #0d1b2a;
+        }
     </style>
 </head>
 <body>
@@ -299,6 +369,13 @@
         </div>
         
         <div id="status" class="status" style="display: none;"></div>
+        
+        <div id="userManagementSection" class="section" style="display: none;">
+            <div class="section-title">👥 Band Members</div>
+            <div id="usersList" class="room-list">
+                <div class="empty-state">Loading users...</div>
+            </div>
+        </div>
         
         <div class="section">
             <div class="section-title">📋 Your Rooms</div>
@@ -360,12 +437,91 @@
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('jacktrip_token');
+            const isOwner = localStorage.getItem('jacktrip_is_owner') === 'true';
             if (!token) {
                 window.location.href = '/';
                 return;
             }
+            if (isOwner) {
+                document.getElementById('userManagementSection').style.display = 'block';
+                loadUsers();
+            }
             loadRooms();
         });
+        
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('jacktrip_token');
+                const response = await fetch('/users', {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                if (response.ok) {
+                    const users = await response.json();
+                    renderUsers(users);
+                }
+            } catch (e) {
+                console.error('Failed to load users:', e);
+            }
+        }
+        
+        function renderUsers(users) {
+            const usersList = document.getElementById('usersList');
+            if (users.length === 0) {
+                usersList.innerHTML = '<div class="empty-state">No users yet</div>';
+                return;
+            }
+            
+            usersList.innerHTML = users.map(user => {
+                const badges = [];
+                if (user.is_owner) badges.push('<span class="badge owner">👑 Owner</span>');
+                if (user.has_patchbay_access) badges.push('<span class="badge">🎛️ Patchbay</span>');
+                if (user.is_connected) badges.push('<span class="badge connected">🟢 Connected</span>');
+                
+                const canToggle = !user.is_owner;
+                const toggleBtn = canToggle ? 
+                    `<button class="permission-toggle ${user.has_patchbay_access ? 'granted' : ''}" 
+                             onclick="togglePermission('${user.id}', ${!user.has_patchbay_access})">
+                        ${user.has_patchbay_access ? '✓ Access Granted' : 'Grant Patchbay Access'}
+                    </button>` : '';
+                
+                return `
+                    <div class="user-item ${user.is_connected ? 'connected' : ''}">
+                        <div class="user-info">
+                            <div class="user-name">${user.username}</div>
+                            <div class="user-badges">${badges.join('')}</div>
+                        </div>
+                        ${toggleBtn}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function togglePermission(userId, grant) {
+            try {
+                const token = localStorage.getItem('jacktrip_token');
+                const response = await fetch(`/users/${userId}/permissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        has_patchbay_access: grant
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus(grant ? 'Access granted' : 'Access revoked', 'loading');
+                    loadUsers(); // Reload to update UI
+                } else {
+                    const error = await response.json();
+                    showStatus('Failed: ' + error.detail, 'error');
+                }
+            } catch (e) {
+                showStatus('Failed to update permissions: ' + e.message, 'error');
+            }
+        }
         
         async function loadRooms() {
             try {
@@ -510,6 +666,9 @@
         function logout() {
             localStorage.removeItem('jacktrip_token');
             localStorage.removeItem('jacktrip_user_id');
+            localStorage.removeItem('jacktrip_username');
+            localStorage.removeItem('jacktrip_is_owner');
+            localStorage.removeItem('jacktrip_has_patchbay_access');
             window.location.href = '/';
         }
         

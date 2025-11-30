@@ -47,6 +47,10 @@ BAND_ROOM = None  # Will be initialized on startup
 JACKTRIP_PROCESS = None  # Single JackTrip server process
 ACTIVE_PARTICIPANTS = set()  # Set of currently connected user_ids
 
+# Multi-room support (legacy - will be removed in Phase 2)
+ROOMS = {}  # room_id -> Room object
+JACKTRIP_PROCS = {}  # room_id -> {"port": int, "process": Popen, "created_at": str}
+
 # ---------- Models ----------
 class RegisterRequest(BaseModel):
     username: str
@@ -85,6 +89,37 @@ class HealthResponse(BaseModel):
     status: str
     participant_count: int
     jacktrip_running: bool
+
+class RoomListItem(BaseModel):
+    id: str
+    name: str
+    description: Optional[str]
+    participant_count: int
+    max_participants: int
+    created_at: str
+
+class RoomCreateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+    max_participants: int = 4
+
+class Room(BaseModel):
+    id: str
+    name: str
+    description: Optional[str]
+    creator_id: str
+    jacktrip_port: int
+    max_participants: int
+    participants: List[str]
+    created_at: str
+
+class RoomJoinResponse(BaseModel):
+    hub_host: str
+    jacktrip_port: int
+    participant_count: int
+
+class RoomJoinRequest(BaseModel):
+    pass  # Empty body for now (previously had passphrase)
 
 # ---------- Database Setup ----------
 def init_database():
@@ -390,10 +425,14 @@ async def register(req: RegisterRequest):
     """Register a new user"""
     user_id = create_user(req.username, req.password, req.email)
     token = create_session(user_id)
+    user_info = get_user_info(user_id)
     
     return LoginResponse(
         token=token,
-        user_id=user_id
+        user_id=user_id,
+        username=user_info["username"],
+        is_owner=user_info["is_owner"],
+        has_patchbay_access=user_info["has_patchbay_access"]
     )
 
 @app.post("/auth/login", response_model=LoginResponse)
@@ -404,7 +443,40 @@ async def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_session(user_id)
-    return LoginResponse(token=token, user_id=user_id)
+    user_info = get_user_info(user_id)
+    return LoginResponse(
+        token=token,
+        user_id=user_id,
+        username=user_info["username"],
+        is_owner=user_info["is_owner"],
+        has_patchbay_access=user_info["has_patchbay_access"]
+    )
+
+@app.get("/users", response_model=List[UserInfo])
+async def list_users(user_id: str = Depends(get_current_user_id)):
+    """List all users (owner only)"""
+    user_info = get_user_info(user_id)
+    if not user_info or not user_info["is_owner"]:
+        raise HTTPException(status_code=403, detail="Only owner can list users")
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, username, is_owner, has_patchbay_access FROM users ORDER BY created_at"
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    
+    users = []
+    for row in rows:
+        users.append(UserInfo(
+            id=row[0],
+            username=row[1],
+            is_owner=bool(row[2]),
+            has_patchbay_access=bool(row[3]),
+            is_connected=(row[0] in ACTIVE_PARTICIPANTS)
+        ))
+    return users
 
 @app.get("/rooms", response_model=List[RoomListItem])
 async def list_rooms(user_id: str = Depends(get_current_user_id)):
@@ -422,8 +494,25 @@ async def list_rooms(user_id: str = Depends(get_current_user_id)):
         for room in ROOMS.values()
     ]
 
+@app.post("/users/{target_user_id}/permissions")
+async def set_permissions(target_user_id: str, req: SetPermissionRequest, user_id: str = Depends(get_current_user_id)):
+    """Grant or revoke patchbay access (owner only)"""
+    user_info = get_user_info(user_id)
+    if not user_info or not user_info["is_owner"]:
+        raise HTTPException(status_code=403, detail="Only owner can manage permissions")
+    
+    # Can't change owner's permissions
+    target_info = get_user_info(target_user_id)
+    if not target_info:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target_info["is_owner"]:
+        raise HTTPException(status_code=400, detail="Cannot modify owner permissions")
+    
+    set_user_patchbay_access(target_user_id, req.has_patchbay_access)
+    return {"success": True, "user_id": target_user_id, "has_patchbay_access": req.has_patchbay_access}
+
 @app.get("/user/rooms", response_model=List[RoomListItem])
-async def get_user_rooms(user_id: str = Depends(get_current_user_id)):
+async def list_user_rooms(user_id: str = Depends(get_current_user_id)):
     """Get rooms the current user is participating in"""
     user_rooms = [
         RoomListItem(
@@ -767,7 +856,13 @@ async def websocket_patchbay(websocket: WebSocket):
         await websocket.close(code=1008, reason="Unauthorized")
         return
     
-    # Validate room_id and check user is in the room
+    # Check if user has patchbay access
+    user_info = get_user_info(user_id)
+    if not user_info or not user_info["has_patchbay_access"]:
+        await websocket.close(code=1008, reason="Patchbay access denied")
+        return
+    
+    # Validate room_id
     if not room_id:
         await websocket.close(code=1008, reason="Room ID required")
         return
@@ -775,11 +870,6 @@ async def websocket_patchbay(websocket: WebSocket):
     room = ROOMS.get(room_id)
     if not room:
         await websocket.close(code=1008, reason="Room not found")
-        return
-    
-    # Only the room creator can access the patchbay
-    if user_id != room.creator_id:
-        await websocket.close(code=1008, reason="Only room creator can access patchbay")
         return
     
     # Accept the connection
