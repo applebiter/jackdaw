@@ -8,6 +8,13 @@ cd "$DIR"
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
+# Check if another tray app instance is already running
+if pgrep -f "voice_assistant_tray.py" > /dev/null; then
+    echo "[$(date)] Found existing tray app instance, stopping it..." >> logs/tray_restart.log
+    pkill -f "voice_assistant_tray.py"
+    sleep 2  # Give it time to shut down cleanly
+fi
+
 # Remove stale heartbeat file
 rm -f .tray_heartbeat
 

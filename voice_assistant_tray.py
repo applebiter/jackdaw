@@ -51,6 +51,7 @@ class VoiceAssistantTray(QObject):
         
         # Check for and stop any already-running processes
         self._cleanup_existing_processes()
+        self._check_for_duplicate_tray()
         
         # Voice assistant processes
         self.voice_process: Optional[subprocess.Popen] = None
@@ -275,6 +276,31 @@ class VoiceAssistantTray(QObject):
                 print("Existing processes stopped.")
         except Exception as e:
             print(f"Error checking for existing processes: {e}")
+    
+    def _check_for_duplicate_tray(self):
+        """Check for other tray app instances and exit if found."""
+        try:
+            import os
+            # Get list of all voice_assistant_tray.py processes
+            result = subprocess.run(
+                ["pgrep", "-f", "voice_assistant_tray.py"],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                # Parse PIDs
+                pids = [int(pid.strip()) for pid in result.stdout.strip().split('\n') if pid.strip()]
+                current_pid = os.getpid()
+                
+                # If there are other PIDs besides our own, another instance exists
+                other_pids = [pid for pid in pids if pid != current_pid]
+                if other_pids:
+                    print(f"Another tray app instance is already running (PID: {other_pids[0]})")
+                    print("This instance will exit to prevent duplicates.")
+                    sys.exit(0)
+        except Exception as e:
+            print(f"Error checking for duplicate tray instances: {e}")
     
     def create_icon(self, is_active: bool = False) -> QIcon:
         """Create the jackdaw icon for the tray."""
