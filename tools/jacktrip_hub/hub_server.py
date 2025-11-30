@@ -758,15 +758,55 @@ async def join_default_room(req: RoomJoinRequest, user_id: str = Depends(get_cur
     if not DEFAULT_ROOM_ID:
         raise HTTPException(status_code=500, detail="Default room not initialized")
     
-    # If owner is joining with settings, update hub to match
+    # If owner is joining with settings, update hub to match and restart JACK/JackTrip
     user_info = get_user_info(user_id)
     if user_info and user_info["is_owner"]:
+        settings_changed = False
+        
         if req.sample_rate:
-            set_hub_setting("sample_rate", str(req.sample_rate), user_id)
-            print(f"[Owner] Updated hub sample rate to {req.sample_rate}")
+            current_rate = get_hub_setting("sample_rate")
+            if current_rate != str(req.sample_rate):
+                set_hub_setting("sample_rate", str(req.sample_rate), user_id)
+                print(f"[Owner] Updated hub sample rate to {req.sample_rate}")
+                settings_changed = True
+        
         if req.buffer_size:
-            set_hub_setting("buffer_size", str(req.buffer_size), user_id)
-            print(f"[Owner] Updated hub buffer size to {req.buffer_size}")
+            current_buffer = get_hub_setting("buffer_size")
+            if current_buffer != str(req.buffer_size):
+                set_hub_setting("buffer_size", str(req.buffer_size), user_id)
+                print(f"[Owner] Updated hub buffer size to {req.buffer_size}")
+                settings_changed = True
+        
+        # If settings changed, restart JACK and JackTrip to apply them
+        if settings_changed and DEFAULT_ROOM_ID:
+            print(f"[Owner] Restarting JACK with new settings...")
+            
+            # Stop current JackTrip server
+            stop_jacktrip_server(DEFAULT_ROOM_ID)
+            
+            # Restart JACK with new settings
+            try:
+                import subprocess as sp
+                sp.run(["jack_control", "stop"], capture_output=True, timeout=5)
+                import time
+                time.sleep(1)
+                
+                if req.sample_rate:
+                    sp.run(["jack_control", "dps", "rate", str(req.sample_rate)], 
+                           capture_output=True, timeout=5)
+                if req.buffer_size:
+                    sp.run(["jack_control", "dps", "period", str(req.buffer_size)],
+                           capture_output=True, timeout=5)
+                
+                sp.run(["jack_control", "start"], capture_output=True, timeout=10)
+                time.sleep(2)
+                
+                # Restart JackTrip server
+                port = start_jacktrip_server(DEFAULT_ROOM_ID)
+                print(f"[Owner] JACK and JackTrip restarted successfully on port {port}")
+            except Exception as e:
+                print(f"[Owner] Warning: Could not restart JACK automatically: {e}")
+                print(f"[Owner] Please restart the hub server to apply new settings")
     
     return await join_room(DEFAULT_ROOM_ID, req, user_id)
 
