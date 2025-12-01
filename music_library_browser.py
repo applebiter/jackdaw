@@ -59,7 +59,7 @@ class ConfigManager:
 class MusicLibraryBrowser(QMainWindow):
     """Main window for music library browser"""
     
-    def __init__(self):
+    def __init__(self, music_plugin=None):
         super().__init__()
         
         # Paths
@@ -69,6 +69,9 @@ class MusicLibraryBrowser(QMainWindow):
         
         # Database connection
         self.db_conn: Optional[sqlite3.Connection] = None
+        
+        # Music player plugin (for integrated playback control)
+        self.music_plugin = music_plugin
         
         # Streaming plugin
         self.config_manager = ConfigManager(self.config_path)
@@ -755,28 +758,31 @@ Size: {row['size'] or 'N/A'}
             )
             return
         
-        # Stop any existing playback first - this waits up to 2 seconds
-        audio_jack_player.stop_playback()
+        shuffle = self.shuffle_checkbox.isChecked()
         
-        # Convert to Path objects
-        playlist = [Path(p) for p in file_paths]
+        # Use plugin if available, otherwise fall back to direct audio_jack_player
+        if self.music_plugin:
+            # Play through plugin - this ensures consistent state management
+            self.music_plugin.play_files(file_paths, shuffle=shuffle)
+        else:
+            # Fallback to direct audio_jack_player calls
+            audio_jack_player.stop_playback()
+            playlist = [Path(p) for p in file_paths]
+            audio_jack_player.set_shuffle_mode(shuffle)
+            audio_jack_player.play_playlist(playlist)
+            # Write status file for tray widget to read (only needed in fallback mode)
+            self.write_playback_status("playing", Path(file_paths[0]).name if file_paths else "Unknown")
         
-        # Set shuffle mode
-        audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
-        
-        # Play playlist
-        audio_jack_player.play_playlist(playlist)
-        
-        # Write status file for tray widget to read
-        self.write_playback_status("playing", Path(file_paths[0]).name if file_paths else "Unknown")
-        
-        shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
+        shuffle_text = " (shuffled)" if shuffle else ""
         self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
     
     def on_stop_local(self):
         """Stop local playback"""
-        audio_jack_player.stop_playback()
-        self.write_playback_status("stopped", "")
+        if self.music_plugin:
+            self.music_plugin.stop()
+        else:
+            audio_jack_player.stop_playback()
+            self.write_playback_status("stopped", "")
         self.status_label.setText("Local playback stopped")
     
     def on_stream_selected(self):
@@ -876,7 +882,10 @@ Size: {row['size'] or 'N/A'}
     
     def sync_volume_from_player(self):
         """Sync volume slider with current audio_jack_player volume state"""
-        current_volume = audio_jack_player.get_volume()
+        if self.music_plugin:
+            current_volume = self.music_plugin.get_volume_level()
+        else:
+            current_volume = audio_jack_player.get_volume()
         volume_percent = int(current_volume * 100)
         self.volume_slider.setValue(volume_percent)
         self.volume_label.setText(f"{volume_percent}%")
@@ -884,7 +893,10 @@ Size: {row['size'] or 'N/A'}
     def on_volume_changed(self, value):
         """Handle volume slider changes"""
         volume_level = value / 100.0
-        audio_jack_player.set_volume(volume_level)
+        if self.music_plugin:
+            self.music_plugin.set_volume_level(volume_level)
+        else:
+            audio_jack_player.set_volume(volume_level)
         self.volume_label.setText(f"{value}%")
     
     def write_playback_status(self, status: str, track_name: str):
@@ -922,7 +934,29 @@ def main():
     # Set application style
     app.setStyle("Fusion")
     
-    browser = MusicLibraryBrowser()
+    # Try to load music_player plugin for integrated control
+    music_plugin = None
+    try:
+        from pathlib import Path
+        import json
+        
+        config_file = Path("voice_assistant_config.json")
+        if config_file.exists():
+            with open(config_file, 'r') as f:
+                config = json.load(f)
+                music_config = config.get('music', {})
+                
+                # Import and instantiate the plugin
+                from plugins.music_player import MusicPlayerPlugin
+                music_plugin = MusicPlayerPlugin(music_config)
+                print("[MusicBrowser] Loaded music_player plugin for integrated control")
+        else:
+            print("[MusicBrowser] No config file found, using direct audio_jack_player mode")
+    except Exception as e:
+        print(f"[MusicBrowser] Could not load music_player plugin: {e}")
+        print("[MusicBrowser] Falling back to direct audio_jack_player mode")
+    
+    browser = MusicLibraryBrowser(music_plugin=music_plugin)
     browser.show()
     
     sys.exit(app.exec())

@@ -41,6 +41,10 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     
     Supports playing random tracks from a configured library,
     skip/next track control, stop playback, and volume adjustment.
+    
+    Also provides public API for other components (like music browser)
+    to control playback through the plugin instead of directly calling
+    audio_jack_player.
     """
     
     def __init__(self, config: Dict[str, Any]):
@@ -623,6 +627,121 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
         except ImportError:
             print(f"[{self.get_name()}] PySide6 not available, GUI disabled")
             return None
+    
+    # Public API for other components (like music browser) to use
+    
+    def play_files(self, file_paths: list, shuffle: bool = False) -> str:
+        """
+        Public API: Play a list of files through the plugin.
+        
+        This ensures playback state is managed consistently whether
+        initiated via voice commands or GUI.
+        
+        Args:
+            file_paths: List of file paths to play
+            shuffle: Whether to shuffle the playlist
+        
+        Returns:
+            Status message
+        """
+        from pathlib import Path
+        
+        if not file_paths:
+            return "No files to play"
+        
+        try:
+            # Stop any current playback
+            stop_playback()
+            
+            # Convert to Path objects
+            playlist = [Path(p) for p in file_paths]
+            
+            # Set shuffle mode
+            set_shuffle_mode(shuffle)
+            
+            # Play the playlist
+            play_playlist(playlist)
+            
+            shuffle_text = " (shuffled)" if shuffle else ""
+            message = f"Playing {len(file_paths)} tracks{shuffle_text}"
+            print(f"[{self.get_name()}] {message}")
+            return message
+            
         except Exception as e:
-            print(f"[{self.get_name()}] Error creating GUI widget: {e}")
-            return None
+            print(f"[{self.get_name()}] Error in play_files: {e}")
+            return f"Error playing files: {e}"
+    
+    def stop(self) -> str:
+        """
+        Public API: Stop playback.
+        
+        Returns:
+            Status message
+        """
+        stop_playback()
+        return "Playback stopped"
+    
+    def next_track(self) -> str:
+        """
+        Public API: Skip to next track.
+        
+        Returns:
+            Status message
+        """
+        skip_to_next_track()
+        return "Skipped to next track"
+    
+    def previous_track(self) -> str:
+        """
+        Public API: Skip to previous track.
+        
+        Returns:
+            Status message
+        """
+        skip_to_previous_track()
+        return "Skipped to previous track"
+    
+    def set_volume_level(self, level: float) -> str:
+        """
+        Public API: Set volume to specific level.
+        
+        Args:
+            level: Volume level 0.0 to 1.0
+        
+        Returns:
+            Status message
+        """
+        set_volume(level)
+        return f"Volume set to {int(level * 100)}%"
+    
+    def get_volume_level(self) -> float:
+        """
+        Public API: Get current volume level.
+        
+        Returns:
+            Current volume (0.0 to 1.0)
+        """
+        return get_volume()
+    
+    def get_shuffle_state(self) -> bool:
+        """
+        Public API: Get current shuffle mode.
+        
+        Returns:
+            True if shuffle enabled, False otherwise
+        """
+        return get_shuffle_mode()
+    
+    def set_shuffle_state(self, enabled: bool) -> str:
+        """
+        Public API: Set shuffle mode.
+        
+        Args:
+            enabled: True to enable shuffle, False for sequential
+        
+        Returns:
+            Status message
+        """
+        set_shuffle_mode(enabled)
+        mode = "shuffle" if enabled else "sequential"
+        return f"Playback mode set to {mode}"
