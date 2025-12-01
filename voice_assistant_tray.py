@@ -259,6 +259,17 @@ class VoiceAssistantTray(QObject):
         
         about_menu.addSeparator()
         
+        # Plugin descriptions submenu
+        plugins_menu = about_menu.addMenu("🔌 Plugins")
+        for plugin in self.plugins:
+            description = plugin.get_description()
+            if description:  # Only show if plugin has a description
+                plugin_action = QAction(f"{plugin.get_name()}: {description}", plugins_menu)
+                plugin_action.setEnabled(False)  # Make it non-clickable, just informational
+                plugins_menu.addAction(plugin_action)
+        
+        about_menu.addSeparator()
+        
         # Credits/Info action
         credits_action = QAction("Jackdaw Info", about_menu)
         credits_action.triggered.connect(self.show_about)
