@@ -209,7 +209,7 @@ class VoiceAssistantTray(QObject):
                 continue
             
             # Skip plugins that don't need menu items (controlled via voice or other menus)
-            if plugin.get_name() in ['basic_commands', 'music_player', 'icecast_streamer', 'buffer']:
+            if plugin.get_name() in ['basic_commands', 'music_player', 'icecast_streamer', 'buffer', 'system_updates']:
                 continue
                 
             if hasattr(plugin, 'create_gui_widget') and callable(getattr(plugin, 'create_gui_widget')):
