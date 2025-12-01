@@ -226,6 +226,11 @@ class VoiceAssistantTray(QObject):
         remember_routing_action.triggered.connect(self.remember_jack_routing)
         tools_menu.addAction(remember_routing_action)
         
+        # Update check action
+        self.check_updates_action = QAction("🔄 Check for Updates", tools_menu)
+        self.check_updates_action.triggered.connect(self.check_for_updates)
+        tools_menu.addAction(self.check_updates_action)
+        
         # View logs action
         view_logs_action = QAction("📋 View Logs", menu)
         view_logs_action.triggered.connect(self.show_logs_viewer)
@@ -536,6 +541,12 @@ class VoiceAssistantTray(QObject):
                 self.update_now_playing()
             except Exception as e:
                 print(f"Error updating now playing: {e}")
+            
+            # Check for update notifications
+            try:
+                self.check_update_notification()
+            except Exception as e:
+                print(f"Error checking updates: {e}")
         except Exception as e:
             print(f"Error in update_status: {e}")
             import traceback
@@ -1022,6 +1033,37 @@ class VoiceAssistantTray(QObject):
                 print("LLM recorder plugin not available")
         except Exception as e:
             print(f"Error showing chat widget: {e}")
+    
+    def check_update_notification(self):
+        """Check for update notification file and update menu accordingly"""
+        notification_file = Path(".update_available")
+        if notification_file.exists():
+            try:
+                message = notification_file.read_text().strip()
+                # Update menu item to show update available
+                if hasattr(self, 'check_updates_action'):
+                    self.check_updates_action.setText("🔄 Updates Available!")
+                    self.check_updates_action.setToolTip(message)
+            except Exception:
+                pass
+        else:
+            # Reset to default text
+            if hasattr(self, 'check_updates_action'):
+                self.check_updates_action.setText("🔄 Check for Updates")
+                self.check_updates_action.setToolTip("")
+    
+    def check_for_updates(self):
+        """Manual update check triggered from menu"""
+        try:
+            subprocess.Popen(
+                ['python', 'check_updates.py'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            # Give it a moment to complete
+            QTimer.singleShot(2000, self.check_update_notification)
+        except Exception as e:
+            print(f"Error checking for updates: {e}")
     
     def quit_application(self):
         """Quit the application."""
