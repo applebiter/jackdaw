@@ -6,7 +6,8 @@ A graphical application for browsing, searching, and playing music from your Jac
 
 - **Browse & Search**: Paginated table view with sorting and searching by artist, album, title, genre, or year
 - **Track Details**: View complete metadata including audio properties, BPM, credits, and file information
-- **Local Playback**: Play tracks on your local JACK audio system
+- **Plugin Integration**: Uses music_player plugin API for unified playback control with voice commands
+- **Local Playback**: Play tracks on your local JACK audio system with persistent volume settings
 - **Icecast Streaming**: Stream tracks to your Icecast2 server
 - **Dual Mode**: Play locally and stream simultaneously
 - **Multi-Selection**: Select multiple tracks to create on-the-fly playlists
@@ -51,7 +52,10 @@ python music_library_browser.py
 #### Local JACK Playback
 - **▶ Play Selected on JACK**: Play selected tracks on your local JACK audio system
 - **⏹ Stop Local Playback**: Stop currently playing tracks
+- **🔊 Volume Slider**: Adjust playback volume (persists across sessions, synchronized with voice commands)
 - **Shuffle**: Enable random playback order (unchecked = sequential)
+
+**Note**: Playback continues even when the browser window is closed. Volume changes sync with voice-controlled playback.
 
 #### Icecast Streaming
 - **📡 Stream Selected to Icecast**: Start streaming selected tracks to your Icecast2 server

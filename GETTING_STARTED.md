@@ -318,6 +318,13 @@ Now for the moment of truth! Let's test if Jackdaw can hear you:
 
 3. **If it works:** 🎉 Congratulations! Jackdaw is listening!
 
+**Try more commands:**
+```
+"[wake word], check for updates"    # Check for Jackdaw updates
+"[wake word], what time is it?"     # Get current time
+"[wake word], play random track"    # Play music (if library set up)
+```
+
 4. **If nothing happens:** See [Troubleshooting](#troubleshooting) below.
 
 ### Stopping Jackdaw
@@ -674,6 +681,9 @@ A: Only for initial setup (downloading models and packages). Once installed, Jac
 
 **Q: Is my conversation data sent anywhere?**
 A: No. Everything is stored locally in `conversations.sqlite3`. Your voice, questions, and responses never leave your computer.
+
+**Q: How do I update Jackdaw?**
+A: You can check for updates by voice: "[wake word], check for updates". To install updates: "[wake word], install updates". You can also update manually with `git pull` in the project directory.
 
 **Q: How much disk space do I need?**
 A: Minimum 2GB:

@@ -22,7 +22,9 @@ Replace `[wake]` with your configured wake word (default: "alpha")
 | | `[wake], save that` | Save last 5 minutes to file |
 | **Streaming** | `[wake], start streaming` | Broadcast to Icecast2 |
 | | `[wake], stop streaming` | End broadcast |
-| **System** | `[wake], stop listening` | Shut down Jackdaw |
+| **System** | `[wake], check for updates` | Check for system updates |
+| | `[wake], install updates` | Install available updates |
+| | `[wake], stop listening` | Shut down Jackdaw |
 
 ---
 
@@ -135,6 +137,8 @@ python tools/scan_music_library.py
 "[wake], set volume medium"               Set to 60%
 "[wake], set volume high"                 Set to 90%
 ```
+
+*Volume settings persist automatically across restarts.*
 
 **Library Info:**
 ```

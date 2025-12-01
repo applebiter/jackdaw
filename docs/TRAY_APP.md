@@ -71,7 +71,11 @@ The application will:
 - **⏹ Stop Voice Assistant**: Stops all components
 - **Plugin Controls**: Each plugin with a GUI appears here
 - **📋 View Logs**: Opens log viewer
-- **ℹ About**: Shows application information
+- **📖 Reference**: Submenu containing:
+  - **Voice Commands**: Comprehensive command reference
+- **ℹ About**: Submenu containing:
+  - **✓ System Up to Date / ⚠ Update Available**: Update status (click to check)
+  - **Jackdaw Info**: Application information and credits
 - **✕ Quit**: Stops voice assistant and exits
 
 ### Plugin GUI Forms

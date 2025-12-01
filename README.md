@@ -42,7 +42,7 @@ sudo dnf install jack-audio-connection-kit ffmpeg libxcb xcb-util-cursor git    
 
 # 2. Install Ollama (optional, for AI features)
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull granite3.1:2b
+ollama pull granite4:tiny-h
 
 # 3. Clone and install Jackdaw
 git clone https://github.com/applebiter/jackdaw.git
@@ -83,7 +83,6 @@ cd jackdaw
 ## 🎤 Example Voice Commands
 
 ```
-"[wake word], hello"                          # Test command
 "[wake word], play artist Pink Floyd"         # Play music
 "[wake word], next track"                     # Skip track
 "[wake word], volume up"                      # Adjust volume
@@ -91,6 +90,7 @@ cd jackdaw
 "[wake word], stop chat"                      # Send to AI and get response
 "[wake word], start streaming"                # Begin Icecast2 broadcast
 "[wake word], save that"                      # Retroactive recording
+"[wake word], check for updates"              # Check for system updates
 "[wake word], stop listening"                 # Shut down
 ```
 
@@ -135,7 +135,7 @@ Edit `voice_assistant_config.json` to customize:
 ## 🔧 Core Features
 
 ### Voice-Controlled Music Player
-Play and control your music library entirely by voice. Supports Ogg Vorbis, Opus, FLAC, and MP3 formats.
+Play and control your music library entirely by voice. Supports Ogg Vorbis, Opus, FLAC, and MP3 formats. Volume settings persist automatically across restarts.
 
 **Scan your music:**
 ```bash
@@ -168,8 +168,9 @@ See **[docs/TIMEMACHINE.md](docs/TIMEMACHINE.md)** for details.
 Browse and control your music library with a graphical interface featuring:
 - Searchable, sortable table view
 - Playlist management with drag-and-drop
-- Local playback or streaming
+- Local playback or streaming (integrates with music_player plugin for unified control)
 - Save/load playlists as JSON
+- Volume settings synchronized with voice commands
 
 **Launch:** `./launch_music_browser.sh` or from the tray menu
 
@@ -245,7 +246,8 @@ jackdaw/
 │   ├── llm_recorder.py             AI chat capture
 │   ├── buffer.py                   Retroactive recording
 │   ├── icecast_streamer.py         Icecast2 streaming
-│   └── jacktrip_client.py          JackTrip network audio
+│   ├── jacktrip_client.py          JackTrip network audio
+│   └── system_updates.py           System update management
 │
 ├── 📁 tools/                       🔧 Utility scripts
 │   ├── scan_music_library.py       Index your music

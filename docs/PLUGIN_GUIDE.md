@@ -106,6 +106,7 @@ See the existing plugins for examples:
 - **`music_player.py`** - Music playback and volume control
 - **`llm_recorder.py`** - Text capture for LLM queries (accesses voice_client)
 - **`basic_commands.py`** - Simple system commands
+- **`system_updates.py`** - System update checking with tray menu integration
 
 ## Plugin Discovery
 
