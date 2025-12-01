@@ -736,6 +736,11 @@ def play_random_audio_in_directory(root: str):
     _playlist_position = 0  # Reset position
     _stop_requested.clear()  # Clear stop flag for new playback
     
+    # Enable shuffle mode for random playback
+    global _shuffle_mode
+    _shuffle_mode = True
+    print("[AudioJackPlayer] Enabled shuffle mode for random track playback")
+    
     # Clean up any old stop signal file before starting new playback
     try:
         stop_signal = Path(".stop_playback")
