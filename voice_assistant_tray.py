@@ -866,7 +866,7 @@ class VoiceAssistantTray(QObject):
     def show_aliases_editor(self):
         """Show the command aliases editor"""
         try:
-            editor = CommandAliasesEditor(self)
+            editor = CommandAliasesEditor()
             editor.exec()
         except Exception as e:
             print(f"Error showing aliases editor: {e}")
