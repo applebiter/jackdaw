@@ -25,7 +25,7 @@ class SystemUpdatesPlugin(VoiceAssistantPlugin):
         return "system_updates"
     
     def get_description(self) -> str:
-        return "Jackdaw System Updates"
+        return ""  # No description in tray - update status shown in About submenu
     
     def initialize(self) -> bool:
         """Check for updates on startup (non-blocking)"""
