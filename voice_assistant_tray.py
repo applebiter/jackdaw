@@ -24,6 +24,7 @@ from PySide6.QtCore import QTimer, Signal, QObject, Qt
 from PySide6.QtGui import QIcon, QAction, QPixmap
 
 from plugin_loader import PluginLoader
+from music_scanner_widget import MusicScannerWidget
 
 
 class VoiceAssistantTray(QObject):
@@ -163,6 +164,11 @@ class VoiceAssistantTray(QObject):
         music_browser_action = QAction("📂 Library Browser", music_menu)
         music_browser_action.triggered.connect(self.launch_music_browser)
         music_menu.addAction(music_browser_action)
+        
+        # Scan library action
+        scan_library_action = QAction("🔍 Scan Library", music_menu)
+        scan_library_action.triggered.connect(self.launch_music_scanner)
+        music_menu.addAction(scan_library_action)
         
         music_menu.addSeparator()
         
@@ -1040,6 +1046,19 @@ class VoiceAssistantTray(QObject):
                 print("LLM recorder plugin not available")
         except Exception as e:
             print(f"Error showing chat widget: {e}")
+    
+    def launch_music_scanner(self):
+        """Launch the music library scanner widget"""
+        try:
+            scanner = MusicScannerWidget()
+            scanner.exec()  # Show as modal dialog
+        except Exception as e:
+            print(f"Error launching music scanner: {e}")
+            QMessageBox.critical(
+                None,
+                "Scanner Error",
+                f"Failed to launch music scanner:\n{e}"
+            )
     
     def check_update_notification(self):
         """Check for update notification file and update menu accordingly"""

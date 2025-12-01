@@ -117,6 +117,8 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
             
             print(f"[{self.get_name()}] Playing {len(tracks)} random tracks from database")
             stop_playback()
+            # Enable shuffle mode to pick randomly from the list
+            set_shuffle_mode(True)
             play_playlist(tracks, library_root=self.music_library_path or "/")
             return f"Playing random tracks from library."
             
