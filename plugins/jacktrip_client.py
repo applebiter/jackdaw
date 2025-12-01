@@ -57,6 +57,11 @@ class JackTripClient(VoiceAssistantPlugin):
         """Return plugin name"""
         return "jacktrip_client"
     
+    def initialize(self) -> bool:
+        """Initialize plugin and clean up any zombie JackTrip processes"""
+        self._cleanup_zombie_jacktrip()
+        self.logger.info("JackTrip Client plugin initialized")
+        return True
     
     def get_description(self) -> str:
         """Return plugin description"""
@@ -220,6 +225,29 @@ class JackTripClient(VoiceAssistantPlugin):
             
         except Exception as e:
             self.logger.error(f"Failed to sync room state: {e}")
+    
+    def _cleanup_zombie_jacktrip(self):
+        """Kill any existing JackTrip client processes (cleanup zombies from previous crashes)"""
+        try:
+            import psutil
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    # Look for jacktrip processes in client mode (-C)
+                    if proc.info['name'] == 'jacktrip' and proc.info['cmdline']:
+                        cmdline = proc.info['cmdline']
+                        # Check if it's a client (has -C flag) and matches our client name
+                        if '-C' in cmdline and self.jack_client_name in ' '.join(cmdline):
+                            self.logger.info(f"Killing zombie JackTrip client process (PID {proc.info['pid']})")
+                            proc.kill()
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+        except ImportError:
+            # psutil not available, try pkill as fallback
+            try:
+                subprocess.run(['pkill', '-f', f'jacktrip.*{self.jack_client_name}'], 
+                             check=False, stderr=subprocess.DEVNULL)
+            except Exception as e:
+                self.logger.warning(f"Could not clean up zombie JackTrip processes: {e}")
     
     def _stop_jacktrip_client(self):
         """Stop the local JackTrip client process"""

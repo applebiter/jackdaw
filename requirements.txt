@@ -32,3 +32,4 @@ bcrypt==4.1.2
 
 # GUI (System Tray Application)
 PySide6==6.6.1
+psutil
