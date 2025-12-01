@@ -17,12 +17,16 @@ import random
 import subprocess
 import tempfile
 import threading
+import time
 from pathlib import Path
 from typing import List, Optional
 
 import jack
 import numpy as np
 import soundfile as sf  # pip install soundfile
+
+# Seed random number generator with current time for true randomness
+random.seed(time.time())
 
 # Global state for skip/next-track control
 _playback_lock = threading.Lock()
