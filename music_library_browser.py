@@ -18,6 +18,7 @@ Features:
 import sys
 import sqlite3
 import json
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -25,7 +26,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QLineEdit, QLabel,
     QComboBox, QSpinBox, QGroupBox, QSplitter, QTextEdit, QCheckBox,
-    QMessageBox, QHeaderView
+    QMessageBox, QHeaderView, QSlider
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont
@@ -94,6 +95,9 @@ class MusicLibraryBrowser(QMainWindow):
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.update_streaming_status)
         self.status_timer.start(2000)  # Every 2 seconds
+        
+        # Sync volume from current audio player state
+        self.sync_volume_from_player()
     
     def init_ui(self):
         """Initialize the user interface"""
@@ -309,6 +313,23 @@ class MusicLibraryBrowser(QMainWindow):
         local_layout.addWidget(self.shuffle_checkbox)
         
         playback_layout.addLayout(local_layout)
+        
+        # Volume controls
+        volume_layout = QHBoxLayout()
+        volume_layout.addWidget(QLabel("🔊 Volume:"))
+        
+        self.volume_slider = QSlider(Qt.Horizontal)
+        self.volume_slider.setRange(0, 100)
+        self.volume_slider.setValue(70)  # Default 70%
+        self.volume_slider.setToolTip("Adjust playback volume (0-100%)")
+        self.volume_slider.valueChanged.connect(self.on_volume_changed)
+        volume_layout.addWidget(self.volume_slider)
+        
+        self.volume_label = QLabel("70%")
+        self.volume_label.setMinimumWidth(40)
+        volume_layout.addWidget(self.volume_label)
+        
+        playback_layout.addLayout(volume_layout)
         
         # Icecast streaming
         stream_layout = QHBoxLayout()
@@ -746,12 +767,16 @@ Size: {row['size'] or 'N/A'}
         # Play playlist
         audio_jack_player.play_playlist(playlist)
         
+        # Write status file for tray widget to read
+        self.write_playback_status("playing", Path(file_paths[0]).name if file_paths else "Unknown")
+        
         shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
         self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
     
     def on_stop_local(self):
         """Stop local playback"""
         audio_jack_player.stop_playback()
+        self.write_playback_status("stopped", "")
         self.status_label.setText("Local playback stopped")
     
     def on_stream_selected(self):
@@ -849,12 +874,39 @@ Size: {row['size'] or 'N/A'}
         else:
             self.stream_status_label.setText("Stream: Inactive")
     
+    def sync_volume_from_player(self):
+        """Sync volume slider with current audio_jack_player volume state"""
+        current_volume = audio_jack_player.get_volume()
+        volume_percent = int(current_volume * 100)
+        self.volume_slider.setValue(volume_percent)
+        self.volume_label.setText(f"{volume_percent}%")
+    
+    def on_volume_changed(self, value):
+        """Handle volume slider changes"""
+        volume_level = value / 100.0
+        audio_jack_player.set_volume(volume_level)
+        self.volume_label.setText(f"{value}%")
+    
+    def write_playback_status(self, status: str, track_name: str):
+        """Write playback status to file for tray widget to read"""
+        try:
+            import json
+            status_file = Path(".playback_status")
+            status_data = {
+                "status": status,
+                "track": track_name,
+                "timestamp": time.time()
+            }
+            status_file.write_text(json.dumps(status_data))
+        except Exception as e:
+            print(f"[MusicBrowser] Failed to write status: {e}")
+    
     def closeEvent(self, event):
         """Clean up on window close"""
-        # Stop any local playback
-        audio_jack_player.stop_playback()
+        # NOTE: Do NOT stop local playback - let music continue after window closes
+        # Users can stop playback via voice commands or by reopening the browser
         
-        # Stop any streaming
+        # Stop any streaming (Icecast stream should stop when browser closes)
         if self.streamer and self.streamer.is_streaming:
             self.streamer._stop_stream()
         

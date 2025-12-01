@@ -545,6 +545,37 @@ class VoiceAssistantTray(QObject):
         """Update the currently playing track information."""
         try:
             import time
+            
+            # Check browser playback status first (from music_library_browser)
+            browser_status_file = Path(".playback_status")
+            if browser_status_file.exists():
+                try:
+                    with open(browser_status_file, 'r') as f:
+                        browser_status = json.load(f)
+                    
+                    # Check if browser status is fresh (less than 5 seconds old)
+                    if 'timestamp' in browser_status:
+                        age = time.time() - browser_status['timestamp']
+                        if age < 5.0:
+                            # Browser status is fresh
+                            if browser_status.get('status') == 'playing':
+                                # Emit track info from browser
+                                track_name = browser_status.get('track', 'Unknown')
+                                self.track_changed.emit({
+                                    'track': track_name,
+                                    'artist': '',  # Browser doesn't provide artist in status
+                                    'timestamp': browser_status['timestamp']
+                                })
+                                return
+                            elif browser_status.get('status') == 'stopped':
+                                # Browser stopped playback
+                                self.track_changed.emit({})
+                                return
+                except Exception as e:
+                    # Ignore errors reading browser status
+                    pass
+            
+            # Fall back to voice command playback status (.now_playing.json)
             status_file = Path(".now_playing.json")
             if not status_file.exists():
                 self.track_changed.emit({})
