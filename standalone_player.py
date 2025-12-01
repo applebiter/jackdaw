@@ -50,6 +50,18 @@ def main():
         except Exception as e:
             print(f"[StandalonePlayer] Warning: Could not read shuffle mode: {e}")
     
+    # Check for repeat mode signal file
+    repeat_file = Path(".repeat_mode")
+    if repeat_file.exists():
+        try:
+            data = json.loads(repeat_file.read_text())
+            repeat_mode = data.get("repeat", False)
+            audio_jack_player._repeat_mode = repeat_mode
+            print(f"[StandalonePlayer] Repeat mode: {'loop' if repeat_mode else 'play once'}")
+            repeat_file.unlink()  # Clean up signal file
+        except Exception as e:
+            print(f"[StandalonePlayer] Warning: Could not read repeat mode: {e}")
+    
     print(f"[StandalonePlayer] Starting playback of {len(file_paths)} track(s)")
     
     # Stop any existing playback first

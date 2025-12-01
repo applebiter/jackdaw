@@ -37,6 +37,7 @@ _current_music_dir: Optional[str] = None
 _current_playlist: Optional[List[Path]] = None  # Custom playlist
 _playlist_position: int = 0  # Current position in playlist for sequential playback
 _shuffle_mode: bool = False  # False = sequential, True = random
+_repeat_mode: bool = True  # True = loop playlist, False = stop after playing once
 _playback_thread: Optional[threading.Thread] = None  # Track active playback thread
 _current_track: Optional[Path] = None  # Currently playing track
 _total_tracks: int = 0  # Total tracks in current playlist/library
@@ -640,6 +641,18 @@ def _play_music_loop(root: str):
             except Exception:
                 pass
         
+        # Check for cross-process repeat signal
+        repeat_signal = Path(".repeat_mode")
+        if repeat_signal.exists():
+            try:
+                import json
+                data = json.loads(repeat_signal.read_text())
+                _repeat_mode = data.get("repeat", _repeat_mode)
+                print(f"[AudioJackPlayer] Repeat mode updated from another process: {'loop' if _repeat_mode else 'play once'}")
+                repeat_signal.unlink()
+            except Exception:
+                pass
+        
         # Check for cross-process volume signal
         volume_signal = Path(".volume_level")
         if volume_signal.exists():
@@ -679,7 +692,17 @@ def _play_music_loop(root: str):
             # Write status to file for cross-process sharing
             _write_now_playing_status(choice, _playlist_position + 1, len(audio_files))
             
-            _playlist_position = (_playlist_position + 1) % len(audio_files)  # Wrap around to start
+            # Advance playlist position
+            _playlist_position += 1
+            
+            # Check if we've reached the end of the playlist
+            if _playlist_position >= len(audio_files):
+                if _repeat_mode:
+                    _playlist_position = 0  # Loop back to start
+                    print("[AudioJackPlayer] Playlist finished, looping...")
+                else:
+                    print("[AudioJackPlayer] Playlist finished, stopping (repeat mode off)")
+                    break  # Stop after playing once
         
         player = AudioJackPlayer(client_name="jd_music")
         player.play_blocking(choice)

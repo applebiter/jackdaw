@@ -257,6 +257,24 @@ class MusicLibraryBrowser(QMainWindow):
         
         playlist_layout.addLayout(save_load_layout)
         
+        # Playback mode controls
+        mode_layout = QHBoxLayout()
+        
+        # Repeat mode toggle
+        self.repeat_checkbox = QCheckBox("🔁 Repeat Playlist")
+        self.repeat_checkbox.setToolTip("When enabled: playlist loops continuously\nWhen disabled: stops after playing all tracks once")
+        self.repeat_checkbox.setChecked(False)  # Default to play once
+        mode_layout.addWidget(self.repeat_checkbox)
+        
+        # Shuffle toggle button
+        self.playlist_shuffle_btn = QPushButton("🔀 Shuffle")
+        self.playlist_shuffle_btn.setToolTip("Click to shuffle or unshuffle the current playlist order")
+        self.playlist_shuffle_btn.setCheckable(True)
+        self.playlist_shuffle_btn.clicked.connect(self.on_toggle_playlist_shuffle)
+        mode_layout.addWidget(self.playlist_shuffle_btn)
+        
+        playlist_layout.addLayout(mode_layout)
+        
         # Playlist count
         self.playlist_count_label = QLabel("0 tracks in playlist")
         playlist_layout.addWidget(self.playlist_count_label)
@@ -310,10 +328,6 @@ class MusicLibraryBrowser(QMainWindow):
         self.stop_local_btn.setToolTip("Stop currently playing music")
         self.stop_local_btn.clicked.connect(self.on_stop_local)
         local_layout.addWidget(self.stop_local_btn)
-        
-        self.shuffle_checkbox = QCheckBox("🔀 Shuffle Playback")
-        self.shuffle_checkbox.setToolTip("When enabled: play selected tracks in random order\nWhen disabled: play in table order (use column headers to sort)")
-        local_layout.addWidget(self.shuffle_checkbox)
         
         playback_layout.addLayout(local_layout)
         
@@ -646,6 +660,24 @@ Size: {row['size'] or 'N/A'}
         
         self.update_playlist_display()
     
+    def on_toggle_playlist_shuffle(self):
+        """Shuffle or unshuffle the current playlist"""
+        if not self.playlist:
+            return
+        
+        if self.playlist_shuffle_btn.isChecked():
+            # Shuffle the playlist
+            import random
+            random.shuffle(self.playlist)
+            self.playlist_shuffle_btn.setText("🔀 Shuffled")
+            self.status_label.setText("Playlist shuffled")
+        else:
+            # Unshuffle - user would need to re-add tracks or reload playlist
+            self.playlist_shuffle_btn.setText("🔀 Shuffle")
+            self.status_label.setText("Shuffle disabled - reorder manually or reload playlist")
+        
+        self.update_playlist_display()
+    
     def on_move_up(self):
         """Move selected track up in playlist"""
         selected_rows = self.playlist_table.selectionModel().selectedRows()
@@ -762,7 +794,8 @@ Size: {row['size'] or 'N/A'}
         # This ensures we use the volume set by voice commands
         self.sync_volume_from_player()
         
-        shuffle = self.shuffle_checkbox.isChecked()
+        shuffle = self.playlist_shuffle_btn.isChecked()
+        repeat = self.repeat_checkbox.isChecked()
         
         # Spawn playback in a detached process so it continues after browser closes
         # This ensures music keeps playing even when the browser window is closed
@@ -773,9 +806,12 @@ Size: {row['size'] or 'N/A'}
             # Prepare command
             python_exec = sys.executable
             
-            # Set shuffle mode via signal file before starting playback
+            # Set shuffle and repeat mode via signal files before starting playback
             shuffle_file = Path(".shuffle_mode")
             shuffle_file.write_text(json.dumps({"shuffle": shuffle}))
+            
+            repeat_file = Path(".repeat_mode")
+            repeat_file.write_text(json.dumps({"repeat": repeat}))
             
             # Launch standalone player as detached background process
             subprocess.Popen(
@@ -785,8 +821,9 @@ Size: {row['size'] or 'N/A'}
                 start_new_session=True  # Detach from parent process
             )
             
-            shuffle_text = " (shuffled)" if shuffle else ""
-            self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
+            shuffle_text = " shuffled" if shuffle else ""
+            repeat_text = " looping" if repeat else " once"
+            self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}{repeat_text}")
             self.write_playback_status("playing", Path(file_paths[0]).name if file_paths else "Unknown")
             
         except Exception as e:
@@ -868,17 +905,17 @@ Size: {row['size'] or 'N/A'}
                 
                 # Now play the tracks (will be heard locally and streamed)
                 playlist = [Path(p) for p in file_paths]
-                audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
+                audio_jack_player.set_shuffle_mode(self.playlist_shuffle_btn.isChecked())
                 audio_jack_player.play_playlist(playlist)
                 
-                shuffle_text = " (shuffled)" if self.shuffle_checkbox.isChecked() else ""
+                shuffle_text = " (shuffled)" if self.playlist_shuffle_btn.isChecked() else ""
                 self.status_label.setText(f"Streaming {len(file_paths)} tracks from {source}{shuffle_text}")
             else:
                 QMessageBox.critical(self, "Stream Error", f"Failed to start stream: {result}")
         else:
             # Already streaming, just update playlist
             playlist = [Path(p) for p in file_paths]
-            audio_jack_player.set_shuffle_mode(self.shuffle_checkbox.isChecked())
+            audio_jack_player.set_shuffle_mode(self.playlist_shuffle_btn.isChecked())
             audio_jack_player.play_playlist(playlist)
             self.status_label.setText(f"Updated stream playlist with {len(file_paths)} tracks")
     
