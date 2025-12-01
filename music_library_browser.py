@@ -764,21 +764,35 @@ Size: {row['size'] or 'N/A'}
         
         shuffle = self.shuffle_checkbox.isChecked()
         
-        # Use plugin if available, otherwise fall back to direct audio_jack_player
-        if self.music_plugin:
-            # Play through plugin - this ensures consistent state management
-            self.music_plugin.play_files(file_paths, shuffle=shuffle)
-        else:
-            # Fallback to direct audio_jack_player calls
-            audio_jack_player.stop_playback()
-            playlist = [Path(p) for p in file_paths]
-            audio_jack_player.set_shuffle_mode(shuffle)
-            audio_jack_player.play_playlist(playlist)
-            # Write status file for tray widget to read (only needed in fallback mode)
+        # Spawn playback in a detached process so it continues after browser closes
+        # This ensures music keeps playing even when the browser window is closed
+        try:
+            import subprocess
+            import os
+            
+            # Prepare command
+            python_exec = sys.executable
+            
+            # Set shuffle mode via signal file before starting playback
+            shuffle_file = Path(".shuffle_mode")
+            shuffle_file.write_text(json.dumps({"shuffle": shuffle}))
+            
+            # Launch standalone player as detached background process
+            subprocess.Popen(
+                [python_exec, "standalone_player.py"] + file_paths,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True  # Detach from parent process
+            )
+            
+            shuffle_text = " (shuffled)" if shuffle else ""
+            self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
             self.write_playback_status("playing", Path(file_paths[0]).name if file_paths else "Unknown")
-        
-        shuffle_text = " (shuffled)" if shuffle else ""
-        self.status_label.setText(f"Playing {len(file_paths)} tracks from {source}{shuffle_text}")
+            
+        except Exception as e:
+            print(f"[MusicBrowser] Error starting playback: {e}")
+            QMessageBox.critical(self, "Playback Error", f"Failed to start playback: {e}")
+            return
     
     def on_stop_local(self):
         """Stop local playback"""
