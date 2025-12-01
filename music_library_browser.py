@@ -94,9 +94,9 @@ class MusicLibraryBrowser(QMainWindow):
         self.load_tracks()
         self.update_button_labels()  # Initialize button labels
         
-        # Update streaming status periodically
+        # Update streaming status and volume periodically
         self.status_timer = QTimer()
-        self.status_timer.timeout.connect(self.update_streaming_status)
+        self.status_timer.timeout.connect(self.update_status_and_volume)
         self.status_timer.start(2000)  # Every 2 seconds
         
         # Sync volume from current audio player state
@@ -758,6 +758,10 @@ Size: {row['size'] or 'N/A'}
             )
             return
         
+        # Sync volume from player state BEFORE starting playback
+        # This ensures we use the volume set by voice commands
+        self.sync_volume_from_player()
+        
         shuffle = self.shuffle_checkbox.isChecked()
         
         # Use plugin if available, otherwise fall back to direct audio_jack_player
@@ -872,23 +876,36 @@ Size: {row['size'] or 'N/A'}
     
 
     
-    def update_streaming_status(self):
-        """Update streaming status label"""
+    def update_status_and_volume(self):
+        """Update streaming status label and sync volume from player"""
+        # Update streaming status
         if self.streamer and self.streamer.is_streaming:
             status = self.streamer._stream_status()
             self.stream_status_label.setText(f"Stream: {status}")
         else:
             self.stream_status_label.setText("Stream: Inactive")
+        
+        # Sync volume slider with player state (in case changed by voice)
+        self.sync_volume_from_player()
     
     def sync_volume_from_player(self):
         """Sync volume slider with current audio_jack_player volume state"""
+        # Don't update if user is currently dragging the slider
+        if self.volume_slider.isSliderDown():
+            return
+        
         if self.music_plugin:
             current_volume = self.music_plugin.get_volume_level()
         else:
             current_volume = audio_jack_player.get_volume()
         volume_percent = int(current_volume * 100)
-        self.volume_slider.setValue(volume_percent)
-        self.volume_label.setText(f"{volume_percent}%")
+        
+        # Only update if different (avoid unnecessary redraws)
+        if self.volume_slider.value() != volume_percent:
+            self.volume_slider.blockSignals(True)  # Prevent triggering on_volume_changed
+            self.volume_slider.setValue(volume_percent)
+            self.volume_slider.blockSignals(False)
+            self.volume_label.setText(f"{volume_percent}%")
     
     def on_volume_changed(self, value):
         """Handle volume slider changes"""
