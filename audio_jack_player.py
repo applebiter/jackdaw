@@ -33,10 +33,24 @@ _current_music_dir: Optional[str] = None
 _current_playlist: Optional[List[Path]] = None  # Custom playlist
 _playlist_position: int = 0  # Current position in playlist for sequential playback
 _shuffle_mode: bool = False  # False = sequential, True = random
-_volume: float = 0.7  # Default volume (0.0 to 1.0)
 _playback_thread: Optional[threading.Thread] = None  # Track active playback thread
 _current_track: Optional[Path] = None  # Currently playing track
 _total_tracks: int = 0  # Total tracks in current playlist/library
+
+# Load persisted volume on module import
+def _load_persisted_volume() -> float:
+    """Load volume from persistent state file"""
+    try:
+        import json
+        state_file = Path(".audio_player_state")
+        if state_file.exists():
+            data = json.loads(state_file.read_text())
+            return data.get("volume", 0.7)
+    except Exception:
+        pass
+    return 0.7
+
+_volume: float = _load_persisted_volume()  # Load persisted volume or default to 0.7
 
 
 class AudioJackPlayer:
@@ -445,6 +459,14 @@ def set_volume(level: float):
         import json
         volume_signal = Path(".volume_level")
         volume_signal.write_text(json.dumps({"volume": _volume}))
+    except Exception:
+        pass
+    
+    # Persist volume state to file (survives process restarts)
+    try:
+        import json
+        state_file = Path(".audio_player_state")
+        state_file.write_text(json.dumps({"volume": _volume}))
     except Exception:
         pass
     
