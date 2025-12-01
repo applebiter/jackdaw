@@ -31,7 +31,8 @@ from music_query import (
     search_by_genre,
     search_by_title,
     search_by_year,
-    get_database_stats
+    get_database_stats,
+    get_random_tracks
 )
 
 
@@ -105,11 +106,25 @@ class MusicPlayerPlugin(VoiceAssistantPlugin):
     
     # Command handlers
     def _cmd_play_random(self):
-        """Play a random track from the music library."""
-        if self.music_library_path:
-            play_random_audio_in_directory(self.music_library_path)
-        else:
-            print(f"[{self.get_name()}] No music library path configured")
+        """Play a random track from the music library using database query."""
+        try:
+            # Get random tracks from database (SQL RANDOM() is properly random)
+            tracks = get_random_tracks(limit=200)
+            
+            if not tracks:
+                print(f"[{self.get_name()}] No tracks found in database")
+                return "No tracks found in music library."
+            
+            print(f"[{self.get_name()}] Playing {len(tracks)} random tracks from database")
+            stop_playback()
+            play_playlist(tracks, library_root=self.music_library_path or "/")
+            return f"Playing random tracks from library."
+            
+        except Exception as e:
+            print(f"[{self.get_name()}] Error playing random tracks: {e}")
+            import traceback
+            traceback.print_exc()
+            return f"Error playing random tracks: {e}"
     
     def _cmd_next_track(self):
         """Skip to the next track."""
