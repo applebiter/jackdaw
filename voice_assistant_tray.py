@@ -25,6 +25,7 @@ from PySide6.QtGui import QIcon, QAction, QPixmap
 
 from plugin_loader import PluginLoader
 from music_scanner_widget import MusicScannerWidget
+from command_aliases_editor import CommandAliasesEditor
 
 
 class VoiceAssistantTray(QObject):
@@ -226,6 +227,13 @@ class VoiceAssistantTray(QObject):
         
         # Tools submenu
         tools_menu = menu.addMenu("🔧 Tools")
+        
+        # Command aliases editor
+        aliases_action = QAction("🗣️ Edit Command Aliases", tools_menu)
+        aliases_action.triggered.connect(self.show_aliases_editor)
+        tools_menu.addAction(aliases_action)
+        
+        tools_menu.addSeparator()
         
         # Remember JACK routing action
         remember_routing_action = QAction("💾 Save JACK Connections", tools_menu)
@@ -853,6 +861,19 @@ class VoiceAssistantTray(QObject):
                 None,
                 "Launch Error",
                 f"Failed to launch music browser:\n{e}"
+            )
+    
+    def show_aliases_editor(self):
+        """Show the command aliases editor"""
+        try:
+            editor = CommandAliasesEditor(self)
+            editor.exec()
+        except Exception as e:
+            print(f"Error showing aliases editor: {e}")
+            QMessageBox.critical(
+                None,
+                "Aliases Editor Error",
+                f"Failed to launch aliases editor:\n{e}"
             )
     
     def remember_jack_routing(self):

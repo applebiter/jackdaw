@@ -107,9 +107,30 @@ class VoiceCommandClient:
         self.running = False
         self.recognition_thread = None
 
+        # Load command aliases
+        self.load_command_aliases()
+        
         # Load any remembered routing
         self.load_routing_config()
         
+    def load_command_aliases(self):
+        """Load command aliases from config file"""
+        try:
+            config_file = Path("voice_assistant_config.json")
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    config = json.load(f)
+                self.command_aliases = config.get('command_aliases', {})
+                if self.command_aliases:
+                    print(f"Loaded {len(self.command_aliases)} command alias(es)")
+                    for alias, command in self.command_aliases.items():
+                        print(f"  '{alias}' → '{command}'")
+            else:
+                self.command_aliases = {}
+        except Exception as e:
+            print(f"Warning: Could not load command aliases: {e}")
+            self.command_aliases = {}
+    
     def register_command(self, phrase: str, callback: Callable):
         """
         Register a voice command with its callback function
@@ -323,6 +344,12 @@ class VoiceCommandClient:
                 has_wake_word = True
                 # Remove wake word from text for command matching
                 command_text = text_lower[len(self.wake_word):].strip()
+                
+                # Resolve command aliases
+                if hasattr(self, 'command_aliases') and command_text in self.command_aliases:
+                    original = command_text
+                    command_text = self.command_aliases[command_text]
+                    print(f"  [Alias resolved: '{original}' → '{command_text}']")
             elif not self.capturing:
                 # No wake word and not capturing - ignore completely
                 return
