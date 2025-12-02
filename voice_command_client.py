@@ -520,6 +520,7 @@ class VoiceCommandClient:
 def main():
     """Main entry point for the voice command client with plugin support"""
     import argparse
+    import signal
     
     parser = argparse.ArgumentParser(
         description="Voice Command Client - Listens for voice commands on JACK"
@@ -538,9 +539,24 @@ def main():
     # Create client
     client = VoiceCommandClient(config_file=args.config)
     
+    # Global reference for signal handler
+    plugin_loader_ref = None
+    
+    def signal_handler(sig, frame):
+        """Handle termination signals by cleaning up plugins"""
+        print(f"\n=== Received signal {sig}, cleaning up ===")
+        if plugin_loader_ref:
+            plugin_loader_ref.cleanup_all_plugins()
+        sys.exit(0)
+    
+    # Register signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
     # Load plugins
     print("\n=== Loading Plugins ===")
     plugin_loader = PluginLoader(config)
+    plugin_loader_ref = plugin_loader  # Make available to signal handler
     plugins = plugin_loader.load_all_plugins()
     
     # Give plugins access to voice client if they need it

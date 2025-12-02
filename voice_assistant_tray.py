@@ -511,6 +511,13 @@ class VoiceAssistantTray(QObject):
         
         print("Stopping voice assistant components...")
         
+        # Clean up plugins first (in case they're running in this process)
+        try:
+            self.plugin_loader.cleanup_all_plugins()
+            print("Cleaned up plugins")
+        except Exception as e:
+            print(f"Error cleaning up plugins: {e}")
+        
         # Terminate processes
         for process in [self.voice_process, self.llm_process, self.tts_process]:
             if process:
