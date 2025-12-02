@@ -702,3 +702,7 @@ class JackTripClient(VoiceAssistantPlugin):
             except:
                 pass
         self._stop_jacktrip_client()
+    
+    def cleanup(self):
+        """Plugin cleanup (called by plugin loader on shutdown)"""
+        self.shutdown()
