@@ -405,6 +405,7 @@ class VoiceCommandClient:
                 has_wake_word = True
                 # Remove wake word from text for command matching
                 command_text = text_to_check[len(self.wake_word):].strip()
+                print(f"[Wake word detected] Original: '{text_lower}' -> Command: '{command_text}'")
                 
                 # Resolve command aliases
                 if hasattr(self, 'command_aliases') and command_text in self.command_aliases:
