@@ -296,8 +296,21 @@ class VoiceCommandClient:
                 audio_resampled = self.resample_audio(audio)
                 
                 # Check for voice activity
-                if not self.check_voice_activity(audio_resampled):
-                    # Skip processing if no speech detected
+                has_speech = self.check_voice_activity(audio_resampled)
+                
+                if not has_speech:
+                    # During silence, check if we need to force finalization of pending partial
+                    if self.last_partial_text and self.last_partial_time > 0:
+                        time_waiting = time.time() - self.last_partial_time
+                        if time_waiting > self.finalization_timeout:
+                            print(f"\n[FORCED during silence after {time_waiting:.1f}s] Finalizing: {self.last_partial_text}")
+                            final_result = json.loads(self.recognizer.FinalResult())
+                            final_text = final_result.get('text', '')
+                            if final_text:
+                                self.check_commands(final_text)
+                            self.last_partial_text = ""
+                            self.last_partial_time = 0
+                    # Skip feeding audio to recognizer if no speech
                     continue
 
                 # Convert to 16-bit PCM for Vosk
@@ -327,25 +340,33 @@ class VoiceCommandClient:
                         
                         # Check if partial hasn't changed for timeout period
                         if partial == self.last_partial_text:
-                            if current_time - self.last_partial_time > self.finalization_timeout:
+                            time_waiting = current_time - self.last_partial_time
+                            if time_waiting > self.finalization_timeout:
                                 # Force finalization
-                                print(f"\n[FORCED] Finalizing: {partial}")
+                                print(f"\n[FORCED after {time_waiting:.1f}s] Finalizing: {partial}")
                                 final_result = json.loads(self.recognizer.FinalResult())
                                 final_text = final_result.get('text', '')
                                 if final_text:
                                     self.check_commands(final_text)
                                 self.last_partial_text = ""
                                 self.last_partial_time = 0
+                            elif self.log_level == 'DEBUG':
+                                print(f"Partial stable for {time_waiting:.1f}s: {partial}", end='\r')
                         else:
                             # Partial changed, update tracking
+                            if self.log_level == 'DEBUG':
+                                print(f"\n[Partial changed] {self.last_partial_text} -> {partial}")
                             self.last_partial_text = partial
                             self.last_partial_time = current_time
                         
-                        # Show partial results only in DEBUG mode
+                        # Show partial results
                         if self.log_level == 'DEBUG':
                             print(f"Partial: {partial}", end='\r')
                     else:
                         # No partial, reset tracking
+                        if self.last_partial_text:
+                            if self.log_level == 'DEBUG':
+                                print(f"\n[Partial cleared]")
                         self.last_partial_text = ""
                         self.last_partial_time = 0
                         
