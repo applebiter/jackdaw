@@ -306,8 +306,10 @@ class VoiceCommandClient:
                     text = result.get('text', '')
                     
                     if text:
-                        print(f"Recognized: {text}")
+                        print(f"\n[FINAL] Recognized: {text}")
                         self.check_commands(text)
+                    else:
+                        print("[FINAL] Utterance ended but no text")
                 else:
                     # Partial result
                     result = json.loads(self.recognizer.PartialResult())
