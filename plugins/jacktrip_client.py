@@ -298,11 +298,12 @@ class JackTripClient(VoiceAssistantPlugin):
             channels = max(self.send_channels, self.receive_channels)
             cmd.extend(['-n', str(channels)])
         
-        # Add JACK client name locally and remotely (use username for identification)
-        # -J sets local JACK client name, -K sets remote name visible on hub server
+        # Add JACK client names:
+        # -J sets local JACK client name (what user sees in Carla/their graph)
+        # -K sets remote name visible on hub server's patchbay
+        cmd.extend(['-J', 'JackDawHub'])  # Local name - consistent for all users
         if username:
-            cmd.extend(['-J', username])
-            cmd.extend(['-K', username])
+            cmd.extend(['-K', username])  # Remote name - shows username on server
         
         # Add server-provided flags
         cmd.extend(flags)
