@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Jackdaw Hub - Room Manager</title>
+    <title>Jackdaw Hub - User Management</title>
     <style>
         * {
             margin: 0;
@@ -364,23 +364,23 @@
         </div>
         
         <div class="header">
-            <h1 id="pageTitle">Room Manager</h1>
+            <h1 id="pageTitle">User Management</h1>
             <p class="subtitle" id="pageSubtitle">Loading...</p>
         </div>
         
         <div id="status" class="status" style="display: none;"></div>
         
         <div id="userManagementSection" class="section" style="display: none;">
-            <div class="section-title">👥 Band Members</div>
+            <div class="section-title">👥 Hub Users</div>
             <div id="usersList" class="room-list">
                 <div class="empty-state">Loading users...</div>
             </div>
         </div>
         
         <div class="section">
-            <div class="section-title">📋 Your Rooms</div>
+            <div class="section-title">🎵 Hub Status</div>
             <div id="roomsList" class="room-list">
-                <div class="empty-state">Loading rooms...</div>
+                <div class="empty-state">Loading status...</div>
             </div>
         </div>
         
@@ -458,11 +458,11 @@
                 
                 if (singleRoomMode) {
                     document.getElementById('pageTitle').textContent = rooms[0].name;
-                    document.getElementById('pageSubtitle').textContent = 'Band Collaboration Room';
-                    document.querySelector('.section-title').textContent = '🎵 Active Session';
+                    document.getElementById('pageSubtitle').textContent = 'Collaboration Hub Users';
+                    document.querySelector('.section-title').textContent = '👥 Hub Users';
                 } else {
-                    document.getElementById('pageTitle').textContent = 'Room Manager';
-                    document.getElementById('pageSubtitle').textContent = 'Create or join a room to get started';
+                    document.getElementById('pageTitle').textContent = 'User Management';
+                    document.getElementById('pageSubtitle').textContent = 'Manage hub users and permissions';
                     document.getElementById('createRoomBtn').style.display = 'block';
                 }
             } catch (e) {
@@ -586,15 +586,15 @@
                 userList.innerHTML = `
                     <div class="room-item" onclick="${isJoined ? 'viewRoom' : 'promptJoinRoom'}('${room.id}')">
                         <div class="room-name">${room.name}</div>
-                        <div class="room-description">${room.description || 'Default band collaboration room'}</div>
+                        <div class="room-description">${room.description || 'Collaboration hub session'}</div>
                         <div class="room-info">
                             ${room.participant_count} connected | 
-                            ${isJoined ? '✓ You are in this room' : 'Click to join'}
+                            ${isJoined ? '✓ You are connected' : 'Click to join'}
                         </div>
                     </div>
                 `;
             } else if (userRooms.length === 0) {
-                userList.innerHTML = '<div class="empty-state">No rooms yet. Create one to get started!</div>';
+                userList.innerHTML = '<div class="empty-state">Hub is not active</div>';
             } else {
                 userList.innerHTML = userRooms.map(room => `
                     <div class="room-item" onclick="enterRoom('${room.id}')">

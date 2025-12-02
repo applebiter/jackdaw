@@ -537,10 +537,10 @@ async def patchbay():
 async def manage_users_page():
     """Serve user management interface (owner only)"""
     try:
-        with open(Path(__file__).parent / "static" / "rooms.html", "r") as f:
+        with open(Path(__file__).parent / "static" / "manage_users.html", "r") as f:
             return f.read()
     except FileNotFoundError:
-        return "<h1>Room manager interface not found</h1>"
+        return "<h1>User management interface not found</h1>"
 
 @app.get("/access-denied", response_class=HTMLResponse)
 async def access_denied_page():
