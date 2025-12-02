@@ -606,9 +606,6 @@
                         if (port.direction === 'output') {
                             // Make draggable for creating connections
                             connector.addEventListener('mousedown', (e) => startDrag(e, port.name, 'output'));
-                        } else {
-                            // Make drop target
-                            connector.addEventListener('mouseup', (e) => endDrag(e, port.name));
                         }
                         
                         box.appendChild(portDiv);
@@ -809,6 +806,26 @@
         }
         
         function onDragEnd(e) {
+            if (dragState) {
+                // Check if mouse is over an input port
+                const element = document.elementFromPoint(e.clientX, e.clientY);
+                if (element) {
+                    // Find the port connector or port div
+                    const portDiv = element.closest('.port.input');
+                    if (portDiv && portDiv.dataset.portName) {
+                        // Found a valid input port - make the connection
+                        const destPort = portDiv.dataset.portName;
+                        const sourcePort = dragState.source;
+                        
+                        ws.send(JSON.stringify({
+                            type: 'connect',
+                            source: sourcePort,
+                            dest: destPort
+                        }));
+                    }
+                }
+            }
+            
             document.removeEventListener('mousemove', onDragMove);
             document.removeEventListener('mouseup', onDragEnd);
             dragState = null;
