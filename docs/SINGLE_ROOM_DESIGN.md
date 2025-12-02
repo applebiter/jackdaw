@@ -1,7 +1,7 @@
-# Single Room Band Collaboration - Design Document
+# Single Room Collaboration - Design Document
 
 ## Overview
-Transform the JackTrip hub from a multi-room system into a focused single-band collaboration tool where one persistent room serves all band members with granular permission controls.
+The JackTrip hub provides a focused single-room collaboration tool where one persistent room serves all users with granular permission controls. This is ideal for band collaboration or home network audio routing between multiple Jackdaw instances.
 
 ## Key Requirements
 
@@ -119,24 +119,16 @@ ALTER TABLE users ADD COLUMN has_patchbay_access BOOLEAN DEFAULT 0;
 - Show patchbay link conditionally based on `has_patchbay_access`
 - Show "Access Restricted" message if no patchbay access
 
-### Phase 2: Single Room Mode (Config Option)
-**Goal:** Add optional single-room mode alongside existing multi-room
-
-#### Configuration
-Add to `run_local_hub.sh`:
-```bash
-export SINGLE_ROOM_MODE="${SINGLE_ROOM_MODE:-true}"  # Enable by default
-export BAND_NAME="${BAND_NAME:-The Band}"            # Default room name
-```
+### Phase 2: Single Room Mode Implementation
+**Goal:** Implement single-room mode (now the only mode)
 
 #### Backend Changes
-- Add `SINGLE_ROOM_MODE` config check in startup
-- If enabled:
-  - Create default room on startup with name from `BAND_NAME`
-  - Store room_id globally (`DEFAULT_ROOM_ID`)
-  - Disable `POST /rooms` endpoint (return 403 or hide)
-  - `/join` endpoint: automatically join the default room
-  - `/leave` endpoint: leave room but keep JackTrip server running
+- Hub always operates in single-room mode
+- Create default room on startup named "Jackdaw Hub"
+- Store room_id globally (`DEFAULT_ROOM_ID`)
+- Disable `POST /rooms` endpoint (return 403 or hide)
+- `/join` endpoint: automatically join the default room
+- `/leave` endpoint: leave room but keep JackTrip server running
   
 #### Frontend Changes
 - If single room mode:
@@ -161,13 +153,12 @@ export BAND_NAME="${BAND_NAME:-The Band}"            # Default room name
   - ❌ Remove: "create jam room [name]"
   - ❌ Remove: "join jam room [name]"
 
-### Phase 4: UI Simplification (Post Single-Room)
-**Goal:** Remove multi-room artifacts from UI
+### Phase 4: UI Simplification
+**Goal:** Streamline UI for single-room
 
-- Remove room list
+- Remove room list UI
 - Remove room creation modal
 - Single dashboard showing:
-  - Band name
   - Active members
   - Join/Leave button
   - Patchbay link (if permitted)
@@ -205,12 +196,8 @@ export BAND_NAME="${BAND_NAME:-The Band}"            # Default room name
 
 ### Environment Variables
 ```bash
-# Single room mode (required)
-SINGLE_ROOM_MODE=true           # Enable single-room mode
-BAND_NAME="The Band"            # Name shown in UI
-
-# Existing config
-HUB_HOST=karate                 # Hostname for JackTrip clients
+# Hub configuration
+HUB_HOST=localhost              # Hostname for JackTrip clients
 JACKTRIP_BASE_PORT=4464         # JackTrip server port
 SSL_CERTFILE=/path/to/cert.pem  # HTTPS certificate
 SSL_KEYFILE=/path/to/key.pem    # HTTPS private key
@@ -229,19 +216,10 @@ SSL_KEYFILE=/path/to/key.pem    # HTTPS private key
    sqlite3 hub.db "UPDATE users SET is_owner=1, has_patchbay_access=1 WHERE id=(SELECT id FROM users ORDER BY created_at LIMIT 1);"
    ```
 
-2. **Config Update:**
-   ```bash
-   # Add to run_local_hub.sh
-   export SINGLE_ROOM_MODE=true
-   export BAND_NAME="My Band"
-   ```
+2. **Restart hub** - default room auto-creates automatically
 
-3. **Restart hub** - default room auto-creates
-
-### Backward Compatibility
-- If `SINGLE_ROOM_MODE=false`: behaves like current multi-room system
-- Allows gradual migration
-- Old deployments continue working unchanged
+### Note
+The hub now operates exclusively in single-room mode. This simplifies the architecture and is suitable for band collaboration or home network audio routing.
 
 ## Security Considerations
 

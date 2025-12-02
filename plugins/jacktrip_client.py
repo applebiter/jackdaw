@@ -271,10 +271,11 @@ class JackTripClient(VoiceAssistantPlugin):
         host = join_info['hub_host']
         port = join_info['jacktrip_port']
         flags = join_info.get('jacktrip_flags', [])
+        username = join_info.get('username', self.jack_client_name)  # Use username from server
         
         # Build JackTrip client command
         # -C = client mode, -P = peer port (JackTrip 2.x)
-        # -n = number of channels, -J = jack client name
+        # -n = number of channels, -J = jack client name (use username)
         cmd = ['jacktrip', '-C', host, '-P', str(port)]
         
         # Add channel configuration if not default (2)
@@ -284,9 +285,9 @@ class JackTripClient(VoiceAssistantPlugin):
             channels = max(self.send_channels, self.receive_channels)
             cmd.extend(['-n', str(channels)])
         
-        # Add JACK client name
-        if self.jack_client_name:
-            cmd.extend(['-J', self.jack_client_name])
+        # Add JACK client name (use username for identification on server graph)
+        if username:
+            cmd.extend(['-J', username])
         
         # Add server-provided flags
         cmd.extend(flags)
@@ -320,18 +321,20 @@ class JackTripClient(VoiceAssistantPlugin):
             
             # Auto-connect if configured
             if self.auto_connect:
-                self._setup_jack_connections()
+                self._setup_jack_connections(username)
             
             return True
         except Exception as e:
             self.logger.error(f"Failed to start JackTrip client: {e}")
             return False
     
-    def _setup_jack_connections(self):
+    def _setup_jack_connections(self, client_name=None):
         """Set up JACK audio routing for JackTrip client"""
         try:
             import subprocess as sp
-            client_name = self.jack_client_name
+            # Use provided client name or fallback to configured name
+            if not client_name:
+                client_name = self.jack_client_name
             
             # Connect system capture to JackTrip send ports
             for i in range(1, self.send_channels + 1):

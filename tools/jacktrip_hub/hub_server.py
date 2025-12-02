@@ -33,9 +33,8 @@ JACKTRIP_BIN = os.getenv("JACKTRIP_BIN", "jacktrip")
 JACKTRIP_BASE_PORT = int(os.getenv("JACKTRIP_BASE_PORT", 4464))
 JACKTRIP_PORT_RANGE = int(os.getenv("JACKTRIP_PORT_RANGE", 100))
 
-# Single room mode configuration
-SINGLE_ROOM_MODE = os.getenv("SINGLE_ROOM_MODE", "true").lower() in ("true", "1", "yes")
-BAND_NAME = os.getenv("BAND_NAME", "The Band")
+# Single room mode - always enabled
+SINGLE_ROOM_MODE = True
 
 # SSL/TLS Configuration
 SSL_CERTFILE = os.getenv("SSL_CERTFILE", None)  # Path to SSL certificate
@@ -50,7 +49,7 @@ CERTS_PATH = Path(__file__).parent / "certs"
 DEFAULT_ROOM_ID = None  # ID of the default room in single room mode
 ACTIVE_PARTICIPANTS = set()  # Set of currently connected user_ids
 
-# Multi-room support (legacy - used in both single and multi-room mode)
+# Single room support
 ROOMS = {}  # room_id -> Room object
 JACKTRIP_PROCS = {}  # room_id -> {"port": int, "process": Popen, "created_at": str}
 
@@ -122,6 +121,7 @@ class RoomJoinResponse(BaseModel):
     hub_host: str
     jacktrip_port: int
     jacktrip_flags: List[str]
+    username: str  # Username to use as JACK client name
 
 class RoomJoinRequest(BaseModel):
     sample_rate: Optional[int] = None  # Client's sample rate
@@ -435,51 +435,69 @@ async def startup_event():
     print(f"Hub host: {HUB_HOST}")
     print(f"JackTrip port range: {JACKTRIP_BASE_PORT}-{JACKTRIP_BASE_PORT + JACKTRIP_PORT_RANGE - 1}")
     
-    if SINGLE_ROOM_MODE:
-        print(f"\n🎵 Single Room Mode: {BAND_NAME}")
-        # Create default room
-        room_id = str(uuid.uuid4())
-        port = allocate_port()
-        DEFAULT_ROOM_ID = room_id
+    # Get JACK audio settings
+    try:
+        jack_sample_rate = subprocess.run(
+            ['jack_samplerate'],
+            capture_output=True,
+            text=True,
+            timeout=2
+        ).stdout.strip()
+    except:
+        jack_sample_rate = "unknown"
+    
+    try:
+        jack_buffer_size = subprocess.run(
+            ['jack_bufsize'],
+            capture_output=True,
+            text=True,
+            timeout=2
+        ).stdout.strip()
+    except:
+        jack_buffer_size = "unknown"
+    
+    # Create default room
+    room_id = str(uuid.uuid4())
+    port = allocate_port()
+    DEFAULT_ROOM_ID = room_id
+    
+    # Start JackTrip server
+    cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4", "-p", "5"]
+    try:
+        proc = Popen(cmd)
+        JACKTRIP_PROCS[room_id] = {
+            "port": port,
+            "process": proc,
+            "created_at": datetime.utcnow().isoformat()
+        }
         
-        # Start JackTrip server
-        cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4", "-p", "5"]
-        try:
-            proc = Popen(cmd)
-            JACKTRIP_PROCS[room_id] = {
-                "port": port,
-                "process": proc,
-                "created_at": datetime.utcnow().isoformat()
-            }
-            
-            # Create room object
-            ROOMS[room_id] = Room(
-                id=room_id,
-                name=BAND_NAME,
-                description="Default band collaboration room",
-                creator_id="system",
-                jacktrip_port=port,
-                max_participants=16,
-                participants=[],
-                created_at=datetime.utcnow().isoformat()
-            )
-            
-            # Wait for JackTrip to finish initial output, then print status
-            import time
-            time.sleep(2)
-            
-            print("\n" + "="*60)
-            print(f"🎵 JACKDAW HUB READY")
-            print("="*60)
-            print(f"   Band: {BAND_NAME}")
-            print(f"   Web Interface: https://{HUB_HOST}:8000")
-            print(f"   JackTrip Port: {port}")
-            print(f"   Mode: Single Room (No Auto-Patching)")
-            print("="*60 + "\n")
-        except Exception as e:
-            print(f"✗ Failed to start default room: {e}")
-    else:
-        print("\n📂 Multi-Room Mode enabled")
+        # Create room object
+        ROOMS[room_id] = Room(
+            id=room_id,
+            name="Jackdaw Hub",
+            description="Default collaboration room",
+            creator_id="system",
+            jacktrip_port=port,
+            max_participants=16,
+            participants=[],
+            created_at=datetime.utcnow().isoformat()
+        )
+        
+        # Wait for JackTrip to finish initial output, then print status
+        import time
+        time.sleep(2)
+        
+        print("\n" + "="*60)
+        print(f"🎵 JACKDAW HUB READY")
+        print("="*60)
+        print(f"   Web Interface: https://{HUB_HOST}:8000")
+        print(f"   JackTrip Port: {port}")
+        print(f"   Sample Rate: {jack_sample_rate} Hz")
+        print(f"   Buffer Size: {jack_buffer_size} frames")
+        print(f"   Mode: Single Room (No Auto-Patching)")
+        print("="*60 + "\n")
+    except Exception as e:
+        print(f"✗ Failed to start default room: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -708,9 +726,8 @@ async def join_room(
     user_id: str = Depends(get_current_user_id)
 ):
     """Join a room and get JackTrip connection details"""
-    # In single room mode, use default room
-    if SINGLE_ROOM_MODE:
-        room_id = DEFAULT_ROOM_ID
+    # Always use default room (single room mode)
+    room_id = DEFAULT_ROOM_ID
     
     room = ROOMS.get(room_id)
     if not room:
@@ -734,16 +751,21 @@ async def join_room(
         )
     
     port = info["port"]
-    # Client should use: jacktrip -C {hub_host} -p {port} -q 4
+    # Client should use: jacktrip -C {hub_host} -p {port} -q 4 -J {username}
     flags = ["-q", "4"]
     
-    print(f"User {user_id[:8]} joined room '{room.name}'")
+    # Get username for JACK client naming
+    user_info = get_user_info(user_id)
+    username = user_info["username"] if user_info else f"user_{user_id[:8]}"
+    
+    print(f"User {username} joined room '{room.name}'")
     return RoomJoinResponse(
         room_id=room.id,
         room_name=room.name,
         hub_host=HUB_HOST,
         jacktrip_port=port,
         jacktrip_flags=flags,
+        username=username
     )
 
 @app.post("/join", response_model=RoomJoinResponse)

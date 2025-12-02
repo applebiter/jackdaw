@@ -629,10 +629,8 @@ curl -k -X GET https://192.168.1.10:8000/rooms \
 
 Coming soon:
 - Voice command to register accounts
-- Voice command to set room passphrases
-- Voice command to kick/ban users (room creators only)
+- Voice command to manage user permissions
 - Reconnection handling (auto-rejoin on disconnect)
-- Multi-room participation
 - Audio effects/processing plugins
 - Recording integration
 - Latency monitoring
