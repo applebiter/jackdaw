@@ -75,6 +75,11 @@ class VoiceCommandClient:
         self.captured_text = []
         self.capture_lock = threading.Lock()
         
+        # Force finalization timer
+        self.last_partial_time = 0
+        self.last_partial_text = ""
+        self.finalization_timeout = 1.0  # Force finalization after 1 second of same partial
+        
         # Initialize JACK client
         self.client = jack.Client("jd_voice")
         self.client.set_process_callback(self.process_callback)
@@ -308,6 +313,8 @@ class VoiceCommandClient:
                     if text:
                         print(f"\n[FINAL] Recognized: {text}")
                         self.check_commands(text)
+                        self.last_partial_text = ""
+                        self.last_partial_time = 0
                     else:
                         print("[FINAL] Utterance ended but no text")
                 else:
@@ -316,9 +323,31 @@ class VoiceCommandClient:
                     partial = result.get('partial', '')
                     
                     if partial:
+                        current_time = time.time()
+                        
+                        # Check if partial hasn't changed for timeout period
+                        if partial == self.last_partial_text:
+                            if current_time - self.last_partial_time > self.finalization_timeout:
+                                # Force finalization
+                                print(f"\n[FORCED] Finalizing: {partial}")
+                                final_result = json.loads(self.recognizer.FinalResult())
+                                final_text = final_result.get('text', '')
+                                if final_text:
+                                    self.check_commands(final_text)
+                                self.last_partial_text = ""
+                                self.last_partial_time = 0
+                        else:
+                            # Partial changed, update tracking
+                            self.last_partial_text = partial
+                            self.last_partial_time = current_time
+                        
                         # Show partial results only in DEBUG mode
                         if self.log_level == 'DEBUG':
                             print(f"Partial: {partial}", end='\r')
+                    else:
+                        # No partial, reset tracking
+                        self.last_partial_text = ""
+                        self.last_partial_time = 0
                         
             except queue.Empty:
                 continue
