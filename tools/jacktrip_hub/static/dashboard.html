@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - Jackdaw Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1a2332 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .welcome-card {
+            background: #1a2332;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.1);
+        }
+        
+        .welcome-card h2 {
+            color: #2196F3;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-item .icon {
+            font-size: 20px;
+        }
+        
+        .info-item .label {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .info-item .value {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-owner {
+            background: rgba(255, 193, 7, 0.2);
+            color: #FFC107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        
+        .badge-member {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .card {
+            background: #1a2332;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .card h3 {
+            color: #2196F3;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-icon {
+            font-size: 24px;
+        }
+        
+        .card p {
+            color: #999;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+        
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-check {
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        
+        .feature-cross {
+            color: #999;
+            font-size: 18px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #1976D2;
+        }
+        
+        .btn-secondary {
+            background: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #444;
+        }
+        
+        .btn-danger {
+            background: #EF5350;
+        }
+        
+        .btn-danger:hover {
+            background: #E53935;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .info-box {
+            background: rgba(33, 150, 243, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #90CAF9;
+        }
+        
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #FFE082;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Jackdaw Hub</h1>
+            <p>Real-time Audio Collaboration</p>
+        </div>
+        
+        <div class="welcome-card">
+            <h2>Welcome, <span id="username">User</span>! <span id="role-badge" class="badge"></span></h2>
+            <p>You're connected to the Jackdaw Hub. This system enables real-time audio collaboration over the network.</p>
+            
+            <div class="user-info">
+                <div class="info-item">
+                    <span class="icon">👤</span>
+                    <div>
+                        <div class="label">Username</div>
+                        <div class="value" id="username-display"></div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="icon">🔑</span>
+                    <div>
+                        <div class="label">Patchbay Access</div>
+                        <div class="value" id="access-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Patchbay Card (shown if user has access) -->
+        <div class="card" id="patchbay-card" style="display: none;">
+            <h3><span class="card-icon">🎛️</span> Audio Patchbay</h3>
+            <p>You have access to the audio patchbay where you can route audio connections between participants.</p>
+            <div class="button-group">
+                <a href="/patchbay" class="btn">Open Patchbay</a>
+            </div>
+        </div>
+        
+        <!-- No Access Info Card -->
+        <div class="card" id="no-access-card" style="display: none;">
+            <h3><span class="card-icon">ℹ️</span> About Patchbay Access</h3>
+            <p>The audio patchbay is where audio routing is configured. Currently, you don't have patchbay access, but you can still use all audio features.</p>
+            
+            <div class="warning-box">
+                <strong>Want patchbay access?</strong><br>
+                Contact the hub owner to request permission to manage audio routing.
+            </div>
+        </div>
+        
+        <!-- Features Card -->
+        <div class="card">
+            <h3><span class="card-icon">🎵</span> What You Can Do</h3>
+            <p>Here's what's available with your current access level:</p>
+            
+            <ul class="feature-list">
+                <li>
+                    <span class="feature-check">✓</span>
+                    <div>
+                        <strong>Connect JackTrip Client</strong><br>
+                        <span style="color: #999; font-size: 13px;">
+                            Use voice commands ("start jam session") or the command-line client to stream audio
+                        </span>
+                    </div>
+                </li>
+                <li>
+                    <span class="feature-check">✓</span>
+                    <div>
+                        <strong>Receive Audio Streams</strong><br>
+                        <span style="color: #999; font-size: 13px;">
+                            Hear audio from other participants in real-time
+                        </span>
+                    </div>
+                </li>
+                <li>
+                    <span class="feature-check">✓</span>
+                    <div>
+                        <strong>Send Audio Streams</strong><br>
+                        <span style="color: #999; font-size: 13px;">
+                            Broadcast your audio to other participants
+                        </span>
+                    </div>
+                </li>
+                <li id="patchbay-feature">
+                    <span class="feature-cross">○</span>
+                    <div>
+                        <strong>Manage Audio Routing</strong><br>
+                        <span style="color: #999; font-size: 13px;">
+                            Configure audio connections in the patchbay (requires permission)
+                        </span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Connection Instructions -->
+        <div class="card">
+            <h3><span class="card-icon">🔌</span> How to Connect</h3>
+            <p>You can connect to the hub using any of these methods:</p>
+            
+            <div class="info-box">
+                <strong>Voice Command (if using Jackdaw voice assistant):</strong><br>
+                Say: <em>"start jam session"</em>
+            </div>
+            
+            <div class="info-box">
+                <strong>Command Line:</strong><br>
+                <code style="color: #e0e0e0;">jacktrip -C <span id="hub-host"></span> -P <span id="hub-port"></span> -J <span id="client-name"></span></code>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+            <p style="margin-top: 20px;">&copy; 2025 Jackdaw Hub</p>
+        </div>
+    </div>
+    
+    <script>
+        // Load user info
+        window.addEventListener('DOMContentLoaded', async function() {
+            const token = localStorage.getItem('jacktrip_token');
+            const username = localStorage.getItem('jacktrip_username');
+            const isOwner = localStorage.getItem('jacktrip_is_owner') === 'true';
+            const hasPatchbayAccess = localStorage.getItem('jacktrip_has_patchbay_access') === 'true';
+            
+            if (!token || !username) {
+                window.location.href = '/';
+                return;
+            }
+            
+            // Set username
+            document.getElementById('username').textContent = username;
+            document.getElementById('username-display').textContent = username;
+            document.getElementById('client-name').textContent = username;
+            
+            // Set role badge
+            const roleBadge = document.getElementById('role-badge');
+            if (isOwner) {
+                roleBadge.textContent = 'Owner';
+                roleBadge.className = 'badge badge-owner';
+            } else {
+                roleBadge.textContent = 'Member';
+                roleBadge.className = 'badge badge-member';
+            }
+            
+            // Set access status
+            const accessStatus = document.getElementById('access-status');
+            if (hasPatchbayAccess) {
+                accessStatus.textContent = 'Granted ✓';
+                accessStatus.style.color = '#4CAF50';
+                document.getElementById('patchbay-card').style.display = 'block';
+                document.getElementById('patchbay-feature').innerHTML = `
+                    <span class="feature-check">✓</span>
+                    <div>
+                        <strong>Manage Audio Routing</strong><br>
+                        <span style="color: #999; font-size: 13px;">
+                            Configure audio connections in the patchbay
+                        </span>
+                    </div>
+                `;
+            } else {
+                accessStatus.textContent = 'Not granted';
+                accessStatus.style.color = '#999';
+                document.getElementById('no-access-card').style.display = 'block';
+            }
+            
+            // Fetch hub connection details
+            try {
+                const response = await fetch('/join', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('hub-host').textContent = data.hub_host;
+                    document.getElementById('hub-port').textContent = data.jacktrip_port;
+                }
+            } catch (err) {
+                console.error('Failed to fetch connection info:', err);
+            }
+        });
+        
+        function logout() {
+            localStorage.removeItem('jacktrip_token');
+            localStorage.removeItem('jacktrip_user_id');
+            localStorage.removeItem('jacktrip_username');
+            localStorage.removeItem('jacktrip_is_owner');
+            localStorage.removeItem('jacktrip_has_patchbay_access');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

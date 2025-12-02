@@ -515,6 +515,15 @@ async def root():
     except FileNotFoundError:
         return "<h1>Login page not found</h1>"
 
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    """Serve user dashboard"""
+    try:
+        with open(Path(__file__).parent / "static" / "dashboard.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Dashboard not found</h1>"
+
 @app.get("/patchbay", response_class=HTMLResponse)
 async def patchbay():
     """Serve patchbay interface (client will check authentication via token)"""

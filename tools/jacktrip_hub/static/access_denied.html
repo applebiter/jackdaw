@@ -115,19 +115,23 @@
         <div class="message-card">
             <div class="icon">🔒</div>
             <h2>Patchbay Access Required</h2>
-            <p>You do not have permission to access the patchbay.</p>
+            <p>This page requires patchbay permissions to access.</p>
             
             <div class="info-box">
                 <strong>What this means:</strong><br>
-                Only band members with patchbay access can use the web interface.
-                Contact the band owner to request access.
+                The audio patchbay is restricted to authorized users. You can still connect
+                your audio client and collaborate - you just can't modify the audio routing.
+                Contact the hub owner to request patchbay access if needed.
             </div>
             
             <p style="font-size: 14px; color: #777;">
-                You can still join jam sessions using voice commands or the command-line client.
+                You can connect using voice commands or the JackTrip command-line client.
             </p>
             
-            <button class="logout-btn" onclick="logout()">Back to Login</button>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="logout-btn" onclick="goToDashboard()">Go to Dashboard</button>
+                <button class="logout-btn" style="background: #333;" onclick="logout()">Logout</button>
+            </div>
         </div>
         
         <div class="footer">
@@ -136,6 +140,10 @@
     </div>
     
     <script>
+        function goToDashboard() {
+            window.location.href = '/dashboard';
+        }
+        
         function logout() {
             localStorage.removeItem('jacktrip_token');
             localStorage.removeItem('jacktrip_user_id');
