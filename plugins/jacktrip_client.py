@@ -276,10 +276,15 @@ class JackTripClient(VoiceAssistantPlugin):
         # Stop any existing connection first
         self._stop_jacktrip_client()
         
+        print(f"[JackTrip] Join info received: {join_info}")
+        self.logger.info(f"Join info: {join_info}")
+        
         host = join_info['hub_host']
         port = join_info['jacktrip_port']
         flags = join_info.get('jacktrip_flags', [])
         username = join_info.get('username', self.jack_client_name)  # Use username from server
+        
+        print(f"[JackTrip] Username for JACK client: {username}")
         
         # Build JackTrip client command
         # -C = client mode, -P = peer port (JackTrip 2.x)
@@ -293,9 +298,11 @@ class JackTripClient(VoiceAssistantPlugin):
             channels = max(self.send_channels, self.receive_channels)
             cmd.extend(['-n', str(channels)])
         
-        # Add JACK client name (use username for identification on server graph)
+        # Add JACK client name locally and remotely (use username for identification)
+        # -J sets local JACK client name, -K sets remote name visible on hub server
         if username:
             cmd.extend(['-J', username])
+            cmd.extend(['-K', username])
         
         # Add server-provided flags
         cmd.extend(flags)
