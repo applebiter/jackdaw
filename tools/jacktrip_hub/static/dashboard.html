@@ -253,7 +253,17 @@
             </div>
         </div>
         
-        <!-- Patchbay Card (shown if user has access) -->
+        <!-- Owner Card (shown if user is owner) -->
+        <div class="card" id="owner-card" style="display: none;">
+            <h3><span class="card-icon">👑</span> Owner Controls</h3>
+            <p>As the hub owner, you have full administrative access to manage users and audio routing.</p>
+            <div class="button-group">
+                <a href="/patchbay" class="btn">Open Patchbay</a>
+                <a href="/rooms-ui" class="btn btn-secondary">Manage Users</a>
+            </div>
+        </div>
+        
+        <!-- Patchbay Card (shown if user has access but is not owner) -->
         <div class="card" id="patchbay-card" style="display: none;">
             <h3><span class="card-icon">🎛️</span> Audio Patchbay</h3>
             <p>You have access to the audio patchbay where you can route audio connections between participants.</p>
@@ -368,9 +378,24 @@
                 roleBadge.className = 'badge badge-member';
             }
             
-            // Set access status
+            // Set access status and show appropriate cards
             const accessStatus = document.getElementById('access-status');
-            if (hasPatchbayAccess) {
+            if (isOwner) {
+                // Owner gets special card with both patchbay and user management
+                accessStatus.textContent = 'Full (Owner) ✓';
+                accessStatus.style.color = '#FFC107';
+                document.getElementById('owner-card').style.display = 'block';
+                document.getElementById('patchbay-feature').innerHTML = `
+                    <span class="feature-check">✓</span>
+                    <div>
+                        <strong>Manage Audio Routing & Users</strong><br>
+                        <span style="color: #999; font-size: 13px;">
+                            Configure audio connections and grant permissions
+                        </span>
+                    </div>
+                `;
+            } else if (hasPatchbayAccess) {
+                // Non-owner with patchbay access
                 accessStatus.textContent = 'Granted ✓';
                 accessStatus.style.color = '#4CAF50';
                 document.getElementById('patchbay-card').style.display = 'block';
@@ -384,6 +409,7 @@
                     </div>
                 `;
             } else {
+                // No patchbay access
                 accessStatus.textContent = 'Not granted';
                 accessStatus.style.color = '#999';
                 document.getElementById('no-access-card').style.display = 'block';
