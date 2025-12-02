@@ -253,6 +253,7 @@
             <button onclick="clearAllConnections()" class="danger">❌ Clear All</button>
             <button onclick="autoRoute()">🔗 Auto Route</button>
             <button onclick="resetLayout()">⟲ Reset Layout</button>
+            <button onclick="savePositions()">💾 Save Layout</button>
             <button onclick="logout()" class="danger">🚪 Logout</button>
         </div>
     </div>
@@ -311,6 +312,18 @@
             try {
                 localStorage.setItem('patchbay_positions', JSON.stringify(clientPositions));
                 console.log('Saved box positions to localStorage');
+                
+                // Show visual feedback
+                const btn = event?.target;
+                if (btn && btn.textContent.includes('Save Layout')) {
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ Saved!';
+                    btn.style.background = '#4CAF50';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }, 1500);
+                }
             } catch (e) {
                 console.error('Failed to save positions:', e);
             }
