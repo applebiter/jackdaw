@@ -427,6 +427,11 @@ class JackTripClient(VoiceAssistantPlugin):
                 self._speak_response(result)
                 return result
                 
+        except RuntimeError as e:
+            self.logger.error(f"Authentication failed: {e}")
+            result = "Authentication failed. Check your username and password in the config."
+            self._speak_response(result)
+            return result
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Failed to start jam session: {e}")
             result = "Unable to start jam session. Check hub connection."
@@ -458,6 +463,14 @@ class JackTripClient(VoiceAssistantPlugin):
             self._speak_response(result)
             return result
             
+        except RuntimeError as e:
+            self.logger.error(f"Authentication failed: {e}")
+            # Still clean up locally
+            self._stop_jacktrip_client()
+            self.current_room = None
+            result = "Stopped jam session locally (authentication failed)."
+            self._speak_response(result)
+            return result
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Failed to stop jam session: {e}")
             # Still clean up locally
@@ -492,6 +505,11 @@ class JackTripClient(VoiceAssistantPlugin):
             self._speak_response(result)
             return result
             
+        except RuntimeError as e:
+            self.logger.error(f"Authentication failed: {e}")
+            result = "Authentication failed. Check your username and password in the config."
+            self._speak_response(result)
+            return result
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Failed to get jam info: {e}")
             result = "Unable to get jam information. Check hub connection."
