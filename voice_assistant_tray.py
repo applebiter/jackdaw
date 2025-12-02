@@ -65,6 +65,7 @@ class VoiceAssistantTray(QObject):
         self.plugin_loader = PluginLoader(self.config)
         self.plugins = self.plugin_loader.load_all_plugins()
         self.llm_recorder_plugin = None  # Will be set during menu setup
+        self.jacktrip_plugin = None  # Will be set during menu setup
         
         # Create tray icon
         self.app = QApplication.instance()
@@ -158,6 +159,13 @@ class VoiceAssistantTray(QObject):
         
         menu.addSeparator()
         
+        # Hub connection status (read-only, shows connection state)
+        self.hub_status_action = QAction("○ Hub Connection", menu)
+        self.hub_status_action.setEnabled(False)  # Not clickable, just shows status
+        menu.addAction(self.hub_status_action)
+        
+        menu.addSeparator()
+        
         # Music submenu
         music_menu = menu.addMenu("🎵 Music")
         
@@ -212,11 +220,16 @@ class VoiceAssistantTray(QObject):
             # Skip plugins that don't need menu items (controlled via voice or other menus)
             if plugin.get_name() in ['basic_commands', 'music_player', 'icecast_streamer', 'buffer', 'system_updates']:
                 continue
+            
+            # Special handling for JackTrip - just show status, not a widget
+            if plugin.get_name() == 'jacktrip_client':
+                self.jacktrip_plugin = plugin
+                # Will add status menu item below
+                continue
                 
             if hasattr(plugin, 'create_gui_widget') and callable(getattr(plugin, 'create_gui_widget')):
                 plugin_name = plugin.get_name()
-                # Use special icon for JackTrip, wrench for others
-                icon = "🎵" if plugin_name == "jacktrip_client" else "🔧"
+                icon = "🔧"
                 action = QAction(f"{icon} {plugin.get_description()}", menu)
                 action.triggered.connect(lambda checked=False, p=plugin: self.show_plugin_gui(p))
                 menu.addAction(action)
@@ -581,6 +594,12 @@ class VoiceAssistantTray(QObject):
             except Exception as e:
                 print(f"Error updating now playing: {e}")
             
+            # Update hub connection status
+            try:
+                self.update_hub_status()
+            except Exception as e:
+                print(f"Error updating hub status: {e}")
+            
             # Check for update notifications
             try:
                 self.check_update_notification()
@@ -647,6 +666,20 @@ class VoiceAssistantTray(QObject):
         except Exception as e:
             # Silently ignore read errors (file might be mid-write)
             pass
+    
+    def update_hub_status(self):
+        """Update hub connection status icon."""
+        if not hasattr(self, 'hub_status_action') or not self.hub_status_action:
+            return
+        
+        # Check if JackTrip plugin is loaded and connected
+        is_connected = False
+        if self.jacktrip_plugin and hasattr(self.jacktrip_plugin, 'current_room'):
+            is_connected = self.jacktrip_plugin.current_room is not None
+        
+        # Update icon: ● for connected, ○ for disconnected
+        icon = "●" if is_connected else "○"
+        self.hub_status_action.setText(f"{icon} Hub Connection")
     
     def on_status_changed(self, status: str):
         """Handle status change signal."""
