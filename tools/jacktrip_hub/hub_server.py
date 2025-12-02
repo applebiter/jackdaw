@@ -535,9 +535,7 @@ async def patchbay():
 
 @app.get("/rooms-ui", response_class=HTMLResponse)
 async def rooms_page():
-    """Serve room manager interface (legacy - redirects to patchbay in single room mode)"""
-    if SINGLE_ROOM_MODE:
-        return "<script>window.location.href = '/patchbay';</script>"
+    """Serve room manager interface (includes user management for owners)"""
     try:
         with open(Path(__file__).parent / "static" / "rooms.html", "r") as f:
             return f.read()
