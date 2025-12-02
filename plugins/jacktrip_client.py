@@ -176,12 +176,17 @@ class JackTripClient(VoiceAssistantPlugin):
         """Authenticate with the hub server"""
         try:
             verify_ssl = self.hub_config.get('verify_ssl', False)
+            url = f"{self.hub_config['hub_url']}/auth/login"
+            payload = {
+                "username": self.hub_config['username'],
+                "password": self.hub_config['password']
+            }
+            self.logger.info(f"Authenticating to {url} as {payload['username']}")
+            print(f"[JackTrip] Attempting authentication to {url} as {payload['username']}")
+            
             response = requests.post(
-                f"{self.hub_config['hub_url']}/auth/login",
-                json={
-                    "username": self.hub_config['username'],
-                    "password": self.hub_config['password']
-                },
+                url,
+                json=payload,
                 timeout=5,
                 verify=verify_ssl
             )
@@ -190,9 +195,12 @@ class JackTripClient(VoiceAssistantPlugin):
             self.auth_token = data['token']
             self.user_id = data['user_id']
             self.logger.info(f"Authenticated with JackTrip hub as {self.hub_config['username']}")
+            print(f"[JackTrip] Successfully authenticated as {self.hub_config['username']}")
             return True
         except Exception as e:
             self.logger.error(f"Failed to authenticate with hub: {e}")
+            print(f"[JackTrip] Authentication failed: {e}")
+            print(f"[JackTrip] Config: hub_url={self.hub_config.get('hub_url')}, username={self.hub_config.get('username')}")
             return False
     
     def _sync_room_state(self):

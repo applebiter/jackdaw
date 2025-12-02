@@ -340,10 +340,19 @@ class VoiceCommandClient:
         
         # If wake word is configured, check if text starts with it
         if self.wake_word:
-            if text_lower.startswith(self.wake_word):
+            # Check for wake word with or without common articles/pronouns
+            text_to_check = text_lower
+            stripped_article = False
+            for article in ['the ', 'a ', 'an ', 'hey ', 'hi ']:
+                if text_lower.startswith(article):
+                    text_to_check = text_lower[len(article):]
+                    stripped_article = True
+                    break
+            
+            if text_to_check.startswith(self.wake_word):
                 has_wake_word = True
                 # Remove wake word from text for command matching
-                command_text = text_lower[len(self.wake_word):].strip()
+                command_text = text_to_check[len(self.wake_word):].strip()
                 
                 # Resolve command aliases
                 if hasattr(self, 'command_aliases') and command_text in self.command_aliases:
