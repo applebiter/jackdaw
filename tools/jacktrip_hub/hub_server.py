@@ -356,7 +356,8 @@ def start_jacktrip_server(room_id: str) -> int:
     cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4", "-p", "5"]
     
     try:
-        proc = Popen(cmd)
+        # Suppress JackTrip output to prevent IP addresses in logs
+        proc = Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         JACKTRIP_PROCS[room_id] = {
             "port": port,
             "process": proc,
@@ -464,7 +465,8 @@ async def startup_event():
     # Start JackTrip server
     cmd = [JACKTRIP_BIN, "-S", "-B", str(port), "-q", "4", "-p", "5"]
     try:
-        proc = Popen(cmd)
+        # Suppress JackTrip output to prevent IP addresses in logs
+        proc = Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         JACKTRIP_PROCS[room_id] = {
             "port": port,
             "process": proc,
