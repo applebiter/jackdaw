@@ -301,7 +301,7 @@ class JackTripClient(VoiceAssistantPlugin):
         # Add JACK client names:
         # -J sets local JACK client name (what user sees in Carla/their graph)
         # -K sets remote name visible on hub server's patchbay
-        cmd.extend(['-J', 'JackDawHub'])  # Local name - consistent for all users
+        cmd.extend(['-J', 'jd_hub'])  # Local name - consistent for all users (jd_ prefix for save tool)
         if username:
             cmd.extend(['-K', username])  # Remote name - shows username on server
         
