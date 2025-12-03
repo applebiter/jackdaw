@@ -124,7 +124,7 @@ class MusicLibraryBrowser(QMainWindow):
         
         search_layout.addWidget(QLabel("Field:"))
         self.search_field_combo = QComboBox()
-        self.search_field_combo.addItems(["artist", "album", "title", "genre", "year"])
+        self.search_field_combo.addItems(["artist", "album", "title", "genre", "year", "bpm"])
         self.search_field_combo.setToolTip("Choose which field to search in")
         search_layout.addWidget(self.search_field_combo)
         
@@ -484,6 +484,9 @@ class MusicLibraryBrowser(QMainWindow):
         """Handle search button click"""
         self.search_text = self.search_input.text().strip()
         self.search_field = self.search_field_combo.currentText()
+        # Map 'bpm' display name to actual database column
+        if self.search_field == 'bpm':
+            self.search_field = 'beats_per_minute'
         self.current_page = 0
         self.load_tracks()
     
