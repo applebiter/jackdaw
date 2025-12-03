@@ -133,9 +133,10 @@ python tools/scan_music_library.py
 ```
 "[wake], volume up"                       Increase by 10%
 "[wake], volume down"                     Decrease by 10%
-"[wake], set volume low"                  Set to 30%
-"[wake], set volume medium"               Set to 60%
-"[wake], set volume high"                 Set to 90%
+"[wake], set volume low"                  Set to 20%
+"[wake], set volume medium"               Set to 50%
+"[wake], set volume high"                 Set to 80%
+"[wake], set volume loud"                 Set to 95%
 ```
 
 *Volume settings persist automatically across restarts.*
