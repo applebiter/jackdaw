@@ -16,6 +16,8 @@ import tracemalloc
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
+import platform_utils
+
 from PySide6.QtWidgets import (
     QApplication, QSystemTrayIcon, QMenu, QDialog,
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QWidget,
@@ -44,7 +46,9 @@ class VoiceAssistantTray(QObject):
         
         # Setup signal handlers for clean shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        # SIGTERM not available on Windows
+        if not platform_utils.is_windows():
+            signal.signal(signal.SIGTERM, self._signal_handler)
         atexit.register(self._cleanup_on_exit)
         
         # Start memory tracking
@@ -306,17 +310,11 @@ class VoiceAssistantTray(QObject):
         """Check for and stop any already-running voice assistant processes."""
         try:
             # Check if processes are running
-            result = subprocess.run(
-                ["pgrep", "-f", "voice_command_client.py"],
-                capture_output=True,
-                text=True
-            )
-            
-            if result.returncode == 0:
+            if platform_utils.find_process("voice_command_client.py"):
                 print("Found existing voice assistant processes, stopping them...")
-                subprocess.run(["pkill", "-f", "voice_command_client.py"], check=False)
-                subprocess.run(["pkill", "-f", "llm_query_processor.py"], check=False)
-                subprocess.run(["pkill", "-f", "tts_jack_client.py"], check=False)
+                platform_utils.kill_process("voice_command_client.py")
+                platform_utils.kill_process("llm_query_processor.py")
+                platform_utils.kill_process("tts_jack_client.py")
                 import time
                 time.sleep(1)  # Give processes time to stop
                 print("Existing processes stopped.")
@@ -328,16 +326,10 @@ class VoiceAssistantTray(QObject):
         try:
             import os
             # Get list of all voice_assistant_tray.py processes
-            result = subprocess.run(
-                ["pgrep", "-f", "voice_assistant_tray.py"],
-                capture_output=True,
-                text=True
-            )
+            pids = platform_utils.find_all_processes("voice_assistant_tray.py")
+            current_pid = os.getpid()
             
-            if result.returncode == 0:
-                # Parse PIDs
-                pids = [int(pid.strip()) for pid in result.stdout.strip().split('\n') if pid.strip()]
-                current_pid = os.getpid()
+            if pids:
                 
                 # If there are other PIDs besides our own, another instance exists
                 other_pids = [pid for pid in pids if pid != current_pid]
@@ -421,15 +413,11 @@ class VoiceAssistantTray(QObject):
     
     def detect_running_processes(self):
         """Detect if voice assistant processes are already running"""
-        import subprocess as sp
         try:
-            # Check for running processes
-            voice_running = sp.run(["pgrep", "-f", "voice_command_client.py"], 
-                                  capture_output=True, text=True).returncode == 0
-            llm_running = sp.run(["pgrep", "-f", "llm_query_processor.py"], 
-                                capture_output=True, text=True).returncode == 0
-            tts_running = sp.run(["pgrep", "-f", "tts_jack_client.py"], 
-                                capture_output=True, text=True).returncode == 0
+            # Check for running processes using platform_utils
+            voice_running = platform_utils.find_process("voice_command_client.py") is not None
+            llm_running = platform_utils.find_process("llm_query_processor.py") is not None
+            tts_running = platform_utils.find_process("tts_jack_client.py") is not None
             
             if voice_running and llm_running and tts_running:
                 print("Detected voice assistant already running")
@@ -455,8 +443,12 @@ class VoiceAssistantTray(QObject):
             # Get the directory of this script
             script_dir = Path(__file__).parent.resolve()
             
-            # Find the venv Python executable
-            venv_python = script_dir / ".venv" / "bin" / "python"
+            # Find the venv Python executable (platform-specific)
+            if platform_utils.is_windows():
+                venv_python = script_dir / ".venv" / "Scripts" / "python.exe"
+            else:
+                venv_python = script_dir / ".venv" / "bin" / "python"
+            
             if not venv_python.exists():
                 raise FileNotFoundError(f"Virtual environment Python not found at {venv_python}")
             
@@ -468,7 +460,14 @@ class VoiceAssistantTray(QObject):
             import os
             env = os.environ.copy()
             env['VIRTUAL_ENV'] = str(script_dir / ".venv")
-            env['PATH'] = f"{script_dir / '.venv' / 'bin'}:{env.get('PATH', '')}"
+            
+            # Set PATH based on platform
+            if platform_utils.is_windows():
+                venv_bin = script_dir / '.venv' / 'Scripts'
+                env['PATH'] = f"{venv_bin};{env.get('PATH', '')}"
+            else:
+                venv_bin = script_dir / '.venv' / 'bin'
+                env['PATH'] = f"{venv_bin}:{env.get('PATH', '')}"
             
             # Start voice command client with log redirection
             self.voice_log = open(script_dir / "logs" / "voice_command.log", "a", buffering=1)
