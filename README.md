@@ -96,6 +96,8 @@ cd jackdaw
 
 **Default wake word:** "alpha" (change in `voice_assistant_config.json`)
 
+**Need a quick reference?** Access the voice command cheat sheet from the system tray menu. You can also easily add custom command aliases and tailor the system to work exactly the way you want—see **[docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md)** for details.
+
 See **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** for complete command list.
 
 ---
@@ -116,11 +118,20 @@ See **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** for complete command 
 
 All included in the installation script!
 
-## Core Components
+## Architecture
+
+### Background Services
+These processes run continuously in the background, handling voice recognition and AI:
 
 1. **voice_command_client.py** - Listens to JACK audio, performs speech recognition, detects wake word (configurable), executes commands
 2. **llm_query_processor.py** - Polls for LLM queries, maintains conversation history in SQLite, sends to Ollama
 3. **tts_jack_client.py** - Reads responses, synthesizes speech with Piper, outputs to JACK
+
+### User Interface
+The main application that most users interact with:
+
+- **voice_assistant_tray.py** - System tray application that launches and manages the background services, provides GUI controls, plugin interfaces, and configuration
+- **music_library_browser.py** - Standalone GUI for browsing, searching, and managing your music library with playlists
 
 ## Configuration
 

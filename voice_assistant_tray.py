@@ -12,6 +12,7 @@ import subprocess
 import threading
 import signal
 import atexit
+import tracemalloc
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -45,6 +46,9 @@ class VoiceAssistantTray(QObject):
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
         atexit.register(self._cleanup_on_exit)
+        
+        # Start memory tracking
+        tracemalloc.start()
         
         # Load configuration
         self.config_file = Path("voice_assistant_config.json")
@@ -237,6 +241,13 @@ class VoiceAssistantTray(QObject):
         remember_routing_action = QAction("💾 Save JACK Connections", tools_menu)
         remember_routing_action.triggered.connect(self.remember_jack_routing)
         tools_menu.addAction(remember_routing_action)
+        
+        tools_menu.addSeparator()
+        
+        # Memory stats action
+        memory_stats_action = QAction("🧠 Memory Statistics", tools_menu)
+        memory_stats_action.triggered.connect(self.show_memory_stats)
+        tools_menu.addAction(memory_stats_action)
         
         # View logs action
         view_logs_action = QAction("📋 View Logs", menu)
@@ -661,6 +672,12 @@ class VoiceAssistantTray(QObject):
         is_connected = False
         if self.jacktrip_plugin and hasattr(self.jacktrip_plugin, 'current_room'):
             is_connected = self.jacktrip_plugin.current_room is not None
+        
+        # TODO: Status indicator may not update if plugin's current_room is set
+        # before this timer starts, or if there's a race condition between
+        # the plugin setting current_room and this check running. Consider
+        # adding a signal/slot mechanism from the plugin to notify status changes,
+        # or verify that current_room is being properly set during connection.
         
         # Update icon: ● for connected, ○ for disconnected
         icon = "●" if is_connected else "○"
@@ -1106,6 +1123,196 @@ class VoiceAssistantTray(QObject):
         
         dialog.setLayout(layout)
         dialog.show()  # Non-blocking
+    
+    def show_memory_stats(self):
+        """Show memory usage statistics."""
+        import gc
+        import psutil
+        import os
+        
+        dialog = QDialog()
+        dialog.setWindowTitle("Memory Statistics")
+        dialog.resize(700, 600)
+        
+        # Track for cleanup
+        self.opened_windows.append(dialog)
+        dialog.destroyed.connect(lambda: self._remove_window(dialog))
+        
+        layout = QVBoxLayout()
+        
+        # Get current process memory info
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
+        mem_mb = mem_info.rss / 1024 / 1024
+        
+        # Take memory snapshot
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        
+        # Force garbage collection and get counts
+        gc.collect()
+        gc_stats = gc.get_stats()
+        
+        # Build HTML report
+        html = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: monospace; font-size: 11px; }}
+                h3 {{ color: #2196F3; margin-top: 15px; margin-bottom: 5px; }}
+                table {{ border-collapse: collapse; width: 100%; margin-top: 5px; }}
+                th {{ background: #f0f0f0; text-align: left; padding: 5px; border: 1px solid #ddd; }}
+                td {{ padding: 5px; border: 1px solid #ddd; }}
+                .metric {{ font-weight: bold; color: #4CAF50; }}
+                .warning {{ color: #FF9800; }}
+                .file {{ color: #666; }}
+            </style>
+        </head>
+        <body>
+            <h2>Memory Usage Report</h2>
+            <p><span class="metric">Process RSS:</span> {mem_mb:.2f} MB</p>
+            <p><span class="metric">Virtual Memory:</span> {mem_info.vms / 1024 / 1024:.2f} MB</p>
+            
+            <h3>Garbage Collection</h3>
+            <p><span class="metric">Generation 0 collections:</span> {gc_stats[0]['collections']}</p>
+            <p><span class="metric">Generation 1 collections:</span> {gc_stats[1]['collections']}</p>
+            <p><span class="metric">Generation 2 collections:</span> {gc_stats[2]['collections']}</p>
+            <p><span class="metric">Tracked objects:</span> {len(gc.get_objects())}</p>
+            
+            <h3>Top 15 Memory Allocations</h3>
+            <table>
+                <tr>
+                    <th>File:Line</th>
+                    <th>Size (KB)</th>
+                    <th>Count</th>
+                </tr>
+        """
+        
+        for stat in top_stats[:15]:
+            size_kb = stat.size / 1024
+            filename = stat.traceback.format()[0].split('\n')[0].strip()
+            html += f"""
+                <tr>
+                    <td class="file">{filename}</td>
+                    <td>{size_kb:.1f}</td>
+                    <td>{stat.count}</td>
+                </tr>
+            """
+        
+        html += """
+            </table>
+            
+            <h3>Potential Issues to Watch For</h3>
+            <ul>
+                <li>QPixmap/QIcon objects not being released</li>
+                <li>Growing opened_windows list</li>
+                <li>Database cursor leaks</li>
+                <li>Zombie subprocess.Popen objects</li>
+                <li>Unclosed file handles in logs/</li>
+            </ul>
+        </body>
+        </html>
+        """
+        
+        text = QTextEdit()
+        text.setReadOnly(True)
+        text.setHtml(html)
+        layout.addWidget(text)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.clicked.connect(lambda: self._refresh_memory_dialog(text))
+        button_layout.addWidget(refresh_btn)
+        
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(dialog.close)
+        button_layout.addWidget(close_btn)
+        
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        dialog.show()
+    
+    def _refresh_memory_dialog(self, text_widget):
+        """Refresh memory statistics in the dialog."""
+        import gc
+        import psutil
+        import os
+        
+        # Repeat the same logic as show_memory_stats but update existing widget
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
+        mem_mb = mem_info.rss / 1024 / 1024
+        
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        
+        gc.collect()
+        gc_stats = gc.get_stats()
+        
+        html = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: monospace; font-size: 11px; }}
+                h3 {{ color: #2196F3; margin-top: 15px; margin-bottom: 5px; }}
+                table {{ border-collapse: collapse; width: 100%; margin-top: 5px; }}
+                th {{ background: #f0f0f0; text-align: left; padding: 5px; border: 1px solid #ddd; }}
+                td {{ padding: 5px; border: 1px solid #ddd; }}
+                .metric {{ font-weight: bold; color: #4CAF50; }}
+                .warning {{ color: #FF9800; }}
+                .file {{ color: #666; }}
+            </style>
+        </head>
+        <body>
+            <h2>Memory Usage Report</h2>
+            <p><span class="metric">Process RSS:</span> {mem_mb:.2f} MB</p>
+            <p><span class="metric">Virtual Memory:</span> {mem_info.vms / 1024 / 1024:.2f} MB</p>
+            
+            <h3>Garbage Collection</h3>
+            <p><span class="metric">Generation 0 collections:</span> {gc_stats[0]['collections']}</p>
+            <p><span class="metric">Generation 1 collections:</span> {gc_stats[1]['collections']}</p>
+            <p><span class="metric">Generation 2 collections:</span> {gc_stats[2]['collections']}</p>
+            <p><span class="metric">Tracked objects:</span> {len(gc.get_objects())}</p>
+            
+            <h3>Top 15 Memory Allocations</h3>
+            <table>
+                <tr>
+                    <th>File:Line</th>
+                    <th>Size (KB)</th>
+                    <th>Count</th>
+                </tr>
+        """
+        
+        for stat in top_stats[:15]:
+            size_kb = stat.size / 1024
+            filename = stat.traceback.format()[0].split('\n')[0].strip()
+            html += f"""
+                <tr>
+                    <td class="file">{filename}</td>
+                    <td>{size_kb:.1f}</td>
+                    <td>{stat.count}</td>
+                </tr>
+            """
+        
+        html += """
+            </table>
+            
+            <h3>Potential Issues to Watch For</h3>
+            <ul>
+                <li>QPixmap/QIcon objects not being released</li>
+                <li>Growing opened_windows list</li>
+                <li>Database cursor leaks</li>
+                <li>Zombie subprocess.Popen objects</li>
+                <li>Unclosed file handles in logs/</li>
+            </ul>
+        </body>
+        </html>
+        """
+        
+        text_widget.setHtml(html)
     
     def music_next_track(self):
         """Skip to next track."""
