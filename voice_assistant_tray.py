@@ -185,27 +185,6 @@ class VoiceAssistantTray(QObject):
         scan_library_action.triggered.connect(self.launch_music_scanner)
         music_menu.addAction(scan_library_action)
         
-        music_menu.addSeparator()
-        
-        # Music playback controls
-        next_track_action = QAction("⏭ Next Track", music_menu)
-        next_track_action.triggered.connect(self.music_next_track)
-        music_menu.addAction(next_track_action)
-        
-        stop_music_action = QAction("⏹ Stop Playback", music_menu)
-        stop_music_action.triggered.connect(self.music_stop)
-        music_menu.addAction(stop_music_action)
-        
-        music_menu.addSeparator()
-        
-        volume_up_action = QAction("🔊 Volume Up", music_menu)
-        volume_up_action.triggered.connect(self.music_volume_up)
-        music_menu.addAction(volume_up_action)
-        
-        volume_down_action = QAction("🔉 Volume Down", music_menu)
-        volume_down_action.triggered.connect(self.music_volume_down)
-        music_menu.addAction(volume_down_action)
-        
         menu.addSeparator()
         
         # AI Chat submenu - open the widget instead of inline controls

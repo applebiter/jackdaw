@@ -277,6 +277,11 @@ class MusicLibraryBrowser(QMainWindow):
         # Pagination controls
         page_layout = QHBoxLayout()
         
+        self.first_page_btn = QPushButton("⏮ First")
+        self.first_page_btn.setToolTip("Jump to first page")
+        self.first_page_btn.clicked.connect(self.on_first_page)
+        page_layout.addWidget(self.first_page_btn)
+        
         self.prev_btn = QPushButton("◀ Previous")
         self.prev_btn.setToolTip("Go to previous page")
         self.prev_btn.clicked.connect(self.on_previous_page)
@@ -290,7 +295,23 @@ class MusicLibraryBrowser(QMainWindow):
         self.next_btn.clicked.connect(self.on_next_page)
         page_layout.addWidget(self.next_btn)
         
+        self.last_page_btn = QPushButton("Last ⏭")
+        self.last_page_btn.setToolTip("Jump to last page")
+        self.last_page_btn.clicked.connect(self.on_last_page)
+        page_layout.addWidget(self.last_page_btn)
+        
         page_layout.addStretch()
+        
+        page_layout.addWidget(QLabel("Jump to Page:"))
+        self.page_jump_spin = QSpinBox()
+        self.page_jump_spin.setRange(1, 1)
+        self.page_jump_spin.setValue(1)
+        self.page_jump_spin.setToolTip("Enter page number and press Enter to jump")
+        self.page_jump_spin.setMaximumWidth(80)
+        self.page_jump_spin.editingFinished.connect(self.on_jump_to_page)
+        page_layout.addWidget(self.page_jump_spin)
+        
+        page_layout.addSpacing(20)
         
         page_layout.addWidget(QLabel("Page Size:"))
         self.page_size_spin = QSpinBox()
@@ -432,10 +453,16 @@ class MusicLibraryBrowser(QMainWindow):
             self.track_table.item(i, 0).setData(Qt.UserRole, row['id'])
         
         # Update pagination
-        total_pages = (self.total_tracks + self.page_size - 1) // self.page_size
+        total_pages = max(1, (self.total_tracks + self.page_size - 1) // self.page_size)
         self.page_label.setText(f"Page {self.current_page + 1} of {total_pages} ({self.total_tracks} tracks)")
         self.prev_btn.setEnabled(self.current_page > 0)
         self.next_btn.setEnabled((self.current_page + 1) * self.page_size < self.total_tracks)
+        self.first_page_btn.setEnabled(self.current_page > 0)
+        self.last_page_btn.setEnabled((self.current_page + 1) * self.page_size < self.total_tracks)
+        
+        # Update jump spinner range
+        self.page_jump_spin.setRange(1, total_pages)
+        self.page_jump_spin.setValue(self.current_page + 1)
         
         self.status_label.setText(f"Loaded {len(rows)} tracks")
     
@@ -492,6 +519,26 @@ class MusicLibraryBrowser(QMainWindow):
         self.page_size = value
         self.current_page = 0
         self.load_tracks()
+    
+    def on_first_page(self):
+        """Jump to first page"""
+        self.current_page = 0
+        self.load_tracks()
+    
+    def on_last_page(self):
+        """Jump to last page"""
+        total_pages = max(1, (self.total_tracks + self.page_size - 1) // self.page_size)
+        self.current_page = total_pages - 1
+        self.load_tracks()
+    
+    def on_jump_to_page(self):
+        """Jump to specified page number"""
+        target_page = self.page_jump_spin.value() - 1  # Convert from 1-based to 0-based
+        total_pages = max(1, (self.total_tracks + self.page_size - 1) // self.page_size)
+        
+        if 0 <= target_page < total_pages:
+            self.current_page = target_page
+            self.load_tracks()
     
     def on_edit_track(self):
         """Handle Edit Track button click"""
