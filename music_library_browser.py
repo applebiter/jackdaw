@@ -124,7 +124,8 @@ class MusicLibraryBrowser(QMainWindow):
         
         search_layout.addWidget(QLabel("Field:"))
         self.search_field_combo = QComboBox()
-        self.search_field_combo.addItems(["artist", "album", "title", "genre", "year", "bpm"])
+        self.search_field_combo.addItems(["All Fields", "Title", "Artist", "Album", "Genre", "Year", "BPM"])
+        self.search_field_combo.setCurrentText("Title")  # Set default to Title
         self.search_field_combo.setToolTip("Choose which field to search in")
         search_layout.addWidget(self.search_field_combo)
         
@@ -414,8 +415,13 @@ class MusicLibraryBrowser(QMainWindow):
         params = []
         
         if self.search_text:
-            where_clause = f"WHERE {self.search_field} LIKE ?"
-            params.append(f"%{self.search_text}%")
+            if self.search_field == 'all':
+                # Search across multiple fields
+                where_clause = "WHERE (title LIKE ? OR artist LIKE ? OR album LIKE ? OR genre LIKE ?)"
+                params.extend([f"%{self.search_text}%"] * 4)
+            else:
+                where_clause = f"WHERE {self.search_field} LIKE ?"
+                params.append(f"%{self.search_text}%")
         
         # Get total count
         count_query = f"SELECT COUNT(*) FROM sounds {where_clause}"
@@ -483,10 +489,20 @@ class MusicLibraryBrowser(QMainWindow):
     def on_search(self):
         """Handle search button click"""
         self.search_text = self.search_input.text().strip()
-        self.search_field = self.search_field_combo.currentText()
-        # Map 'bpm' display name to actual database column
-        if self.search_field == 'bpm':
-            self.search_field = 'beats_per_minute'
+        display_field = self.search_field_combo.currentText()
+        
+        # Map display names to database column names
+        field_map = {
+            'All Fields': 'all',
+            'Title': 'title',
+            'Artist': 'artist',
+            'Album': 'album',
+            'Genre': 'genre',
+            'Year': 'year',
+            'BPM': 'beats_per_minute'
+        }
+        
+        self.search_field = field_map.get(display_field, 'title')
         self.current_page = 0
         self.load_tracks()
     
