@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS sounds (
     filename TEXT,
     mimetype TEXT NOT NULL,
     extension TEXT NOT NULL,
+    filetype TEXT,
     size TEXT,
     duration_timecode TEXT,
     duration_milliseconds TEXT,

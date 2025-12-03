@@ -19,6 +19,18 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 import argparse
 
+# Format mapping for human-readable file types
+FORMAT_MAP = {
+    'ogg': 'Ogg Vorbis',
+    'flac': 'FLAC',
+    'mp3': 'MP3',
+    'opus': 'Opus',
+    'm4a': 'AAC/M4A',
+    'mp4': 'AAC/MP4',
+    'm4b': 'AAC/M4B',
+    'm4p': 'AAC/M4P',
+}
+
 # Audio metadata and analysis
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
@@ -248,6 +260,9 @@ def process_audio_file(filepath: Path, root_dir: Path, analyze_bpm_flag: bool = 
         else:
             mimetype = f'audio/{extension}'
         
+        # Determine human-readable file type
+        filetype = FORMAT_MAP.get(extension, extension.upper())
+        
         # Extract audio properties
         audio_props = extract_audio_properties(filepath)
         
@@ -271,6 +286,7 @@ def process_audio_file(filepath: Path, root_dir: Path, analyze_bpm_flag: bool = 
             'filename': filename,
             'mimetype': mimetype,
             'extension': extension,
+            'filetype': filetype,
             'size': file_size,
             'duration_timecode': audio_props.get('duration_timecode'),
             'duration_milliseconds': audio_props.get('duration_milliseconds'),
@@ -319,7 +335,7 @@ def insert_track(conn: sqlite3.Connection, data: Dict[str, Any]) -> bool:
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO sounds (
-                uuid, location, filename, mimetype, extension,
+                uuid, location, filename, mimetype, extension, filetype,
                 size, duration_timecode, duration_milliseconds,
                 bits_per_sample, bitrate, channels, samplerate,
                 beats_per_minute, genre, title, albumartist, album,
@@ -327,7 +343,7 @@ def insert_track(conn: sqlite3.Connection, data: Dict[str, Any]) -> bool:
                 copyright, composer, producer, engineer, comment,
                 created, modified
             ) VALUES (
-                :uuid, :location, :filename, :mimetype, :extension,
+                :uuid, :location, :filename, :mimetype, :extension, :filetype,
                 :size, :duration_timecode, :duration_milliseconds,
                 :bits_per_sample, :bitrate, :channels, :samplerate,
                 :beats_per_minute, :genre, :title, :albumartist, :album,
