@@ -61,11 +61,17 @@ class VoiceAssistantTray(QObject):
         self.tts_process: Optional[subprocess.Popen] = None
         self.processes_running = False
         
+        # Track browser process for cleanup
+        self.browser_process: Optional[subprocess.Popen] = None
+        
         # Load plugins
         self.plugin_loader = PluginLoader(self.config)
         self.plugins = self.plugin_loader.load_all_plugins()
         self.llm_recorder_plugin = None  # Will be set during menu setup
         self.jacktrip_plugin = None  # Will be set during menu setup
+        
+        # Track all opened windows for cleanup on exit
+        self.opened_windows: List[QWidget] = []
         
         # Create tray icon
         self.app = QApplication.instance()
@@ -733,11 +739,23 @@ class VoiceAssistantTray(QObject):
                 layout.addWidget(widget)
                 dialog.setLayout(layout)
                 
+                # Track for cleanup
+                self.opened_windows.append(dialog)
+                dialog.destroyed.connect(lambda: self._remove_window(dialog))
+                
                 # Show non-blocking
                 dialog.show()
                 # Don't call exec() - that blocks until dialog closes
         except Exception as e:
             print(f"Error showing plugin GUI for {plugin.get_name()}: {e}")
+    
+    def _remove_window(self, window):
+        """Remove window from tracking list when destroyed"""
+        try:
+            if window in self.opened_windows:
+                self.opened_windows.remove(window)
+        except:
+            pass
     
     def show_logs_viewer(self):
         """Show a simple log viewer dialog."""
@@ -745,6 +763,10 @@ class VoiceAssistantTray(QObject):
         dialog.setWindowTitle("Jackdaw Logs")
         dialog.setModal(False)  # Non-modal
         dialog.resize(800, 600)
+        
+        # Track for cleanup
+        self.opened_windows.append(dialog)
+        dialog.destroyed.connect(lambda: self._remove_window(dialog))
         
         layout = QVBoxLayout()
         
@@ -885,7 +907,8 @@ class VoiceAssistantTray(QObject):
             env['VIRTUAL_ENV'] = str(script_dir / ".venv")
             env['PATH'] = f"{script_dir / '.venv' / 'bin'}:{env.get('PATH', '')}"
             
-            subprocess.Popen(
+            # Store the process handle
+            self.browser_process = subprocess.Popen(
                 [str(venv_python), "music_library_browser.py"],
                 cwd=str(script_dir),
                 env=env,
@@ -913,6 +936,11 @@ class VoiceAssistantTray(QObject):
         try:
             editor = CommandAliasesEditor()
             editor.setModal(False)  # Non-modal
+            
+            # Track for cleanup
+            self.opened_windows.append(editor)
+            editor.destroyed.connect(lambda: self._remove_window(editor))
+            
             editor.show()  # Non-blocking
         except Exception as e:
             print(f"Error showing aliases editor: {e}")
@@ -949,6 +977,10 @@ class VoiceAssistantTray(QObject):
             dialog.setWindowTitle("JACK Connections Saved")
             dialog.setMinimumWidth(500)
             
+            # Track for cleanup
+            self.opened_windows.append(dialog)
+            dialog.destroyed.connect(lambda: self._remove_window(dialog))
+            
             layout = QVBoxLayout()
             
             output_text = QTextEdit()
@@ -967,6 +999,11 @@ class VoiceAssistantTray(QObject):
             # Show error dialog
             dialog = QDialog()
             dialog.setWindowTitle("Error")
+            
+            # Track for cleanup
+            self.opened_windows.append(dialog)
+            dialog.destroyed.connect(lambda: self._remove_window(dialog))
+            
             layout = QVBoxLayout()
             
             error_label = QLabel(f"Failed to save JACK routing:\n{str(e)}")
@@ -985,6 +1022,10 @@ class VoiceAssistantTray(QObject):
         dialog = QDialog()
         dialog.setWindowTitle("Voice Commands Reference")
         dialog.resize(700, 600)
+        
+        # Track for cleanup
+        self.opened_windows.append(dialog)
+        dialog.destroyed.connect(lambda: self._remove_window(dialog))
         
         layout = QVBoxLayout()
         
@@ -1051,6 +1092,10 @@ class VoiceAssistantTray(QObject):
         """Show about dialog."""
         dialog = QDialog()
         dialog.setWindowTitle("About Jackdaw")
+        
+        # Track for cleanup
+        self.opened_windows.append(dialog)
+        dialog.destroyed.connect(lambda: self._remove_window(dialog))
         
         layout = QVBoxLayout()
         
@@ -1130,6 +1175,11 @@ class VoiceAssistantTray(QObject):
         try:
             scanner = MusicScannerWidget()
             scanner.setModal(False)  # Non-modal
+            
+            # Track for cleanup
+            self.opened_windows.append(scanner)
+            scanner.destroyed.connect(lambda: self._remove_window(scanner))
+            
             scanner.show()  # Non-blocking
         except Exception as e:
             print(f"Error launching music scanner: {e}")
@@ -1172,6 +1222,28 @@ class VoiceAssistantTray(QObject):
     
     def quit_application(self):
         """Quit the application."""
+        # Close all opened windows first
+        print(f"Closing {len(self.opened_windows)} opened windows...")
+        for window in self.opened_windows[:]:  # Copy list to avoid modification during iteration
+            try:
+                window.close()
+            except:
+                pass
+        self.opened_windows.clear()
+        
+        # Terminate music browser process if running
+        if self.browser_process:
+            try:
+                print("Terminating music library browser...")
+                self.browser_process.terminate()
+                self.browser_process.wait(timeout=2.0)
+            except:
+                try:
+                    self.browser_process.kill()
+                except:
+                    pass
+            self.browser_process = None
+        
         self.stop_voice_assistant()
         self.plugin_loader.cleanup_all_plugins()
         # Exit with code 0 so launcher knows it's intentional
