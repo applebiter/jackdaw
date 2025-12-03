@@ -1158,14 +1158,14 @@ class VoiceAssistantTray(QObject):
         <html>
         <head>
             <style>
-                body {{ font-family: monospace; font-size: 11px; }}
-                h3 {{ color: #2196F3; margin-top: 15px; margin-bottom: 5px; }}
+                body {{ font-family: monospace; font-size: 11px; background: #1e1e1e; color: #e0e0e0; }}
+                h3 {{ color: #64B5F6; margin-top: 15px; margin-bottom: 5px; }}
                 table {{ border-collapse: collapse; width: 100%; margin-top: 5px; }}
-                th {{ background: #f0f0f0; text-align: left; padding: 5px; border: 1px solid #ddd; }}
-                td {{ padding: 5px; border: 1px solid #ddd; }}
-                .metric {{ font-weight: bold; color: #4CAF50; }}
-                .warning {{ color: #FF9800; }}
-                .file {{ color: #666; }}
+                th {{ background: #2d2d2d; text-align: left; padding: 5px; border: 1px solid #444; color: #e0e0e0; }}
+                td {{ padding: 5px; border: 1px solid #444; color: #d0d0d0; }}
+                .metric {{ font-weight: bold; color: #81C784; }}
+                .warning {{ color: #FFB74D; }}
+                .file {{ color: #a0a0a0; }}
             </style>
         </head>
         <body>
@@ -1256,14 +1256,14 @@ class VoiceAssistantTray(QObject):
         <html>
         <head>
             <style>
-                body {{ font-family: monospace; font-size: 11px; }}
-                h3 {{ color: #2196F3; margin-top: 15px; margin-bottom: 5px; }}
+                body {{ font-family: monospace; font-size: 11px; background: #1e1e1e; color: #e0e0e0; }}
+                h3 {{ color: #64B5F6; margin-top: 15px; margin-bottom: 5px; }}
                 table {{ border-collapse: collapse; width: 100%; margin-top: 5px; }}
-                th {{ background: #f0f0f0; text-align: left; padding: 5px; border: 1px solid #ddd; }}
-                td {{ padding: 5px; border: 1px solid #ddd; }}
-                .metric {{ font-weight: bold; color: #4CAF50; }}
-                .warning {{ color: #FF9800; }}
-                .file {{ color: #666; }}
+                th {{ background: #2d2d2d; text-align: left; padding: 5px; border: 1px solid #444; color: #e0e0e0; }}
+                td {{ padding: 5px; border: 1px solid #444; color: #d0d0d0; }}
+                .metric {{ font-weight: bold; color: #81C784; }}
+                .warning {{ color: #FFB74D; }}
+                .file {{ color: #a0a0a0; }}
             </style>
         </head>
         <body>
