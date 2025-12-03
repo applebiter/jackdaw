@@ -143,17 +143,20 @@ class MusicLibraryBrowser(QMainWindow):
         self.select_all_btn.clicked.connect(self.on_select_all)
         search_layout.addWidget(self.select_all_btn)
         
+        self.edit_track_btn = QPushButton("✏️ Edit Track")
+        self.edit_track_btn.setToolTip("Open editor for selected track (or double-click a track)")
+        self.edit_track_btn.clicked.connect(self.on_edit_track)
+        search_layout.addWidget(self.edit_track_btn)
+        
         layout.addLayout(search_layout)
         
         # Main horizontal splitter for table and playlist
         main_splitter = QSplitter(Qt.Horizontal)
         
-        # Left side: table and details in vertical splitter
+        # Left side: table only (details removed - will use editor widget instead)
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
-        
-        splitter = QSplitter(Qt.Vertical)
         
         # Track table
         self.track_table = QTableWidget()
@@ -161,30 +164,16 @@ class MusicLibraryBrowser(QMainWindow):
         self.track_table.setHorizontalHeaderLabels([
             "Title", "Artist", "Album", "Genre", "Year", "Duration", "BPM", "Path"
         ])
-        self.track_table.setToolTip("Click column headers to sort • Ctrl+Click to select multiple • Shift+Click for ranges")
+        self.track_table.setToolTip("Click column headers to sort • Ctrl+Click to select multiple • Shift+Click for ranges • Double-click to edit track")
         self.track_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.track_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.track_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.track_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.track_table.setSelectionMode(QTableWidget.MultiSelection)
         self.track_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
-        self.track_table.itemSelectionChanged.connect(self.on_selection_changed)
-        splitter.addWidget(self.track_table)
+        self.track_table.itemDoubleClicked.connect(self.on_track_double_clicked)
         
-        # Track details panel
-        details_widget = QWidget()
-        details_layout = QVBoxLayout(details_widget)
-        
-        self.track_details = QTextEdit()
-        self.track_details.setReadOnly(True)
-        self.track_details.setMaximumHeight(150)
-        details_layout.addWidget(QLabel("Track Details:"))
-        details_layout.addWidget(self.track_details)
-        
-        splitter.addWidget(details_widget)
-        splitter.setSizes([600, 200])
-        
-        left_layout.addWidget(splitter)
+        left_layout.addWidget(self.track_table)
         main_splitter.addWidget(left_widget)
         
         # Right side: Playlist panel
@@ -504,54 +493,40 @@ class MusicLibraryBrowser(QMainWindow):
         self.current_page = 0
         self.load_tracks()
     
-    def on_selection_changed(self):
-        """Handle track selection change"""
+    def on_edit_track(self):
+        """Handle Edit Track button click"""
         selected_rows = self.track_table.selectionModel().selectedRows()
         
-        if len(selected_rows) == 1:
-            # Show details for single selection
-            row = selected_rows[0].row()
-            track_id = self.track_table.item(row, 0).data(Qt.UserRole)
-            self.show_track_details(track_id)
-        elif len(selected_rows) > 1:
-            self.track_details.setPlainText(f"{len(selected_rows)} tracks selected")
-        else:
-            self.track_details.clear()
-    
-    def show_track_details(self, track_id: int):
-        """Display detailed information for a track"""
-        cursor = self.db_conn.cursor()
-        cursor.execute("SELECT * FROM sounds WHERE id = ?", (track_id,))
-        row = cursor.fetchone()
+        if len(selected_rows) != 1:
+            QMessageBox.information(
+                self,
+                "Select One Track",
+                "Please select exactly one track to edit"
+            )
+            return
         
-        if row:
-            details = f"""
-Title: {row['title'] or 'Unknown'}
-Artist: {row['artist'] or 'Unknown'}
-Album Artist: {row['albumartist'] or 'N/A'}
-Album: {row['album'] or 'Unknown'}
-Genre: {row['genre'] or 'N/A'}
-Year: {row['year'] or 'N/A'}
-Track: {row['tracknumber'] or 'N/A'} / Disc: {row['discnumber'] or 'N/A'}
-
-Duration: {row['duration_timecode']} ({row['duration_milliseconds']} ms)
-BPM: {row['beats_per_minute'] or 'N/A'}
-
-Audio Format:
-  Sample Rate: {row['samplerate']} Hz
-  Channels: {row['channels']}
-  Bits per Sample: {row['bits_per_sample']}
-  Bitrate: {row['bitrate']} kbps
-
-Composer: {row['composer'] or 'N/A'}
-Producer: {row['producer'] or 'N/A'}
-Engineer: {row['engineer'] or 'N/A'}
-Label: {row['label'] or 'N/A'}
-
-File: {row['location']}/{row['filename']}
-Size: {row['size'] or 'N/A'}
-            """.strip()
-            self.track_details.setPlainText(details)
+        row = selected_rows[0].row()
+        track_id = self.track_table.item(row, 0).data(Qt.UserRole)
+        self.open_track_editor(track_id)
+    
+    def on_track_double_clicked(self, item):
+        """Handle double-click on track to open editor"""
+        row = item.row()
+        track_id = self.track_table.item(row, 0).data(Qt.UserRole)
+        self.open_track_editor(track_id)
+    
+    def open_track_editor(self, track_id: int):
+        """Open track editor widget for the specified track"""
+        from track_editor_widget import TrackEditorWidget
+        
+        editor = TrackEditorWidget(track_id, self.db_conn, self.db_path, parent=self)
+        editor.track_updated.connect(self.on_track_updated)
+        editor.show()
+    
+    def on_track_updated(self, track_id: int):
+        """Handle track update from editor - reload the table"""
+        self.load_tracks()
+        self.status_label.setText(f"Track {track_id} updated successfully")
     
     def get_selected_file_paths(self) -> List[str]:
         """Get file paths of selected tracks"""

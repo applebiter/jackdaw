@@ -721,17 +721,21 @@ class VoiceAssistantTray(QObject):
         try:
             widget = plugin.create_gui_widget()
             if widget:
-                # Create a dialog to host the widget
+                # Create a non-modal dialog to host the widget
                 dialog = QDialog()
                 dialog.setWindowTitle(plugin.get_description())
                 dialog.setModal(False)
+                
+                # Make dialog independent (no parent) so it can be managed separately
+                dialog.setParent(None)
                 
                 layout = QVBoxLayout()
                 layout.addWidget(widget)
                 dialog.setLayout(layout)
                 
+                # Show non-blocking
                 dialog.show()
-                dialog.exec()
+                # Don't call exec() - that blocks until dialog closes
         except Exception as e:
             print(f"Error showing plugin GUI for {plugin.get_name()}: {e}")
     
@@ -739,6 +743,7 @@ class VoiceAssistantTray(QObject):
         """Show a simple log viewer dialog."""
         dialog = QDialog()
         dialog.setWindowTitle("Jackdaw Logs")
+        dialog.setModal(False)  # Non-modal
         dialog.resize(800, 600)
         
         layout = QVBoxLayout()
@@ -844,7 +849,7 @@ class VoiceAssistantTray(QObject):
         layout.addLayout(button_layout)
         
         dialog.setLayout(layout)
-        dialog.exec()
+        dialog.show()  # Non-blocking
     
     def launch_music_browser(self):
         """Launch the music library browser application."""
@@ -871,7 +876,7 @@ class VoiceAssistantTray(QObject):
                 layout.addWidget(close_btn)
                 
                 dialog.setLayout(layout)
-                dialog.exec()
+                dialog.show()  # Non-blocking
                 return
             
             # Launch the browser in a separate process
@@ -907,7 +912,8 @@ class VoiceAssistantTray(QObject):
         """Show the command aliases editor"""
         try:
             editor = CommandAliasesEditor()
-            editor.exec()
+            editor.setModal(False)  # Non-modal
+            editor.show()  # Non-blocking
         except Exception as e:
             print(f"Error showing aliases editor: {e}")
             QMessageBox.critical(
@@ -955,7 +961,7 @@ class VoiceAssistantTray(QObject):
             layout.addWidget(close_btn)
             
             dialog.setLayout(layout)
-            dialog.exec()
+            dialog.show()  # Non-blocking
             
         except Exception as e:
             # Show error dialog
@@ -972,7 +978,7 @@ class VoiceAssistantTray(QObject):
             layout.addWidget(close_btn)
             
             dialog.setLayout(layout)
-            dialog.exec()
+            dialog.show()  # Non-blocking
     
     def show_voice_commands_reference(self):
         """Show comprehensive voice commands reference grouped by plugin."""
@@ -1039,7 +1045,7 @@ class VoiceAssistantTray(QObject):
         layout.addWidget(close_btn)
         
         dialog.setLayout(layout)
-        dialog.exec()
+        dialog.show()  # Non-blocking
     
     def show_about(self):
         """Show about dialog."""
@@ -1075,7 +1081,7 @@ class VoiceAssistantTray(QObject):
         layout.addWidget(close_btn)
         
         dialog.setLayout(layout)
-        dialog.exec()
+        dialog.show()  # Non-blocking
     
     def music_next_track(self):
         """Skip to next track."""
@@ -1123,7 +1129,8 @@ class VoiceAssistantTray(QObject):
         """Launch the music library scanner widget"""
         try:
             scanner = MusicScannerWidget()
-            scanner.exec()  # Show as modal dialog
+            scanner.setModal(False)  # Non-modal
+            scanner.show()  # Non-blocking
         except Exception as e:
             print(f"Error launching music scanner: {e}")
             QMessageBox.critical(
